@@ -5094,7 +5094,9 @@ function xcValid(c){
   if (c.af === '' || c.av === '' || c.bf === '' || c.bv === '') return false;
   return !(c.af === c.bf && c.av === c.bv);
 }
-/** Match products across the two sides of one cross. */
+/** Match products across the two sides of one cross. A "product" is either
+ *  a single item or a group of items linked through Crossed To; every item
+ *  inside it is kept with its own per-side figures so the sheet can list them. */
 function xcCompare(lines, c, match){
   const info = derived.crossInfo || {};
   const keyOf = l => {
@@ -5107,11 +5109,12 @@ function xcCompare(lines, c, match){
   const prods = new Map();
   const add = (side, l, k) => {
     let p = prods.get(k);
-    if (!p) { p = { key:k, A:{ qty:0, net:0, lines:0, items:new Map() }, B:{ qty:0, net:0, lines:0, items:new Map() } }; prods.set(k, p); }
-    const s = p[side];
-    s.qty += l.qty; s.net += l.net; s.lines++;
-    const it = s.items.get(l.item) || { net:0, desc:l.desc };
-    it.net += l.net; s.items.set(l.item, it);
+    if (!p) { p = { key:k, A:{ qty:0, net:0, lines:0 }, B:{ qty:0, net:0, lines:0 }, items:new Map() }; prods.set(k, p); }
+    p[side].qty += l.qty; p[side].net += l.net; p[side].lines++;
+    let it = p.items.get(l.item);
+    if (!it) { it = { item:l.item, desc:l.desc, mfg:l.mfg, crossedTo:(l.g.resolved.crossedTo && l.g.resolved.crossedTo.value) || '',
+                      A:{ qty:0, net:0, lines:0 }, B:{ qty:0, net:0, lines:0 } }; p.items.set(l.item, it); }
+    it[side].qty += l.qty; it[side].net += l.net; it[side].lines++;
   };
   lines.forEach(l => {
     const k = keyOf(l); if (!k) return;
@@ -5119,14 +5122,20 @@ function xcCompare(lines, c, match){
     if (inSide(l, c.bf, c.bv)) add('B', l, k);
   });
   const each = s => s.qty > 0 ? s.net / s.qty : null;
-  const names = s => [...s.items.entries()].sort((a, b) => b[1].net - a[1].net).map(e => e[0]).join(', ');
-  const desc = p => { const all = [...p.A.items.values(), ...p.B.items.values()].sort((a, b) => b.net - a.net); return all.length ? all[0].desc : ''; };
   const both = [], onlyA = [], onlyB = [];
   prods.forEach(p => {
     const eA = each(p.A), eB = each(p.B);
-    const row = { p, eA, eB, itemsA:names(p.A), itemsB:names(p.B), desc:desc(p) };
+    const items = [...p.items.values()].sort((a, b) => (b.A.net + b.B.net) - (a.A.net + a.B.net));
+    const row = { p, eA, eB, items, desc:items.length ? items[0].desc : '', sav:0 };
     if (eA !== null && eB !== null) {
-      row.sav = eA > eB ? (eA - eB) * p.A.qty : (eB - eA) * p.B.qty;
+      const hi = eA > eB ? 'A' : eB > eA ? 'B' : null, bench = Math.min(eA, eB);
+      row.lower = eA < eB ? 'A' : eB < eA ? 'B' : 'Same';
+      row.bench = bench;
+      items.forEach(it => {
+        const e = hi ? each(it[hi]) : null;
+        it.sav = hi && e !== null ? Math.max(0, (e - bench) * it[hi].qty) : 0;
+        row.sav += it.sav;
+      });
       both.push(row);
     } else if (p.A.lines) onlyA.push(row);
     else if (p.B.lines) onlyB.push(row);
@@ -5134,33 +5143,96 @@ function xcCompare(lines, c, match){
   both.sort((a, b) => b.sav - a.sav);
   onlyA.sort((a, b) => b.p.A.net - a.p.A.net);
   onlyB.sort((a, b) => b.p.B.net - a.p.B.net);
-  return { both, onlyA, onlyB, savings:both.reduce((s, r) => s + r.sav, 0) };
+  return { both, onlyA, onlyB, savings:both.reduce((s, r) => s + r.sav, 0),
+           itemCount:[...both, ...onlyA, ...onlyB].reduce((s, r) => s + r.items.length, 0) };
 }
 
 function xlSheetCrosses(wb, lines, metaLine){
   const ws = wb.addWorksheet('Crosses', { properties:{ tabColor:{ argb:'FF7B2FBE' } } });
   const crosses = (state.ui.xlCrosses || []).filter(xcValid);
   const match = state.ui.xlCrossMatch || 'link';
-  const widths = [24, 24, 46, 12, 14, 12, 12, 14, 12, 10, 13, 16];
+  const heads = ['Item #', 'Item Description', 'MFG. Catalog #', 'Crossed To',
+                 'Qty (A)', 'Net Sales (A)', 'Each Price (A)', 'Qty (B)', 'Net Sales (B)', 'Each Price (B)',
+                 'Benchmark (lower side)', 'Over Benchmark', 'Lower Price', 'Potential Savings'];
+  const widths = [26, 46, 16, 16, 12, 14, 12, 12, 14, 12, 14, 12, 10, 15];
+  const N = heads.length;
   widths.forEach((w, i) => ws.getColumn(i + 1).width = w);
   ws.getCell(1, 1).value = 'Cross analysis \u2014 Facility + Vendor comparisons';
   ws.getCell(1, 1).font = xlFont({ size:14, bold:true, color:{ argb:XL.navy } });
   ws.getRow(1).height = 22;
-  ws.getCell(2, 1).value = metaLine + '   |   Matched by: ' + XC_MATCH[match] +
-    '. Potential Savings = price gap \u00d7 quantity of the side that paid more. Collapse blocks with the 1 / 2 buttons at the left.';
+  ws.getCell(2, 1).value = metaLine + '   |   Matched by: ' + XC_MATCH[match] + '.';
   ws.getCell(2, 1).font = xlFont({ size:9, color:{ argb:XL.ink2 } });
-  ws.views = [{ state:'frozen', ySplit:2, showGridLines:false }];
-  ws.properties.outlineLevelRow = 1;
-  ws.pageSetup = { orientation:'landscape', paperSize:9, fitToPage:true, fitToWidth:1, fitToHeight:0,
+  ws.getCell(3, 1).value = 'Every crossed item is listed under its group. Benchmark = the lower side\u2019s each price for the group; Potential Savings = each item on the higher-priced side \u00d7 (its each price \u2212 benchmark). Use the 1 / 2 / 3 buttons at the left to collapse.';
+  ws.getCell(3, 1).font = xlFont({ size:9, italic:true, color:{ argb:XL.ink3 } });
+  ws.views = [{ state:'frozen', ySplit:3, showGridLines:false }];
+  /* Group rows sit ABOVE their items. ExcelJS writes <pageSetUpPr> before
+     <outlinePr> (Excel rejects that), so this sheet prints at a fixed scale
+     rather than fit-to-page. */
+  ws.properties.outlineProperties = { summaryBelow:false, summaryRight:false };
+  ws.properties.outlineLevelRow = 2;
+  ws.pageSetup = { orientation:'landscape', paperSize:9, scale:55,
                    margins:{ left:0.4, right:0.4, top:0.5, bottom:0.5, header:0.25, footer:0.25 } };
   ws.headerFooter = { oddFooter:'&L&8Cross analysis&R&8Page &P of &N' };
-  const N = widths.length;
+
+  const C = { item:1, desc:2, mfg:3, xto:4, qA:5, nA:6, eA:7, qB:8, nB:9, eB:10, bench:11, above:12, lower:13, sav:14 };
+  const L = k => xlColLetter(C[k]);
+  const GRP = { fill:'FFF1ECF9', font:{ bold:true, color:{ argb:XL.navy2 } }, border:{ top:xlThin('FFC9B6E4'), bottom:xlThin('FFE6EBF0') } };
+  const GREY = { font:{ color:{ argb:XL.ink3 } } };
+  const GOOD = { fill:XL.ok, font:{ bold:true, color:{ argb:XL.okInk } } };
   const results = [];
-  let r = 4;
+  let r = 5;
+
+  const eachF = (row, q, n) => ({ f:'IF(' + L(q) + row + '=0,"",' + L(n) + row + '/' + L(q) + row + ')' });
+  const num = v => v && v.qty > 0 ? v : null;
+
+  /** One item row. g = its group row (null for a single-item product). */
+  function itemRow(rr, it, g, level, x){
+    const st = level === 2 ? { indent:3 } : null;
+    const oneSide = !num(it.A) || !num(it.B);
+    xlPut(ws, rr, C.item, it.item, null, st);
+    xlPut(ws, rr, C.desc, it.desc || null);
+    xlPut(ws, rr, C.mfg, it.mfg || null);
+    xlPut(ws, rr, C.xto, it.crossedTo || null);
+    const eA = it.A.qty > 0 ? it.A.net / it.A.qty : null, eB = it.B.qty > 0 ? it.B.net / it.B.qty : null;
+    xlPut(ws, rr, C.qA, it.A.lines ? it.A.qty : null, 'qty'); xlPut(ws, rr, C.nA, it.A.lines ? it.A.net : null, 'money');
+    xlPut(ws, rr, C.eA, it.A.lines ? Object.assign(eachF(rr, 'qA', 'nA'), { r:eA == null ? '' : eA }) : null, 'price');
+    xlPut(ws, rr, C.qB, it.B.lines ? it.B.qty : null, 'qty'); xlPut(ws, rr, C.nB, it.B.lines ? it.B.net : null, 'money');
+    xlPut(ws, rr, C.eB, it.B.lines ? Object.assign(eachF(rr, 'qB', 'nB'), { r:eB == null ? '' : eB }) : null, 'price');
+    if (g) {
+      // compared against the group's benchmark (lower side's each price)
+      const B = '$' + L('bench') + '$' + g, W = '$' + L('lower') + '$' + g;
+      xlPut(ws, rr, C.bench, { f:'IF(' + B + '="","",' + B + ')', r:x.bench == null ? '' : x.bench }, 'price', GREY);
+      const hiE = x.lower === 'B' ? L('eA') : L('eB'), hiQ = x.lower === 'B' ? L('qA') : L('qB');
+      const pick = e => 'IF(' + W + '="B",' + L('eA') + rr + ',IF(' + W + '="A",' + L('eB') + rr + ',""))';
+      const hiEach = x.lower === 'B' ? eA : x.lower === 'A' ? eB : null;
+      xlPut(ws, rr, C.above, { f:'IFERROR(IF(OR(' + pick() + '="",' + B + '="",' + B + '=0),"",' + pick() + '/' + B + '-1),"")',
+                               r:hiEach != null && x.bench ? hiEach / x.bench - 1 : '' }, 'pct');
+      xlPut(ws, rr, C.lower, null);
+      const sc = xlPut(ws, rr, C.sav, { f:'IFERROR(IF(' + W + '="B",IF(OR(' + L('eA') + rr + '="",' + B + '=""),"",MAX(0,(' + L('eA') + rr + '-' + B + ')*' + L('qA') + rr + ')),' +
+                                          'IF(' + W + '="A",IF(OR(' + L('eB') + rr + '="",' + B + '=""),"",MAX(0,(' + L('eB') + rr + '-' + B + ')*' + L('qB') + rr + ')),"")),"")',
+                                  r:it.sav || (hiEach != null ? 0 : '') }, 'money');
+      if (it.sav > 0.005) sc.font = xlFont({ bold:true, color:{ argb:XL.warnInk } });
+    } else if (!oneSide) {
+      // a single item bought on both sides: compare directly
+      xlPut(ws, rr, C.bench, { f:'IF(OR(' + L('eA') + rr + '="",' + L('eB') + rr + '=""),"",MIN(' + L('eA') + rr + ',' + L('eB') + rr + '))', r:Math.min(eA, eB) }, 'price', GREY);
+      xlPut(ws, rr, C.above, { f:'IFERROR(MAX(' + L('eA') + rr + ',' + L('eB') + rr + ')/' + L('bench') + rr + '-1,"")', r:Math.max(eA, eB) / Math.min(eA, eB) - 1 }, 'pct');
+      const lw = eB < eA ? 'B' : eB > eA ? 'A' : 'Same';
+      xlPut(ws, rr, C.lower, { f:'IF(' + L('eB') + rr + '<' + L('eA') + rr + ',"B",IF(' + L('eB') + rr + '>' + L('eA') + rr + ',"A","Same"))', r:lw });
+      const sc = xlPut(ws, rr, C.sav, { f:'IF(' + L('eA') + rr + '>' + L('eB') + rr + ',(' + L('eA') + rr + '-' + L('eB') + rr + ')*' + L('qA') + rr + ',(' + L('eB') + rr + '-' + L('eA') + rr + ')*' + L('qB') + rr + ')', r:x.sav }, 'money');
+      if (x.sav > 0.005) sc.font = xlFont({ bold:true, color:{ argb:XL.warnInk } });
+    } else {
+      for (let c = C.bench; c <= C.sav; c++) xlPut(ws, rr, c, null);
+      xlPut(ws, rr, C.lower, it.A.lines ? 'Only in A' : 'Only in B', null, { font:{ italic:true, color:{ argb:XL.ink3 } } });
+    }
+    ws.getCell(rr, C.lower).alignment = { horizontal:'center', vertical:'middle' };
+    if (eA !== null && eB !== null && !g) { if (eA < eB) ws.getCell(rr, C.eA).fill = xlFill(XL.ok); else if (eB < eA) ws.getCell(rr, C.eB).fill = xlFill(XL.ok); }
+    if (oneSide && !g) for (let c = 1; c <= N; c++) if (c !== C.lower) ws.getCell(rr, c).font = xlFont({ color:{ argb:XL.ink3 } });
+    ws.getRow(rr).outlineLevel = level;
+  }
+
   crosses.forEach((c, ci) => {
     const res = xcCompare(lines, c, match);
     const aL = xcSideLabel(c.af, c.av), bL = xcSideLabel(c.bf, c.bv);
-    // block title
     ws.mergeCells(r, 1, r, N);
     const t = ws.getCell(r, 1);
     t.value = 'Cross ' + (ci + 1) + ':   A = ' + aL + '     vs     B = ' + bL;
@@ -5168,82 +5240,79 @@ function xlSheetCrosses(wb, lines, metaLine){
     t.fill = xlFill(XL.navy); t.alignment = { vertical:'middle', indent:1 };
     ws.getRow(r).height = 22;
     r++;
-    // column headers
-    const heads = ['Item # (A)', 'Item # (B)', 'Item Description', 'Qty (A)', 'Net Sales (A)', 'Each Price (A)',
-                   'Qty (B)', 'Net Sales (B)', 'Each Price (B)', 'B vs A', 'Lower Price', 'Potential Savings'];
     heads.forEach((h, i) => {
       const cell = ws.getCell(r, i + 1);
       cell.value = h;
       cell.font = xlFont({ bold:true, size:9.5, color:{ argb:XL.navy2 } });
-      cell.fill = xlFill(i >= 3 && i <= 5 ? 'FFEEF3FA' : i >= 6 && i <= 8 ? 'FFEEF8F2' : 'FFE9EEF5');
-      cell.alignment = { horizontal:i >= 3 ? 'right' : 'left', vertical:'middle', wrapText:true, indent:1 };
+      cell.fill = xlFill(i >= 4 && i <= 6 ? 'FFEEF3FA' : i >= 7 && i <= 9 ? 'FFEEF8F2' : 'FFE9EEF5');
+      cell.alignment = { horizontal:i >= 4 ? 'right' : 'left', vertical:'middle', wrapText:true, indent:1 };
       cell.border = { bottom:xlThin(XL.navy2) };
     });
-    ws.getRow(r).height = 28;
+    ws.getRow(r).height = 34;
     r++;
     const first = r;
-    const put = (row, i, v, fmt, st) => xlPut(ws, row, i, v, fmt, st);
-    res.both.forEach(x => {
+
+    res.both.concat(res.onlyA, res.onlyB).forEach(x => {
       const p = x.p;
-      put(r, 1, x.itemsA); put(r, 2, x.itemsB); put(r, 3, x.desc || null);
-      put(r, 4, p.A.qty, 'qty'); put(r, 5, p.A.net, 'money');
-      put(r, 6, { f:'IF(D' + r + '=0,"",E' + r + '/D' + r + ')', r:x.eA }, 'price', x.eA < x.eB ? { fill:XL.ok, font:{ bold:true, color:{ argb:XL.okInk } } } : null);
-      put(r, 7, p.B.qty, 'qty'); put(r, 8, p.B.net, 'money');
-      put(r, 9, { f:'IF(G' + r + '=0,"",H' + r + '/G' + r + ')', r:x.eB }, 'price', x.eB < x.eA ? { fill:XL.ok, font:{ bold:true, color:{ argb:XL.okInk } } } : null);
-      put(r, 10, { f:'IF(OR(F' + r + '="",I' + r + '="",F' + r + '=0),"",I' + r + '/F' + r + '-1)', r:x.eA ? x.eB / x.eA - 1 : '' }, 'pct');
-      put(r, 11, { f:'IF(OR(F' + r + '="",I' + r + '=""),"",IF(I' + r + '<F' + r + ',"B",IF(I' + r + '>F' + r + ',"A","Same")))',
-                   r:x.eB < x.eA ? 'B' : x.eB > x.eA ? 'A' : 'Same' });
-      ws.getCell(r, 11).alignment = { horizontal:'center', vertical:'middle' };
-      const sc = put(r, 12, { f:'IF(OR(F' + r + '="",I' + r + '=""),"",IF(F' + r + '>I' + r + ',(F' + r + '-I' + r + ')*D' + r + ',(I' + r + '-F' + r + ')*G' + r + '))', r:x.sav }, 'money');
-      if (x.sav > 0.005) sc.font = xlFont({ bold:true, color:{ argb:XL.warnInk } });
-      ws.getRow(r).outlineLevel = 1;
-      r++;
+      if (x.items.length === 1) { itemRow(r, x.items[0], null, 1, x); r++; return; }
+      // group row (its totals are SUBTOTALs of the item rows below it)
+      const g = r, s = g + 1, e = g + x.items.length, paired = x.eA !== null && x.eB !== null;
+      const xtos = [...new Set(x.items.map(it => it.crossedTo).filter(Boolean))];
+      xlPut(ws, g, C.item, 'Crossed group (' + x.items.length + ' items)', null, GRP);
+      xlPut(ws, g, C.desc, x.desc || null, null, GRP);
+      xlPut(ws, g, C.mfg, null, null, GRP);
+      xlPut(ws, g, C.xto, xtos.join(', ') || null, null, GRP);
+      const sub = (k, fmt, v) => xlPut(ws, g, C[k], { f:'SUBTOTAL(9,' + L(k) + s + ':' + L(k) + e + ')', r:v }, fmt, GRP);
+      sub('qA', 'qty', p.A.qty); sub('nA', 'money', p.A.net);
+      xlPut(ws, g, C.eA, Object.assign(eachF(g, 'qA', 'nA'), { r:x.eA == null ? '' : x.eA }), 'price', paired && x.eA < x.eB ? GOOD : GRP);
+      sub('qB', 'qty', p.B.qty); sub('nB', 'money', p.B.net);
+      xlPut(ws, g, C.eB, Object.assign(eachF(g, 'qB', 'nB'), { r:x.eB == null ? '' : x.eB }), 'price', paired && x.eB < x.eA ? GOOD : GRP);
+      if (paired) {
+        xlPut(ws, g, C.bench, { f:'IF(OR(' + L('eA') + g + '="",' + L('eB') + g + '=""),"",MIN(' + L('eA') + g + ',' + L('eB') + g + '))', r:x.bench }, 'price', GRP);
+        xlPut(ws, g, C.above, { f:'IFERROR(MAX(' + L('eA') + g + ',' + L('eB') + g + ')/' + L('bench') + g + '-1,"")', r:Math.max(x.eA, x.eB) / x.bench - 1 }, 'pct', GRP);
+        xlPut(ws, g, C.lower, { f:'IF(OR(' + L('eA') + g + '="",' + L('eB') + g + '=""),"",IF(' + L('eB') + g + '<' + L('eA') + g + ',"B",IF(' + L('eB') + g + '>' + L('eA') + g + ',"A","Same")))', r:x.lower }, null, GRP);
+        const sc = sub('sav', 'money', x.sav);
+        if (x.sav > 0.005) sc.font = xlFont({ bold:true, color:{ argb:XL.warnInk } });
+      } else {
+        xlPut(ws, g, C.bench, null, null, GRP); xlPut(ws, g, C.above, null, null, GRP);
+        xlPut(ws, g, C.lower, x.eA !== null ? 'Only in A' : 'Only in B', null, { fill:GRP.fill, border:GRP.border, font:{ italic:true, color:{ argb:XL.ink3 } } });
+        xlPut(ws, g, C.sav, null, null, GRP);
+      }
+      ws.getCell(g, C.lower).alignment = { horizontal:'center', vertical:'middle' };
+      ws.getRow(g).outlineLevel = 1;
+      x.items.forEach((it, i) => itemRow(s + i, it, paired ? g : null, 2, x));
+      r = e + 1;
     });
-    const grey = { font:{ color:{ argb:XL.ink3 } } };
-    res.onlyA.forEach(x => {
-      put(r, 1, x.itemsA, null, grey); put(r, 2, null); put(r, 3, x.desc || null, null, grey);
-      put(r, 4, x.p.A.qty, 'qty', grey); put(r, 5, x.p.A.net, 'money', grey); put(r, 6, x.eA, 'price', grey);
-      for (let i = 7; i <= 10; i++) put(r, i, null);
-      put(r, 11, 'Only in A', null, { font:{ italic:true, color:{ argb:XL.ink3 } } }); put(r, 12, null);
-      ws.getRow(r).outlineLevel = 1; r++;
-    });
-    res.onlyB.forEach(x => {
-      put(r, 1, null); put(r, 2, x.itemsB, null, grey); put(r, 3, x.desc || null, null, grey);
-      for (let i = 4; i <= 6; i++) put(r, i, null);
-      put(r, 7, x.p.B.qty, 'qty', grey); put(r, 8, x.p.B.net, 'money', grey); put(r, 9, x.eB, 'price', grey);
-      put(r, 10, null); put(r, 11, 'Only in B', null, { font:{ italic:true, color:{ argb:XL.ink3 } } }); put(r, 12, null);
-      ws.getRow(r).outlineLevel = 1; r++;
-    });
+
     if (r === first) {
       ws.mergeCells(r, 1, r, N);
       ws.getCell(r, 1).value = 'No purchases found for either side with this Facility + Vendor choice.';
       ws.getCell(r, 1).font = xlFont({ italic:true, color:{ argb:XL.ink2 } });
       r++;
     }
-    // block totals (below its rows, so Excel's default outline works)
+    // block totals: SUBTOTAL skips the group rows' own SUBTOTALs, so nothing is counted twice
     const last = r - 1, tr = r;
     for (let i = 1; i <= N; i++) {
       const cell = ws.getCell(tr, i);
       cell.fill = xlFill('FFE9EEF5');
       cell.border = { top:xlThin(XL.navy2), bottom:{ style:'medium', color:{ argb:XL.navy } } };
       cell.font = xlFont({ bold:true, color:{ argb:XL.navy } });
-      cell.alignment = { horizontal:i >= 4 ? 'right' : 'left', vertical:'middle', indent:1 };
+      cell.alignment = { horizontal:i >= 5 ? 'right' : 'left', vertical:'middle', indent:1 };
     }
     ws.getCell(tr, 1).value = 'Cross ' + (ci + 1) + ' total';
-    ws.getCell(tr, 3).value = res.both.length + ' compared   |   ' + res.onlyA.length + ' only in A   |   ' + res.onlyB.length + ' only in B';
-    ws.getCell(tr, 3).font = xlFont({ size:9, color:{ argb:XL.ink2 } });
-    const sub = (col, fmt, val) => {
-      const L = xlColLetter(col), cell = ws.getCell(tr, col);
-      cell.value = last >= first ? { formula:'SUBTOTAL(9,' + L + first + ':' + L + last + ')', result:val } : 0;
+    ws.getCell(tr, 2).value = res.itemCount + ' items   |   ' + res.both.length + ' compared   |   ' + res.onlyA.length + ' only in A   |   ' + res.onlyB.length + ' only in B';
+    ws.getCell(tr, 2).font = xlFont({ size:9, color:{ argb:XL.ink2 } });
+    const all = res.both.concat(res.onlyA, res.onlyB);
+    const tot = (k, fmt, v) => {
+      const cell = ws.getCell(tr, C[k]);
+      cell.value = last >= first ? { formula:'SUBTOTAL(9,' + L(k) + first + ':' + L(k) + last + ')', result:v } : 0;
       cell.numFmt = XF[fmt];
     };
-    const sum = (arr, f) => arr.reduce((s, x) => s + f(x), 0);
-    const all = res.both.concat(res.onlyA, res.onlyB);
-    sub(5, 'money', sum(all, x => x.p.A.net));
-    sub(8, 'money', sum(all, x => x.p.B.net));
-    sub(12, 'money', res.savings);
+    tot('nA', 'money', all.reduce((s, x) => s + x.p.A.net, 0));
+    tot('nB', 'money', all.reduce((s, x) => s + x.p.B.net, 0));
+    tot('sav', 'money', res.savings);
     ws.getRow(tr).height = 18;
-    results.push({ label:'A = ' + aL + '  vs  B = ' + bL, compared:res.both.length, savings:res.savings, cell:'Crosses!L' + tr });
+    results.push({ label:'A = ' + aL + '  vs  B = ' + bL, compared:res.both.length, items:res.itemCount, savings:res.savings, cell:'Crosses!' + L('sav') + tr });
     r = tr + 2;
   });
   return { results, match };
@@ -5300,7 +5369,7 @@ function openCrossSetup(onExport){
       row.appendChild(mkSel(facs, 'All facilities', c.bf, v => c.bf = v));
       row.appendChild(mkSel(vens, 'All vendors', c.bv, v => c.bv = v));
       let info = '\u2014';
-      if (xcValid(c)) { const res = xcCompare(lines, c, match); info = res.both.length + ' item' + (res.both.length === 1 ? '' : 's') + (res.both.length ? ', ' + fmtMoney(res.savings) + ' gap' : ''); }
+      if (xcValid(c)) { const res = xcCompare(lines, c, match); info = res.itemCount + ' item' + (res.itemCount === 1 ? '' : 's') + ', ' + res.both.length + ' compared' + (res.savings > 0.005 ? ', ' + fmtMoney(res.savings) : ''); }
       else if (c.af && c.av && c.bf && c.bv) info = 'A and B are identical';
       row.appendChild(el('div', 'xcInfo', info));
       const rm = el('button', 'btn sm', 'Remove');
@@ -5457,13 +5526,13 @@ async function exportExcel(){
   line(27, 'Items matched by', { link:'Item or Crossed To link', item:'Same item', cross:'Crossed To links' }[crs.match]);
   let sr = 28;
   crs.results.forEach((x, i) => {
-    line(sr, 'Cross ' + (i + 1) + ' \u2014 ' + x.compared + ' compared', { formula:x.cell, result:x.savings }, '$#,##0.00', true);
+    line(sr, 'Cross ' + (i + 1) + ' \u2014 ' + x.items + ' items, ' + x.compared + ' compared', { formula:x.cell, result:x.savings }, '$#,##0.00', true);
     S.getCell(sr + 1, 2).value = x.label;
     S.getCell(sr + 1, 2).font = xlFont({ size:8.5, color:{ argb:XL.ink3 } });
     S.getCell(sr + 1, 2).alignment = { indent:1 };
     sr += 2;
   });
-  S.getCell(sr, 2).value = 'Potential Savings = price gap \u00d7 quantity of the side that paid more. Check that matched items are true equivalents.';
+  S.getCell(sr, 2).value = 'Potential Savings = each item on the higher-priced side \u00d7 its gap to the lower side\u2019s price. Check that crossed items are true equivalents.';
   S.getCell(sr, 2).font = xlFont({ size:8.5, italic:true, color:{ argb:XL.ink3 } });
 
   S.getCell(16, 5).value = 'Sheets in this workbook';
