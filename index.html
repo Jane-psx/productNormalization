@@ -4904,6 +4904,8 @@ const xlThin = argb => ({ style:'thin', color:{ argb: argb || XL.line } });
 const ZONE_LABEL = { vendor:'Vendor data', analysed:'Analysed data', computed:'Computed values', orig:'Original data', status:'' };
 
 function xlColLetter(n){ let s = ''; while (n > 0) { const m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); } return s; }
+/* Characters XML 1.0 forbids; one stray control code makes Excel reject the whole sheet. */
+const xlClean = v => typeof v === 'string' ? v.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF]/g, '') : v;
 function xlNum(v){
   if (v === '' || v == null) return null;
   const n = typeof v === 'number' ? v : Number(String(v).replace(/[$,\s]/g, ''));
@@ -4980,7 +4982,7 @@ function xlWriteRow(ws, r, cols, values, opts){
       cell.value = n;
       if (n !== null) cell.numFmt = xlNumFmt(col, n);
     } else {
-      cell.value = v == null || v === '' ? null : String(v);
+      cell.value = v == null || v === '' ? null : xlClean(String(v));
     }
     cell.font = xlFont(isErr ? { color:{ argb:XL.errInk }, bold:true } : null);
     cell.alignment = { horizontal:col.num || isErr ? 'right' : 'left', vertical:'middle', indent:1 };
@@ -5079,8 +5081,13 @@ function xlAnaFrame(ws, title, note, cols){
   });
   ws.getRow(4).height = 42;
   ws.views = [{ state:'frozen', xSplit:1, ySplit:4, topLeftCell:'B5', activeCell:'B5', showGridLines:false }];
+  /* Collapsible blocks with the total row ABOVE its items. ExcelJS writes
+     <pageSetUpPr> before <outlinePr>, which Excel rejects ("We found a
+     problem with some content"), so these sheets print at a fixed scale
+     instead of fit-to-page. */
   ws.properties.outlineProperties = { summaryBelow:false, summaryRight:false };
-  ws.pageSetup = { orientation:'landscape', paperSize:9, fitToPage:true, fitToWidth:1, fitToHeight:0,
+  ws.properties.outlineLevelRow = 1;
+  ws.pageSetup = { orientation:'landscape', paperSize:9, scale:65,
                    printTitlesRow:'4:4', margins:{ left:0.4, right:0.4, top:0.5, bottom:0.5, header:0.25, footer:0.25 } };
   ws.headerFooter = { oddFooter:'&L&8' + title.replace(/&/g, '&&') + '&R&8Page &P of &N' };
 }
@@ -5088,7 +5095,7 @@ function xlAnaFrame(ws, title, note, cols){
 function xlPut(ws, r, c, v, fmt, style){
   const cell = ws.getCell(r, c);
   if (v && typeof v === 'object' && v.f) cell.value = { formula:v.f, result:v.r == null ? '' : v.r };
-  else cell.value = (v === '' || v == null) ? null : (fmt === 'money' && typeof v === 'number' ? Math.round(v * 100) / 100 : v);
+  else cell.value = (v === '' || v == null) ? null : typeof v === 'string' ? xlClean(v) : (fmt === 'money' && typeof v === 'number' ? Math.round(v * 100) / 100 : v);
   if (fmt) cell.numFmt = XF[fmt] || fmt;
   cell.font = xlFont(style && style.font);
   cell.alignment = { horizontal:fmt ? 'right' : 'left', vertical:'middle', indent:(style && style.indent) || 1 };
