@@ -1233,6 +1233,11 @@ function cloudHeaders(extra){
     'Content-Type': 'application/json'
   }, extra || {});
 }
+/* Postgres jsonb cannot store the null character (\u0000), which this app
+   uses inside the "(no Item #)" group key. Swap it for a private-use stand-in
+   (U+E000) on the way up, and back on the way down. */
+function toCloudJSON(obj){ return JSON.stringify(obj).replace(/\\u0000/g, '\\ue000'); }
+function fromCloudText(txt){ return txt.replace(/\uE000/g, '\\u0000').replace(/\\u[eE]000/g, '\\u0000'); }
 async function cloudFetch(path, opts){
   opts = opts || {};
   const res = await fetch(SUPABASE_URL + '/rest/v1/' + path,
@@ -1241,13 +1246,16 @@ async function cloudFetch(path, opts){
   if (!res.ok) {
     const err = new Error(res.status + ' ' + txt);
     err.status = res.status;
+    err.noConflictTarget = /42P10|no unique or exclusion constraint/i.test(txt);
     err.missingTable = res.status === 404 || /PGRST205|42P01|does not exist|schema cache/i.test(txt);
     throw err;
   }
-  return txt ? JSON.parse(txt) : null;
+  return txt ? JSON.parse(fromCloudText(txt)) : null;
 }
 function cloudFail(e, fallback){
   cloudLastError = String(e && e.message || e);
+  const b = document.getElementById('hdrCloud'); if (b) b.title = cloudLastError.slice(0, 500);
+  console.warn('[cloud]', cloudLastError);
   if (e && e.missingTable) {
     cloudState = 'missing';
     setCloudBadge('Cloud table not set up \u2014 open Cases', 'err');
@@ -1261,13 +1269,23 @@ const cloudGet    = k => cloudFetch(CLOUD_TABLE + '?select=session_key,case_name
                             .then(rows => (rows && rows[0]) || null);
 const cloudDelete = k => cloudFetch(CLOUD_TABLE + '?session_key=eq.' + encodeURIComponent(k),
                             { method:'DELETE', headers:{ 'Prefer':'return=minimal' } });
-function cloudUpsert(key, caseName, data){
-  return cloudFetch(CLOUD_TABLE + '?on_conflict=session_key', {
-    method:'POST',
-    headers:{ 'Prefer':'resolution=merge-duplicates,return=minimal' },
-    body: JSON.stringify({ session_key:key, case_name:caseName || 'Untitled case',
-                           data: data || null, updated_at: new Date().toISOString() })
-  });
+async function cloudUpsert(key, caseName, data){
+  const row = { session_key:key, case_name:caseName || 'Untitled case',
+                data: data || null, updated_at: new Date().toISOString() };
+  try {
+    return await cloudFetch(CLOUD_TABLE + '?on_conflict=session_key', {
+      method:'POST',
+      headers:{ 'Prefer':'resolution=merge-duplicates,return=minimal' },
+      body: toCloudJSON(row)
+    });
+  } catch (e) {
+    if (!e.noConflictTarget) throw e;
+    /* table was made without a unique session_key: update, else insert */
+    const upd = await cloudFetch(CLOUD_TABLE + '?session_key=eq.' + encodeURIComponent(key) + '&select=session_key', {
+      method:'PATCH', headers:{ 'Prefer':'return=representation' }, body: toCloudJSON(row) });
+    if (upd && upd.length) return null;
+    return cloudFetch(CLOUD_TABLE, { method:'POST', headers:{ 'Prefer':'return=minimal' }, body: toCloudJSON(row) });
+  }
 }
 function cloudPatchName(key, caseName){
   return cloudFetch(CLOUD_TABLE + '?session_key=eq.' + encodeURIComponent(key), {
@@ -5346,7 +5364,7 @@ window.addEventListener('beforeunload', e => {
   saveSession();
   const entry = sessionEntry(activeSessionId);
   try {
-    const body = JSON.stringify({ session_key:activeSessionId, case_name:entry ? entry.name : 'Untitled case',
+    const body = toCloudJSON({ session_key:activeSessionId, case_name:entry ? entry.name : 'Untitled case',
                                   data:sessionPayload(), updated_at:new Date().toISOString() });
     if (body.length < 60000) {
       fetch(SUPABASE_URL + '/rest/v1/' + CLOUD_TABLE + '?on_conflict=session_key', {
