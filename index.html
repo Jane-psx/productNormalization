@@ -697,7 +697,14 @@ table.sugTable tr.tot td{font-weight:600;border-top:1px solid var(--line)}
 
 /* ---------- audit ---------- */
 /* ---------- usage price comparison (Crosses tab) ---------- */
-.xuSetup{padding:12px 14px 10px;border-bottom:1px solid var(--line);background:#f8fafc;display:flex;flex-direction:column;gap:7px}
+.xsTop{display:flex;flex-wrap:wrap;align-items:flex-start;gap:12px;padding:12px;border-bottom:1px solid var(--line);flex:none}
+.xsTop #xsCards{flex:1 1 640px;padding:0;align-content:start;grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
+.xsTop .card .l{letter-spacing:.05em}
+.xsTop .xuLine{grid-template-columns:84px 170px 170px auto}
+.xsTop #xsSetup{flex:0 1 auto}
+.xsTop #xsSetup:empty{display:none}
+.xuSetup{padding:10px 12px;border:1px solid var(--line);border-radius:3px;background:#fff;display:flex;flex-direction:column;gap:7px;box-sizing:border-box}
+.card.win .n{color:var(--ok)}.card.lose .n{color:var(--err)}
 .xuLine{display:grid;grid-template-columns:118px minmax(150px,240px) minmax(150px,240px) auto;gap:8px;align-items:center;font-size:12.5px}
 .xuLine > .lbl{font-weight:600;color:var(--navy-2)}
 .xuLine > .lbl small{display:block;font-weight:400;color:var(--ink-3);font-size:11px}
@@ -1115,7 +1122,7 @@ table.compareRow tfoot td.cCol{background:#f3ecfb}
     <button class="btn" id="btnXsSetup" title="Open the Facility + Vendor cross setup used by the Excel workbook">Cross product comparison&hellip;</button>
     <span class="note">Facility A&rsquo;s usage priced at Facility B&rsquo;s crossed item. Lowest each price in green; <b style="color:var(--err)">NO CROSS</b> in red.</span>
   </div>
-  <div class="cards" id="xsCards"></div>
+  <div class="xsTop"><div id="xsSetup"></div><div class="cards" id="xsCards"></div></div>
   <div class="pane" id="paneCrosses"></div>
 </section>
 </main>
@@ -7380,11 +7387,11 @@ const XU_HEAD_B = ['Order Qty', 'Order UOM', 'Facility B', 'Vendor', 'Item Numbe
 
 function renderUsageCompare(pane, cards){
   const keep = pane.scrollTop;
-  pane.innerHTML = ''; cards.innerHTML = '';
+  pane.innerHTML = ''; cards.innerHTML = ''; $('#xsSetup').innerHTML = '';
   xuLast = null;
   if (!derived.groups.length) { pane.appendChild(emptyNote('Nothing to compare yet. Paste your range on the Sheet tab.')); return; }
   const lines = xuLines();
-  pane.appendChild(xuSetupPanel(lines, () => { saveSoon(); renderCrosses(); }));
+  $('#xsSetup').appendChild(xuSetupPanel(lines, () => { saveSoon(); renderCrosses(); }));
   const A = state.ui.xuBase, B = state.ui.xuSides[0];
   if (!xuReady(A) || !xuReady(B) || xuSame(A, B)) return;
 
@@ -7394,14 +7401,26 @@ function renderUsageCompare(pane, cards){
 
   /* ---- summary cards ---- */
   const card = (n, l, sub, cls) => { const c = xsCard(n, l, cls); if (sub) c.appendChild(el('div', 's', sub)); return c; };
-  cards.appendChild(card(fmtMoney(T.aNet), 'Facility A spend', aL + ' \u2014 ' + res.rows.length + ' item' + (res.rows.length === 1 ? '' : 's') + ' with a Crossed To' +
-    (T.skipped ? ' (' + T.skipped + ' blank skipped)' : ''), 'base'));
-  cards.appendChild(card(fmtMoney(T.aNetCrossed), 'A spend on crossed items', T.crossed + ' crossed item' + (T.crossed === 1 ? '' : 's')));
-  const d = T.bTotal - T.aNetCrossed;
-  cards.appendChild(card(fmtMoney(T.bTotal), 'Same usage at Facility B', bL + ' \u2014 ' + (d <= 0 ? 'saves ' : 'costs ') + fmtMoney(Math.abs(d)),
-    d < -0.005 ? 'save' : d > 0.005 ? 'cost' : ''));
-  cards.appendChild(card(fmtMoney(T.save), 'Savings at best price', 'A lower on ' + T.bestA + ' \u00b7 B lower on ' + T.bestB + (T.same ? ' \u00b7 same on ' + T.same : ''), T.save > 0.005 ? 'save' : ''));
-  cards.appendChild(card(String(T.noCross), 'No cross', T.noCross ? 'Facility A items with no match at B' : 'Every item is crossed', T.noCross ? 'err' : 'ok'));
+  const plural = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
+  /* 1 */ cards.appendChild(card(fmtMoney(T.aNet), 'Facility A spend',
+    aL + ' \u2014 ' + plural(res.rows.length, 'item') + (T.noCross ? ', ' + T.noCross + ' NO CROSS' : '') +
+    (T.skipped ? ' (' + T.skipped + ' blank Crossed To skipped)' : ''), 'base'));
+  /* 2 */ cards.appendChild(card(fmtMoney(T.aNetCrossed), 'Facility A spend (crossed)',
+    plural(T.crossed, 'crossed item') + ' at Facility A prices'));
+  /* 3 */ cards.appendChild(card(fmtMoney(T.bTotal), 'Facility B spend (crossed)',
+    bL + ' \u2014 same usage at Facility B prices'));
+  /* 4 */ const d = T.aNetCrossed - T.bTotal;   // + = Facility B (our pricing) is lower
+  const won = T.crossed > 0 && d > 0.005, lost = T.crossed > 0 && d < -0.005;
+  const w = card(!T.crossed ? '\u2014' : won ? 'Yes \u2014 won' : lost ? 'No \u2014 lost' : 'Tie', 'Facility B as our pricing: did we win?',
+    !T.crossed ? 'No crossed items to compare' :
+    (won ? 'Lower by ' : lost ? 'Higher by ' : 'Same total, ') + fmtMoney(Math.abs(d)) + ' \u00b7 B lower on ' + T.bestB + ' of ' + T.crossed +
+    (T.same ? ', same on ' + T.same : ''), won ? 'win' : lost ? 'lose' : '');
+  cards.appendChild(w);
+  /* 5 */ const pct = T.aNetCrossed > 0 ? d / T.aNetCrossed * 100 : null;
+  cards.appendChild(card(pct === null ? '\u2014' : (pct > 0 ? '' : pct < 0 ? '\u2212' : '') + Math.abs(pct).toFixed(1) + '%', 'Percentage in saving',
+    pct === null ? 'No crossed spend at Facility A' :
+    pct >= 0 ? fmtMoney(d) + ' saved vs Facility A (crossed)' : fmtMoney(-d) + ' more than Facility A (crossed)',
+    pct === null ? '' : pct > 0.05 ? 'save' : pct < -0.05 ? 'cost' : ''));
 
   if (!res.rows.length) {
     pane.appendChild(emptyNote(T.skipped ? 'None of Facility A\u2019s ' + T.skipped + ' item' + (T.skipped === 1 ? '' : 's') + ' has a Crossed To value, so there is nothing to cross.'
