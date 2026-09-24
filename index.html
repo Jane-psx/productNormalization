@@ -7051,12 +7051,21 @@ function xuCompare(lines, base, sides, match){
   const keyOf = xuMatchKeyFn(match);
   const blank = () => ({ qty:0, net:0, lines:0 });
   const prods = new Map();
+  /* entries: one per Item # + Facility + Vendor inside a product, flagged with
+     the role(s) it plays (usage basis and/or which price pick), so the table
+     can show exactly whose item number was used on each side. */
   const get = (k, l) => {
     let p = prods.get(k);
-    if (!p) { p = { key:k, base:blank(), sides:sides.map(blank), items:new Map() }; prods.set(k, p); }
-    let it = p.items.get(l.item);
-    if (!it) { it = { item:l.item, desc:l.desc, base:blank(), sides:sides.map(blank) }; p.items.set(l.item, it); }
-    return { p, it };
+    if (!p) { p = { key:k, base:blank(), sides:sides.map(blank), entries:new Map() }; prods.set(k, p); }
+    const ek = l.item + PAIR_SEP + l.fac + PAIR_SEP + l.ven;
+    let en = p.entries.get(ek);
+    if (!en) {
+      en = { item:l.item, desc:l.desc, fac:l.fac, ven:l.ven,
+             xto:String((l.g.resolved.crossedTo && l.g.resolved.crossedTo.value) || '').trim(),
+             base:blank(), sides:sides.map(blank) };
+      p.entries.set(ek, en);
+    }
+    return { p, en };
   };
   const addTo = (b, l) => { b.qty += l.qty; b.net += l.net; b.lines++; };
   lines.forEach(l => {
@@ -7064,29 +7073,37 @@ function xuCompare(lines, base, sides, match){
     const inBase = xuIn(l, base);
     const hit = sides.map(sd => xuIn(l, sd));
     if (!inBase && !hit.some(Boolean)) return;
-    const { p, it } = get(k, l);
-    if (inBase) { addTo(p.base, l); addTo(it.base, l); }
-    hit.forEach((h, i) => { if (h) { addTo(p.sides[i], l); addTo(it.sides[i], l); } });
+    const { p, en } = get(k, l);
+    if (inBase) { addTo(p.base, l); addTo(en.base, l); }
+    hit.forEach((h, i) => { if (h) { addTo(p.sides[i], l); addTo(en.sides[i], l); } });
   });
 
+  const uniq = arr => [...new Set(arr.filter(Boolean))];
   const rows = [];
   let noUsage = 0;
   prods.forEach(p => {
     if (!p.base.lines) return;                       // basis never bought it: nothing to price
     if (!(p.base.qty > 0)) { noUsage++; return; }    // bought, but no usable eaches
     const usage = p.base.qty, cur = p.base.net / usage;
-    const items = [...p.items.values()].sort((a, b) => b.base.qty - a.base.qty || a.item.localeCompare(b.item));
-    const baseItems = items.filter(it => it.base.lines);
-    const label = baseItems.length === 1 && items.length === 1 ? items[0].item
-      : 'Crossed group (' + items.length + ' items)';
-    const desc = (baseItems[0] || items[0]).desc || '';
-    const at = p.sides.map(b => { const e = xuEach(b); return { e, ext:e === null ? null : usage * e, lines:b.lines }; });
+    const entries = [...p.entries.values()].sort((a, b) =>
+      (b.base.lines ? 1 : 0) - (a.base.lines ? 1 : 0) || b.base.qty - a.base.qty ||
+      a.fac.localeCompare(b.fac) || a.ven.localeCompare(b.ven) || a.item.localeCompare(b.item));
+    const baseEn = entries.filter(e => e.base.lines);
+    const at = p.sides.map((b, i) => {
+      const e = xuEach(b);
+      const mine = entries.filter(x => x.sides[i].lines);
+      return { e, ext:e === null ? null : usage * e, lines:b.lines, items:uniq(mine.map(x => x.item)),
+               facs:uniq(mine.map(x => x.fac)), vens:uniq(mine.map(x => x.ven)) };
+    });
     let best = { idx:-1, e:cur };
     at.forEach((a, i) => { if (a.e !== null && a.e < best.e - 1e-9) best = { idx:i, e:a.e }; });
     const bestExt = usage * best.e;
-    rows.push({ key:p.key, label, desc, items, usage, cur, curExt:p.base.net, at, best, bestExt,
+    const items = uniq(baseEn.map(e => e.item));
+    rows.push({ key:p.key, items, facs:uniq(baseEn.map(e => e.fac)), vens:uniq(baseEn.map(e => e.ven)),
+                xtos:uniq(baseEn.map(e => e.xto)), desc:baseEn[0].desc || '', entries,
+                usage, cur, curExt:p.base.net, at, best, bestExt,
                 save:Math.max(0, p.base.net - bestExt),
-                search:(label + ' ' + desc + ' ' + items.map(it => it.item + ' ' + it.desc).join(' ')).toLowerCase() });
+                search:entries.map(e => [e.item, e.desc, e.fac, e.ven, e.xto].join(' ')).join(' ').toLowerCase() });
   });
   rows.sort((a, b) => b.save - a.save || b.curExt - a.curExt);
 
@@ -7207,45 +7224,60 @@ function renderUsageCompare(pane, cards){
   /* ---- table ---- */
   const q = String(state.ui.xsSearch || '').trim().toLowerCase();
   const rows = q ? res.rows.filter(r => r.search.indexOf(q) >= 0) : res.rows;
+  const list = (arr, max) => arr.length <= max ? arr.join(', ') : arr.slice(0, max).join(', ') + ' +' + (arr.length - max);
   const t = el('table', 'grid aggTable xuTable');
   const thead = el('thead');
   const h1 = el('tr'), h2 = el('tr', 'xuH2');
-  const th = (tr, txt, cls, span, rows) => { const x = el('th', cls || null, txt); if (span) x.colSpan = span; if (rows) x.rowSpan = rows; tr.appendChild(x); return x; };
-  th(h1, '', 'tw', 0, 2); th(h1, 'Product', '', 0, 2); th(h1, 'Description', '', 0, 2);
-  th(h1, 'Usage (eaches)', 'num', 0, 2).title = 'Normalized Ordered Qty (column M) bought by ' + xuLabel(base);
-  th(h1, 'Current \u2014 ' + xuLabel(base), 'side', 2);
-  sides.forEach((sd, i) => th(h1, 'Price ' + (i + 1) + ' \u2014 ' + xuLabel(sd), 'side', 3));
+  const th = (tr, txt, cls, span, rspan) => { const x = el('th', cls || null, txt); if (span) x.colSpan = span; if (rspan) x.rowSpan = rspan; tr.appendChild(x); return x; };
+  const SIDE_COLS = 6;   // Item #, Facility, Vendor, Each, Extended, Δ
+  th(h1, '', 'tw', 0, 2);
+  th(h1, 'Usage \u2014 ' + xuLabel(base), 'side', 7);
+  th(h1, 'Current price', 'side', 2);
+  sides.forEach((sd, i) => th(h1, 'Price ' + (i + 1) + ' \u2014 ' + xuLabel(sd), 'side', SIDE_COLS));
   th(h1, 'Best', 'side', 3);
+  th(h2, 'Item #', 'sideStart'); th(h2, 'Description'); th(h2, 'Facility'); th(h2, 'Vendor'); th(h2, 'Crossed To');
+  th(h2, 'Lines', 'num');
+  th(h2, 'Usage (eaches)', 'num').title = 'Normalized Ordered Qty (column M) bought by ' + xuLabel(base);
   th(h2, 'Each', 'num sideStart'); th(h2, 'Extended', 'num');
-  sides.forEach(() => { th(h2, 'Each', 'num sideStart'); th(h2, 'Extended', 'num'); th(h2, '\u0394 vs current', 'num'); });
+  sides.forEach(() => {
+    th(h2, 'Matched item #', 'sideStart').title = 'The item number(s) this pick bought that were matched to the usage item';
+    th(h2, 'Facility'); th(h2, 'Vendor');
+    th(h2, 'Each', 'num'); th(h2, 'Extended', 'num'); th(h2, '\u0394 vs current', 'num');
+  });
   th(h2, 'Lowest at', 'sideStart'); th(h2, 'Extended', 'num'); th(h2, 'Savings', 'num');
   thead.appendChild(h1); thead.appendChild(h2); t.appendChild(thead);
+  const NCOL = 1 + 7 + 2 + sides.length * SIDE_COLS + 3;
   const tb = el('tbody');
   const td = (tr, txt, cls, title) => { const x = el('td', cls || null, txt); if (title) x.title = title; tr.appendChild(x); return x; };
   const delta = d => (d > 0 ? '+' : d < 0 ? '\u2212' : '') + fmtMoney(Math.abs(d));
   const bestName = r => r.best.idx === -1 ? 'Current' : 'Price ' + (r.best.idx + 1);
+  const listTd = (tr, arr, cls, max) => td(tr, arr.length ? list(arr, max || 2) : '\u2014', cls, arr.join('\n'));
 
   if (!rows.length) {
     const tr = el('tr'), x = el('td', null, 'No product matches that search.');
-    x.colSpan = 4 + 2 + sides.length * 3 + 3; x.style.cssText = 'padding:12px;color:var(--ink-3)';
+    x.colSpan = NCOL; x.style.cssText = 'padding:12px;color:var(--ink-3)';
     tr.appendChild(x); tb.appendChild(tr);
   }
   rows.forEach(r => {
-    const multi = r.items.length > 1, open = multi && xuOpen.has(r.key);
+    const multi = r.entries.length > 1, open = multi && xuOpen.has(r.key);
     const tr = el('tr', multi ? 'aggRow' + (open ? ' open' : '') : null);
+    if (multi) tr.title = 'Click to see every item number and facility + vendor matched in this product';
     td(tr, multi ? (open ? '\u25bc' : '\u25b6') : '', 'tw');
-    td(tr, r.label, null, multi ? r.items.map(it => it.item).join('\n') : null);
+    listTd(tr, r.items, 'sideStart', 2);
     td(tr, r.desc, null, r.desc);
+    listTd(tr, r.facs); listTd(tr, r.vens); listTd(tr, r.xtos);
+    td(tr, String(r.entries.filter(e => e.base.lines).reduce((n, e) => n + e.base.lines, 0)), 'num');
     td(tr, fmtQty(r.usage), 'num');
     td(tr, fmtPrice(r.cur), 'num sideStart' + (r.best.idx === -1 ? ' best' : ''));
     td(tr, fmtMoney(r.curExt), 'num');
     r.at.forEach((a, i) => {
       if (a.e === null) {
-        td(tr, '\u2014', 'num sideStart dim', xuLabel(sides[i]) + ' did not buy this product');
-        td(tr, '', 'num'); td(tr, '', 'num');
+        td(tr, '\u2014', 'sideStart dim', xuLabel(sides[i]) + ' has no matched item for this product');
+        td(tr, ''); td(tr, ''); td(tr, '', 'num'); td(tr, '', 'num'); td(tr, '', 'num');
         return;
       }
-      td(tr, fmtPrice(a.e), 'num sideStart' + (r.best.idx === i ? ' best' : ''));
+      listTd(tr, a.items, 'sideStart'); listTd(tr, a.facs); listTd(tr, a.vens);
+      td(tr, fmtPrice(a.e), 'num' + (r.best.idx === i ? ' best' : ''));
       td(tr, fmtMoney(a.ext), 'num');
       const d = a.ext - r.curExt;
       td(tr, delta(d), 'num' + (d < -0.005 ? ' better' : d > 0.005 ? ' worse' : ''));
@@ -7259,15 +7291,25 @@ function renderUsageCompare(pane, cards){
     if (multi) tr.addEventListener('click', () => { if (open) xuOpen.delete(r.key); else xuOpen.add(r.key); renderCrosses(); });
     tb.appendChild(tr);
 
-    if (open) r.items.forEach(it => {
+    /* one sub-row per Item # + Facility + Vendor, placed under the side(s) it counts for */
+    if (open) r.entries.forEach(en => {
       const s = el('tr', 'xuSub');
-      td(s, '', 'tw'); td(s, it.item); td(s, it.desc, null, it.desc);
-      td(s, it.base.lines ? fmtQty(it.base.qty) : '\u2014', 'num');
-      const ce = xuEach(it.base);
-      td(s, ce === null ? '\u2014' : fmtPrice(ce), 'num sideStart'); td(s, it.base.lines ? fmtMoney(it.base.net) : '', 'num');
-      it.sides.forEach((b, i) => {
+      const isBase = en.base.lines > 0;
+      td(s, '', 'tw');
+      td(s, isBase ? en.item : '', 'sideStart');
+      td(s, isBase ? en.desc : '', null, en.desc);
+      td(s, isBase ? en.fac : ''); td(s, isBase ? en.ven : ''); td(s, isBase ? (en.xto || '\u2014') : '');
+      td(s, isBase ? String(en.base.lines) : '', 'num');
+      td(s, isBase ? fmtQty(en.base.qty) : '', 'num');
+      const ce = xuEach(en.base);
+      td(s, isBase ? (ce === null ? '\u2014' : fmtPrice(ce)) : '', 'num sideStart');
+      td(s, isBase ? fmtMoney(en.base.net) : '', 'num');
+      en.sides.forEach((b, i) => {
+        if (!b.lines) { td(s, '', 'sideStart'); td(s, ''); td(s, ''); td(s, '', 'num'); td(s, '', 'num'); td(s, '', 'num'); return; }
         const e = xuEach(b);
-        td(s, e === null ? '\u2014' : fmtPrice(e), 'num sideStart', e === null ? '' : 'This item\u2019s own each price at ' + xuLabel(sides[i]));
+        td(s, en.item, 'sideStart', 'Crossed To: ' + (en.xto || '(blank)') + '\n' + en.desc);
+        td(s, en.fac); td(s, en.ven);
+        td(s, e === null ? '\u2014' : fmtPrice(e), 'num', 'This item\u2019s own each price (' + fmtQty(b.qty) + ' eaches, ' + fmtMoney(b.net) + ')');
         td(s, '', 'num'); td(s, '', 'num');
       });
       td(s, '', 'sideStart'); td(s, '', 'num'); td(s, '', 'num');
@@ -7277,13 +7319,16 @@ function renderUsageCompare(pane, cards){
 
   /* totals */
   const tt = el('tr', 'xuTot');
-  td(tt, ''); td(tt, 'Total' + (q ? ' (all products)' : '')); td(tt, res.rows.length + ' product' + (res.rows.length === 1 ? '' : 's'));
+  td(tt, ''); td(tt, 'Total' + (q ? ' (all products)' : ''), 'sideStart');
+  td(tt, res.rows.length + ' product' + (res.rows.length === 1 ? '' : 's'));
+  td(tt, ''); td(tt, ''); td(tt, ''); td(tt, '', 'num');
   td(tt, fmtQty(T.usage), 'num');
   td(tt, T.curLowest + ' lowest', 'sideStart', 'Products where the current price is already the lowest');
   td(tt, fmtMoney(T.cur), 'num');
   sides.forEach((sd, i) => {
     const s = T.sides[i], d = s.ext - s.curOnCovered;
     td(tt, s.covered + '/' + res.rows.length + ' priced', 'sideStart', s.lowest + ' product' + (s.lowest === 1 ? '' : 's') + ' lowest here');
+    td(tt, ''); td(tt, ''); td(tt, '', 'num');
     td(tt, s.covered ? fmtMoney(s.ext) : '\u2014', 'num', 'Extended spend on the ' + s.covered + ' products this pick prices');
     td(tt, s.covered ? delta(d) : '', 'num' + (d < -0.005 ? ' better' : d > 0.005 ? ' worse' : ''),
        'Versus current spend of ' + fmtMoney(s.curOnCovered) + ' on the same ' + s.covered + ' products');
@@ -7295,8 +7340,8 @@ function renderUsageCompare(pane, cards){
   pane.appendChild(t);
   pane.appendChild(el('div', 'xuFoot',
     'Every figure uses the usage of ' + xuLabel(base) + '. Extended = that usage \u00d7 each price. ' +
-    'A pick\u2019s each price is its own net sales \u00f7 its own eaches for the matched product, so a crossed group is priced at the pick\u2019s blended price across the items in that group. ' +
-    '\u0394 vs current compares only products the pick actually prices; a dash means the pick never bought it.' +
+    'Each price pick shows the item number(s), facility and vendor it was matched on. Click a row to see every matched item on its own line, under the side it counts for, with its Crossed To value \u2014 this is where to check that the crossing is right. ' +
+    'A pick\u2019s each price is its own net sales \u00f7 its own eaches across the matched items. A dash means the pick has no matched item.' +
     (res.noUsage ? ' ' + res.noUsage + ' product' + (res.noUsage === 1 ? '' : 's') + ' bought by the basis had no usable eaches and ' + (res.noUsage === 1 ? 'is' : 'are') + ' left out.' : '')));
   pane.scrollTop = keep;
 }
@@ -7304,19 +7349,21 @@ function renderUsageCompare(pane, cards){
 function xuCopyTable(){
   if (!xuLast) { toast('Pick a usage basis and at least one price pick first.', true); return; }
   const { res, base, sides } = xuLast;
-  const head = ['Product', 'Description', 'Usage (eaches) \u2014 ' + xuLabel(base), 'Current each', 'Current extended'];
-  sides.forEach((sd, i) => head.push('Price ' + (i + 1) + ' each \u2014 ' + xuLabel(sd), 'Price ' + (i + 1) + ' extended', 'Price ' + (i + 1) + ' \u0394 vs current'));
+  const head = ['Usage item #', 'Description', 'Usage facility', 'Usage vendor', 'Crossed To', 'Usage (eaches) \u2014 ' + xuLabel(base), 'Current each', 'Current extended'];
+  sides.forEach((sd, i) => head.push('Price ' + (i + 1) + ' matched item # \u2014 ' + xuLabel(sd), 'Price ' + (i + 1) + ' facility', 'Price ' + (i + 1) + ' vendor',
+                                     'Price ' + (i + 1) + ' each', 'Price ' + (i + 1) + ' extended', 'Price ' + (i + 1) + ' \u0394 vs current'));
   head.push('Lowest at', 'Best extended', 'Savings');
   const n = v => v == null ? '' : String(Math.round(v * 10000) / 10000);
+  const j = a => a.join(', ');
   const out = [head.join('\t')];
   res.rows.forEach(r => {
-    const c = [r.label, r.desc, n(r.usage), n(r.cur), n(r.curExt)];
-    r.at.forEach(a => c.push(n(a.e), n(a.ext), a.ext == null ? '' : n(a.ext - r.curExt)));
+    const c = [j(r.items), r.desc, j(r.facs), j(r.vens), j(r.xtos), n(r.usage), n(r.cur), n(r.curExt)];
+    r.at.forEach(a => c.push(j(a.items), j(a.facs), j(a.vens), n(a.e), n(a.ext), a.ext == null ? '' : n(a.ext - r.curExt)));
     c.push(r.best.idx === -1 ? 'Current' : xuLabel(sides[r.best.idx]), n(r.bestExt), n(r.save));
     out.push(c.map(v => String(v).replace(/[\t\r\n]+/g, ' ')).join('\t'));
   });
-  const T = res.tot, tr = ['Total', res.rows.length + ' products', n(T.usage), '', n(T.cur)];
-  T.sides.forEach(s => tr.push(s.covered + '/' + res.rows.length + ' priced', n(s.ext), n(s.ext - s.curOnCovered)));
+  const T = res.tot, tr = ['Total', res.rows.length + ' products', '', '', '', n(T.usage), '', n(T.cur)];
+  T.sides.forEach(s => tr.push(s.covered + '/' + res.rows.length + ' priced', '', '', '', n(s.ext), n(s.ext - s.curOnCovered)));
   tr.push('', n(T.best), n(T.save));
   out.push(tr.join('\t'));
   copyText(out.join('\n'), 'Copied ' + res.rows.length + ' products');
