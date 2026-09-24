@@ -686,6 +686,35 @@ table.sugTable tr.tot td{font-weight:600;border-top:1px solid var(--line)}
 @media (prefers-reduced-motion:reduce){#toast{transition:none}}
 
 /* ---------- audit ---------- */
+/* ---------- usage price comparison (Crosses tab) ---------- */
+#view-crosses.xsUsage .xsRelOnly{display:none}
+#view-crosses:not(.xsUsage) .xsUsageOnly{display:none}
+.xuSetup{padding:12px 14px 10px;border-bottom:1px solid var(--line);background:#f8fafc;display:flex;flex-direction:column;gap:7px}
+.xuLine{display:grid;grid-template-columns:118px minmax(150px,240px) minmax(150px,240px) auto;gap:8px;align-items:center;font-size:12.5px}
+.xuLine > .lbl{font-weight:600;color:var(--navy-2)}
+.xuLine > .lbl small{display:block;font-weight:400;color:var(--ink-3);font-size:11px}
+.xuLine select,.xuMatch select{border:1px solid var(--line);border-radius:3px;padding:4px 6px;font-size:12.5px;background:#fff;min-width:0;width:100%}
+.xuLine select.need{border-color:var(--warn-line);background:var(--warn-bg)}
+.xuLine .acts{display:flex;gap:6px;align-items:center}
+.xuLine.base{padding-bottom:7px;border-bottom:1px dashed var(--line)}
+.xuMatch{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink-2);flex-wrap:wrap;margin-top:2px}
+.xuMatch select{width:auto}
+.xuMsg{font-size:12px;color:var(--warn)}
+.xuMsg:empty{display:none}
+table.xuTable th.side{text-align:center;border-left:2px solid var(--line)}
+table.xuTable th.sideStart,table.xuTable td.sideStart{border-left:2px solid var(--line)}
+table.xuTable thead tr.xuH2 th{top:29px}
+table.xuTable td.best{background:var(--ok-bg);color:var(--ok);font-weight:600}
+table.xuTable td.save{color:var(--ok);font-weight:600}
+table.xuTable td.worse{color:var(--err)}
+table.xuTable td.better{color:var(--ok)}
+table.xuTable td.dim{color:var(--ink-3)}
+table.xuTable tr.xuSub > td{background:#fafbfc;color:var(--ink-2);font-size:11.5px}
+table.xuTable tr.xuSub > td:nth-child(2){padding-left:22px}
+table.xuTable tr.xuTot > td{position:sticky;bottom:0;background:#eef2f7;font-weight:600;border-top:2px solid var(--navy-2)}
+table.xuTable .bestTag{display:inline-block;padding:1px 6px;border-radius:3px;background:var(--ok-bg);color:var(--ok);font-size:11px;font-weight:600}
+table.xuTable .bestTag.cur{background:#eef2f7;color:var(--navy-2)}
+.xuFoot{padding:8px 14px 16px;font-size:11.5px;color:var(--ink-3);line-height:1.55;max-width:900px}
 .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:10px;padding:12px}
 .card{background:#fff;border:1px solid var(--line);border-radius:3px;padding:11px 13px}
 .card .n{font-size:23px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.15}
@@ -1031,15 +1060,21 @@ table.compareRow tfoot td.cCol{background:#f3ecfb}
   <section class="view" id="view-crosses">
   <div class="paneToolbar">
     <b style="font-size:12px;color:var(--navy-2)">Crosses analysis</b>
+    <div class="seg" id="segXsView">
+      <button data-xsview="rel" class="on">Facility relationships</button>
+      <button data-xsview="usage">Usage price comparison</button>
+    </div>
     <div class="search">
       <span class="ico">&#8981;</span>
       <input id="xsSearch" type="search" placeholder="Facility &middot; vendor &middot; item # &middot; Crossed To" autocomplete="off">
     </div>
-    <button class="btn" id="btnXsExpand">Expand all</button>
-    <button class="btn" id="btnXsCollapse">Collapse all</button>
+    <button class="btn xsRelOnly" id="btnXsExpand">Expand all</button>
+    <button class="btn xsRelOnly" id="btnXsCollapse">Collapse all</button>
+    <button class="btn xsUsageOnly" id="btnXuCopy" title="Copy the comparison table (product rows and totals) to paste into Excel">Copy table</button>
     <span class="sep"></span>
     <button class="btn" id="btnXsSetup" title="Open the Facility + Vendor cross setup used by the Excel workbook">Cross product comparison&hellip;</button>
-    <span class="note">Only items with a <b>Crossed To</b> value. Direction is kept: Facility A &rarr; Facility B is separate from B &rarr; A.</span>
+    <span class="note xsRelOnly">Only items with a <b>Crossed To</b> value. Direction is kept: Facility A &rarr; Facility B is separate from B &rarr; A.</span>
+    <span class="note xsUsageOnly">One usage basis, priced at each pick&rsquo;s each price. Lowest each price is highlighted.</span>
   </div>
   <div class="cards" id="xsCards"></div>
   <div class="pane" id="paneCrosses"></div>
@@ -6856,6 +6891,10 @@ function xsExceptionTable(title, note, heads, rows){
 
 function renderCrosses(){
   const pane = $('#paneCrosses'), cards = $('#xsCards');
+  const usageView = state.ui.xsView === 'usage';
+  $('#view-crosses').classList.toggle('xsUsage', usageView);
+  [...$('#segXsView').children].forEach(b => b.classList.toggle('on', b.dataset.xsview === (usageView ? 'usage' : 'rel')));
+  if (usageView) { renderUsageCompare(pane, cards); return; }
   const keep = pane.scrollTop;
   pane.innerHTML = ''; cards.innerHTML = '';
   if (!derived.groups.length) { pane.appendChild(emptyNote('Nothing to analyse yet. Paste your range on the Sheet tab.')); return; }
@@ -6979,6 +7018,315 @@ function renderCrosses(){
 
   pane.scrollTop = keep;
 }
+
+/* ===================================== USAGE PRICE COMPARISON (Crosses tab)
+   Pick ONE Facility + Vendor as the usage basis, then one or more other
+   Facility + Vendor picks to price that usage at. Products are matched with
+   the same rules as the Excel cross export (same item, or linked through
+   Crossed To). For every product the basis side bought:
+     usage            = basis eaches (normalized Ordered Qty, column M)
+     current each     = basis net sales / basis eaches
+     each at pick     = pick net sales / pick eaches   (pick's own price)
+     extended at pick = usage x each at pick
+   Best = the lowest each price among Current and every pick that prices the
+   product; Savings = current spend - usage x best each.                     */
+const xuOpen = new Set();   // product keys expanded to show their items
+
+function xuMatchKeyFn(match){
+  const info = derived.crossInfo || {};
+  return l => {
+    const ci = info[l.g.key], cl = ci && ci.clusterId != null ? 'C' + ci.clusterId : null;
+    if (match === 'item') return 'I' + l.item;
+    if (match === 'cross') return cl;
+    return cl || 'I' + l.item;
+  };
+}
+const xuIn = (l, sd) => (sd.f === XC_ALL || l.fac === sd.f) && (sd.v === XC_ALL || l.ven === sd.v);
+const xuSame = (a, b) => a && b && a.f === b.f && a.v === b.v;
+const xuReady = sd => !!(sd && sd.f && sd.v);
+const xuLabel = sd => xcSideLabel(sd.f, sd.v);
+const xuEach = b => b && b.qty > 0 ? b.net / b.qty : null;
+
+function xuCompare(lines, base, sides, match){
+  const keyOf = xuMatchKeyFn(match);
+  const blank = () => ({ qty:0, net:0, lines:0 });
+  const prods = new Map();
+  const get = (k, l) => {
+    let p = prods.get(k);
+    if (!p) { p = { key:k, base:blank(), sides:sides.map(blank), items:new Map() }; prods.set(k, p); }
+    let it = p.items.get(l.item);
+    if (!it) { it = { item:l.item, desc:l.desc, base:blank(), sides:sides.map(blank) }; p.items.set(l.item, it); }
+    return { p, it };
+  };
+  const addTo = (b, l) => { b.qty += l.qty; b.net += l.net; b.lines++; };
+  lines.forEach(l => {
+    const k = keyOf(l); if (!k) return;
+    const inBase = xuIn(l, base);
+    const hit = sides.map(sd => xuIn(l, sd));
+    if (!inBase && !hit.some(Boolean)) return;
+    const { p, it } = get(k, l);
+    if (inBase) { addTo(p.base, l); addTo(it.base, l); }
+    hit.forEach((h, i) => { if (h) { addTo(p.sides[i], l); addTo(it.sides[i], l); } });
+  });
+
+  const rows = [];
+  let noUsage = 0;
+  prods.forEach(p => {
+    if (!p.base.lines) return;                       // basis never bought it: nothing to price
+    if (!(p.base.qty > 0)) { noUsage++; return; }    // bought, but no usable eaches
+    const usage = p.base.qty, cur = p.base.net / usage;
+    const items = [...p.items.values()].sort((a, b) => b.base.qty - a.base.qty || a.item.localeCompare(b.item));
+    const baseItems = items.filter(it => it.base.lines);
+    const label = baseItems.length === 1 && items.length === 1 ? items[0].item
+      : 'Crossed group (' + items.length + ' items)';
+    const desc = (baseItems[0] || items[0]).desc || '';
+    const at = p.sides.map(b => { const e = xuEach(b); return { e, ext:e === null ? null : usage * e, lines:b.lines }; });
+    let best = { idx:-1, e:cur };
+    at.forEach((a, i) => { if (a.e !== null && a.e < best.e - 1e-9) best = { idx:i, e:a.e }; });
+    const bestExt = usage * best.e;
+    rows.push({ key:p.key, label, desc, items, usage, cur, curExt:p.base.net, at, best, bestExt,
+                save:Math.max(0, p.base.net - bestExt),
+                search:(label + ' ' + desc + ' ' + items.map(it => it.item + ' ' + it.desc).join(' ')).toLowerCase() });
+  });
+  rows.sort((a, b) => b.save - a.save || b.curExt - a.curExt);
+
+  const tot = { cur:0, best:0, save:0, usage:0, sides:sides.map(() => ({ covered:0, ext:0, curOnCovered:0, lowest:0 })) };
+  rows.forEach(r => {
+    tot.cur += r.curExt; tot.best += r.bestExt; tot.save += r.save; tot.usage += r.usage;
+    r.at.forEach((a, i) => {
+      if (a.e === null) return;
+      const t = tot.sides[i];
+      t.covered++; t.ext += a.ext; t.curOnCovered += r.curExt;
+      if (r.best.idx === i) t.lowest++;
+    });
+  });
+  tot.curLowest = rows.filter(r => r.best.idx === -1).length;
+  return { rows, tot, noUsage };
+}
+
+function xuDefaults(){
+  if (!state.ui.xuBase) state.ui.xuBase = { f:'', v:'' };
+  if (!Array.isArray(state.ui.xuSides) || !state.ui.xuSides.length) state.ui.xuSides = [{ f:'', v:'' }];
+  if (!state.ui.xuMatch) state.ui.xuMatch = 'link';
+}
+
+function xuSetupPanel(lines, onChange){
+  xuDefaults();
+  const facs = [...new Set(lines.map(l => l.fac))].sort((a, b) => a.localeCompare(b, undefined, { numeric:true }));
+  const vens = [...new Set(lines.map(l => l.ven))].sort((a, b) => a.localeCompare(b, undefined, { numeric:true }));
+  const box = el('div', 'xuSetup');
+  const mkSel = (opts, allLabel, val, set, aria) => {
+    const s = el('select');
+    s.setAttribute('aria-label', aria);
+    const o0 = el('option', null, 'Choose\u2026'); o0.value = ''; s.appendChild(o0);
+    const oa = el('option', null, allLabel); oa.value = XC_ALL; s.appendChild(oa);
+    opts.forEach(v => { const o = el('option', null, v); o.value = v; s.appendChild(o); });
+    s.value = val == null ? '' : val;
+    if (!s.value) s.classList.add('need');
+    s.addEventListener('change', () => { set(s.value); onChange(); });
+    return s;
+  };
+  const line = (cls, lbl, sub, sd, acts, aria) => {
+    const r = el('div', 'xuLine' + (cls ? ' ' + cls : ''));
+    const l = el('div', 'lbl', lbl);
+    if (sub) l.appendChild(el('small', null, sub));
+    r.appendChild(l);
+    r.appendChild(mkSel(facs, 'All facilities', sd.f, v => sd.f = v, aria + ' facility'));
+    r.appendChild(mkSel(vens, 'All vendors', sd.v, v => sd.v = v, aria + ' vendor'));
+    const a = el('div', 'acts'); acts.forEach(x => a.appendChild(x)); r.appendChild(a);
+    return r;
+  };
+  const base = state.ui.xuBase, sides = state.ui.xuSides;
+  const swap = el('button', 'btn sm', '\u21c5 Swap with price 1');
+  swap.title = 'Use price pick 1 as the usage basis and the current basis as price pick 1';
+  swap.disabled = !xuReady(sides[0]);
+  swap.addEventListener('click', () => { const t = state.ui.xuBase; state.ui.xuBase = sides[0]; sides[0] = t; onChange(); });
+  box.appendChild(line('base', 'Usage from', 'eaches + current price', base, [swap], 'Usage basis'));
+  sides.forEach((sd, i) => {
+    const rm = el('button', 'btn sm', 'Remove');
+    rm.disabled = sides.length === 1;
+    rm.addEventListener('click', () => { sides.splice(i, 1); onChange(); });
+    box.appendChild(line('', 'Price at ' + (i + 1), 'its each price', sd, [rm], 'Price pick ' + (i + 1)));
+  });
+  const foot = el('div', 'xuMatch');
+  const add = el('button', 'btn sm', '+ Add price pick');
+  add.addEventListener('click', () => { sides.push({ f:'', v:'' }); onChange(); });
+  foot.appendChild(add);
+  foot.appendChild(el('span', null, 'Match products by'));
+  const ms = el('select');
+  Object.keys(XC_MATCH).forEach(k => { const o = el('option', null, XC_MATCH[k]); o.value = k; ms.appendChild(o); });
+  ms.value = state.ui.xuMatch;
+  ms.addEventListener('change', () => { state.ui.xuMatch = ms.value; onChange(); });
+  foot.appendChild(ms);
+  box.appendChild(foot);
+  const msg = el('div', 'xuMsg');
+  if (!xuReady(base)) msg.textContent = 'Choose the facility and vendor whose usage you want to price.';
+  else if (!sides.some(xuReady)) msg.textContent = 'Choose at least one facility and vendor to price that usage at.';
+  else if (sides.some(sd => xuReady(sd) && xuSame(sd, base))) msg.textContent = 'A price pick is the same as the usage basis \u2014 it is skipped.';
+  box.appendChild(msg);
+  return box;
+}
+
+let xuLast = null;   // { res, base, sides } of the last render, for Copy table
+
+function renderUsageCompare(pane, cards){
+  const keep = pane.scrollTop;
+  pane.innerHTML = ''; cards.innerHTML = '';
+  xuLast = null;
+  if (!derived.groups.length) { pane.appendChild(emptyNote('Nothing to compare yet. Paste your range on the Sheet tab.')); return; }
+  const lines = xlLines();
+  const rerender = () => { saveSoon(); renderCrosses(); };
+  pane.appendChild(xuSetupPanel(lines, rerender));
+
+  const base = state.ui.xuBase;
+  const sides = state.ui.xuSides.filter(sd => xuReady(sd) && !xuSame(sd, base));
+  if (!xuReady(base) || !sides.length) return;
+
+  const res = xuCompare(lines, base, sides, state.ui.xuMatch);
+  xuLast = { res, base, sides };
+  const T = res.tot;
+
+  /* ---- summary cards ---- */
+  const card = (n, l, s, cls) => { const c = xsCard(n, l, cls); if (s) c.appendChild(el('div', 's', s)); return c; };
+  cards.appendChild(card(fmtMoney(T.cur), 'Current spend', xuLabel(base) + ' \u2014 ' + res.rows.length + ' product' + (res.rows.length === 1 ? '' : 's'), 'base'));
+  sides.forEach((sd, i) => {
+    const t = T.sides[i], d = t.ext - t.curOnCovered;
+    cards.appendChild(card(t.covered ? fmtMoney(t.ext) : '\u2014', 'At ' + xuLabel(sd),
+      t.covered ? 'Prices ' + t.covered + ' of ' + res.rows.length + ' \u00b7 ' + (d <= 0 ? 'saves ' : 'costs ') + fmtMoney(Math.abs(d)) + ' vs current on those'
+                : 'Does not price any of these products',
+      !t.covered ? '' : d < -0.005 ? 'save' : d > 0.005 ? 'cost' : ''));
+  });
+  cards.appendChild(card(fmtMoney(T.best), 'Best-price spend', 'Lowest each price per product', 'alt'));
+  cards.appendChild(card(fmtMoney(T.save), 'Potential savings', T.cur ? (T.save / T.cur * 100).toFixed(1) + '% of current spend' : '', T.save > 0.005 ? 'save' : ''));
+
+  if (!res.rows.length) {
+    pane.appendChild(emptyNote('The usage basis has no products with eaches to price. Check the facility and vendor, or the match rule.'));
+    return;
+  }
+
+  /* ---- table ---- */
+  const q = String(state.ui.xsSearch || '').trim().toLowerCase();
+  const rows = q ? res.rows.filter(r => r.search.indexOf(q) >= 0) : res.rows;
+  const t = el('table', 'grid aggTable xuTable');
+  const thead = el('thead');
+  const h1 = el('tr'), h2 = el('tr', 'xuH2');
+  const th = (tr, txt, cls, span, rows) => { const x = el('th', cls || null, txt); if (span) x.colSpan = span; if (rows) x.rowSpan = rows; tr.appendChild(x); return x; };
+  th(h1, '', 'tw', 0, 2); th(h1, 'Product', '', 0, 2); th(h1, 'Description', '', 0, 2);
+  th(h1, 'Usage (eaches)', 'num', 0, 2).title = 'Normalized Ordered Qty (column M) bought by ' + xuLabel(base);
+  th(h1, 'Current \u2014 ' + xuLabel(base), 'side', 2);
+  sides.forEach((sd, i) => th(h1, 'Price ' + (i + 1) + ' \u2014 ' + xuLabel(sd), 'side', 3));
+  th(h1, 'Best', 'side', 3);
+  th(h2, 'Each', 'num sideStart'); th(h2, 'Extended', 'num');
+  sides.forEach(() => { th(h2, 'Each', 'num sideStart'); th(h2, 'Extended', 'num'); th(h2, '\u0394 vs current', 'num'); });
+  th(h2, 'Lowest at', 'sideStart'); th(h2, 'Extended', 'num'); th(h2, 'Savings', 'num');
+  thead.appendChild(h1); thead.appendChild(h2); t.appendChild(thead);
+  const tb = el('tbody');
+  const td = (tr, txt, cls, title) => { const x = el('td', cls || null, txt); if (title) x.title = title; tr.appendChild(x); return x; };
+  const delta = d => (d > 0 ? '+' : d < 0 ? '\u2212' : '') + fmtMoney(Math.abs(d));
+  const bestName = r => r.best.idx === -1 ? 'Current' : 'Price ' + (r.best.idx + 1);
+
+  if (!rows.length) {
+    const tr = el('tr'), x = el('td', null, 'No product matches that search.');
+    x.colSpan = 4 + 2 + sides.length * 3 + 3; x.style.cssText = 'padding:12px;color:var(--ink-3)';
+    tr.appendChild(x); tb.appendChild(tr);
+  }
+  rows.forEach(r => {
+    const multi = r.items.length > 1, open = multi && xuOpen.has(r.key);
+    const tr = el('tr', multi ? 'aggRow' + (open ? ' open' : '') : null);
+    td(tr, multi ? (open ? '\u25bc' : '\u25b6') : '', 'tw');
+    td(tr, r.label, null, multi ? r.items.map(it => it.item).join('\n') : null);
+    td(tr, r.desc, null, r.desc);
+    td(tr, fmtQty(r.usage), 'num');
+    td(tr, fmtPrice(r.cur), 'num sideStart' + (r.best.idx === -1 ? ' best' : ''));
+    td(tr, fmtMoney(r.curExt), 'num');
+    r.at.forEach((a, i) => {
+      if (a.e === null) {
+        td(tr, '\u2014', 'num sideStart dim', xuLabel(sides[i]) + ' did not buy this product');
+        td(tr, '', 'num'); td(tr, '', 'num');
+        return;
+      }
+      td(tr, fmtPrice(a.e), 'num sideStart' + (r.best.idx === i ? ' best' : ''));
+      td(tr, fmtMoney(a.ext), 'num');
+      const d = a.ext - r.curExt;
+      td(tr, delta(d), 'num' + (d < -0.005 ? ' better' : d > 0.005 ? ' worse' : ''));
+    });
+    const bt = el('td', 'sideStart');
+    bt.appendChild(el('span', 'bestTag' + (r.best.idx === -1 ? ' cur' : ''), bestName(r)));
+    bt.title = r.best.idx === -1 ? 'The usage basis already has the lowest each price' : xuLabel(sides[r.best.idx]);
+    tr.appendChild(bt);
+    td(tr, fmtMoney(r.bestExt), 'num');
+    td(tr, r.save > 0.005 ? fmtMoney(r.save) : '\u2014', 'num' + (r.save > 0.005 ? ' save' : ' dim'));
+    if (multi) tr.addEventListener('click', () => { if (open) xuOpen.delete(r.key); else xuOpen.add(r.key); renderCrosses(); });
+    tb.appendChild(tr);
+
+    if (open) r.items.forEach(it => {
+      const s = el('tr', 'xuSub');
+      td(s, '', 'tw'); td(s, it.item); td(s, it.desc, null, it.desc);
+      td(s, it.base.lines ? fmtQty(it.base.qty) : '\u2014', 'num');
+      const ce = xuEach(it.base);
+      td(s, ce === null ? '\u2014' : fmtPrice(ce), 'num sideStart'); td(s, it.base.lines ? fmtMoney(it.base.net) : '', 'num');
+      it.sides.forEach((b, i) => {
+        const e = xuEach(b);
+        td(s, e === null ? '\u2014' : fmtPrice(e), 'num sideStart', e === null ? '' : 'This item\u2019s own each price at ' + xuLabel(sides[i]));
+        td(s, '', 'num'); td(s, '', 'num');
+      });
+      td(s, '', 'sideStart'); td(s, '', 'num'); td(s, '', 'num');
+      tb.appendChild(s);
+    });
+  });
+
+  /* totals */
+  const tt = el('tr', 'xuTot');
+  td(tt, ''); td(tt, 'Total' + (q ? ' (all products)' : '')); td(tt, res.rows.length + ' product' + (res.rows.length === 1 ? '' : 's'));
+  td(tt, fmtQty(T.usage), 'num');
+  td(tt, T.curLowest + ' lowest', 'sideStart', 'Products where the current price is already the lowest');
+  td(tt, fmtMoney(T.cur), 'num');
+  sides.forEach((sd, i) => {
+    const s = T.sides[i], d = s.ext - s.curOnCovered;
+    td(tt, s.covered + '/' + res.rows.length + ' priced', 'sideStart', s.lowest + ' product' + (s.lowest === 1 ? '' : 's') + ' lowest here');
+    td(tt, s.covered ? fmtMoney(s.ext) : '\u2014', 'num', 'Extended spend on the ' + s.covered + ' products this pick prices');
+    td(tt, s.covered ? delta(d) : '', 'num' + (d < -0.005 ? ' better' : d > 0.005 ? ' worse' : ''),
+       'Versus current spend of ' + fmtMoney(s.curOnCovered) + ' on the same ' + s.covered + ' products');
+  });
+  td(tt, '', 'sideStart'); td(tt, fmtMoney(T.best), 'num'); td(tt, fmtMoney(T.save), 'num save');
+  tb.appendChild(tt);
+
+  t.appendChild(tb);
+  pane.appendChild(t);
+  pane.appendChild(el('div', 'xuFoot',
+    'Every figure uses the usage of ' + xuLabel(base) + '. Extended = that usage \u00d7 each price. ' +
+    'A pick\u2019s each price is its own net sales \u00f7 its own eaches for the matched product, so a crossed group is priced at the pick\u2019s blended price across the items in that group. ' +
+    '\u0394 vs current compares only products the pick actually prices; a dash means the pick never bought it.' +
+    (res.noUsage ? ' ' + res.noUsage + ' product' + (res.noUsage === 1 ? '' : 's') + ' bought by the basis had no usable eaches and ' + (res.noUsage === 1 ? 'is' : 'are') + ' left out.' : '')));
+  pane.scrollTop = keep;
+}
+
+function xuCopyTable(){
+  if (!xuLast) { toast('Pick a usage basis and at least one price pick first.', true); return; }
+  const { res, base, sides } = xuLast;
+  const head = ['Product', 'Description', 'Usage (eaches) \u2014 ' + xuLabel(base), 'Current each', 'Current extended'];
+  sides.forEach((sd, i) => head.push('Price ' + (i + 1) + ' each \u2014 ' + xuLabel(sd), 'Price ' + (i + 1) + ' extended', 'Price ' + (i + 1) + ' \u0394 vs current'));
+  head.push('Lowest at', 'Best extended', 'Savings');
+  const n = v => v == null ? '' : String(Math.round(v * 10000) / 10000);
+  const out = [head.join('\t')];
+  res.rows.forEach(r => {
+    const c = [r.label, r.desc, n(r.usage), n(r.cur), n(r.curExt)];
+    r.at.forEach(a => c.push(n(a.e), n(a.ext), a.ext == null ? '' : n(a.ext - r.curExt)));
+    c.push(r.best.idx === -1 ? 'Current' : xuLabel(sides[r.best.idx]), n(r.bestExt), n(r.save));
+    out.push(c.map(v => String(v).replace(/[\t\r\n]+/g, ' ')).join('\t'));
+  });
+  const T = res.tot, tr = ['Total', res.rows.length + ' products', n(T.usage), '', n(T.cur)];
+  T.sides.forEach(s => tr.push(s.covered + '/' + res.rows.length + ' priced', n(s.ext), n(s.ext - s.curOnCovered)));
+  tr.push('', n(T.best), n(T.save));
+  out.push(tr.join('\t'));
+  copyText(out.join('\n'), 'Copied ' + res.rows.length + ' products');
+}
+$('#segXsView').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  state.ui.xsView = b.dataset.xsview === 'usage' ? 'usage' : 'rel';
+  saveSoon(); renderCrosses();
+});
+$('#btnXuCopy').addEventListener('click', xuCopyTable);
 
 let xsSearchT = null;
 $('#xsSearch').addEventListener('input', e => {
