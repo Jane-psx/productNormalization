@@ -728,6 +728,12 @@ table.xuTable th.xuCmpH{background:#e9eef5}
 table.xuTable th.xuAH{background:var(--zone-vendor-h)}
 table.xuTable th.xuBH{background:#ebe3f7}
 table.xuTable .bestTag.same{background:#eef2f7;color:var(--ink-2)}
+table.xsFixed{table-layout:fixed;min-width:0}
+table.xsFixed td,table.xsFixed th{max-width:none;overflow:hidden;text-overflow:ellipsis}
+table.xsFixed th.xsRz{position:sticky}
+.xsGrip{position:absolute;top:0;right:-4px;width:8px;height:100%;cursor:col-resize;z-index:7}
+.xsGrip:hover,.xsGrip.active{background:rgba(31,111,235,.3)}
+body.xsResizing,body.xsResizing *{cursor:col-resize !important;user-select:none !important}
 .xuFoot{padding:8px 14px 16px;font-size:11.5px;color:var(--ink-3);line-height:1.55;max-width:900px}
 .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:10px;padding:12px}
 .card{background:#fff;border:1px solid var(--line);border-radius:3px;padding:11px 13px}
@@ -1084,6 +1090,7 @@ table.compareRow tfoot td.cCol{background:#f3ecfb}
     </div>
     <button class="btn xsRelOnly" id="btnXsExpand">Expand all</button>
     <button class="btn xsRelOnly" id="btnXsCollapse">Collapse all</button>
+    <button class="btn" id="btnXsWidths" title="Put every column in this table back to its automatic width">Reset widths</button>
     <button class="btn xsUsageOnly" id="btnXuCopy" title="Copy the comparison table (product rows and totals) to paste into Excel">Copy table</button>
     <span class="sep"></span>
     <button class="btn" id="btnXsSetup" title="Open the Facility + Vendor cross setup used by the Excel workbook">Cross product comparison&hellip;</button>
@@ -6144,19 +6151,63 @@ function resNum(res){
   return (res && !res.err && !res.blank && typeof res.v === 'number' && isFinite(res.v)) ? res.v : null;
 }
 
+/* ================================================================= VIEW
+   What each person is LOOKING at \u2014 searches, filters, tabs, view modes,
+   the Facility A / B picks, column widths \u2014 is kept in this browser's
+   localStorage only, per case. It is never written into the shared case, so
+   someone else opening the same case keeps their own view and nobody's
+   searching or selecting changes anyone else's screen. The data itself
+   (rows, overrides, Group by, the Excel cross setup) is still shared.    */
+const VIEW_UI_KEYS = ['tab','mode','search','colFilters','freeze','issuesOnly','outMode','aggSearch','aggAttn','aggSelectedOnly',
+  'modeB','searchB','sortKeyB','sortDirB','freezeB','issuesOnlyB','aggSearchB','aggAttnB','aggSelectedOnlyB','lastSubA','lastSubB',
+  'lineItemCols','lineItemColWidths','lineItemView','lineItemCombineStat',
+  'xsView','xsSearch','xuBase','xuSides','xuColWidths','xsRelColWidths'];
+const VIEW_KEY_SET = new Set(VIEW_UI_KEYS);
+const clone = o => JSON.parse(JSON.stringify(o === undefined ? null : o));
+const pickView = ui => { const o = {}; VIEW_UI_KEYS.forEach(k => { if (ui[k] !== undefined) o[k] = ui[k]; }); return o; };
+const VIEW_DEFAULTS = clone({ ui:pickView(state.ui), widths:state.widths, widthsB:state.widthsB });
+const viewKey = id => 'pn_view_v1:' + id;
+let lastViewJson = null;
+function sharedUi(){ const o = {}; Object.keys(state.ui).forEach(k => { if (!VIEW_KEY_SET.has(k)) o[k] = state.ui[k]; }); return o; }
+function saveViewPrefs(){
+  if (!activeSessionId) return;
+  try {
+    const j = JSON.stringify({ ui:pickView(state.ui), widths:state.widths, widthsB:state.widthsB });
+    const k = viewKey(activeSessionId) + '|' + j;
+    if (k === lastViewJson) return;
+    localStorage.setItem(viewKey(activeSessionId), j);
+    lastViewJson = k;
+  } catch (e) {}
+}
+/** Put this browser's own view of case `id` on screen (defaults if it has none yet). */
+function applyViewPrefs(id){
+  let v = null;
+  try { v = JSON.parse(localStorage.getItem(viewKey(id)) || 'null'); } catch (e) {}
+  const d = clone(VIEW_DEFAULTS);
+  VIEW_UI_KEYS.forEach(k => { delete state.ui[k]; });
+  Object.assign(state.ui, d.ui, v && v.ui);
+  Object.assign(state.widths, d.widths, v && v.widths);
+  Object.assign(state.widthsB, d.widthsB, v && v.widthsB);
+  lastViewJson = null;
+}
+setInterval(saveViewPrefs, 1500);
+window.addEventListener('pagehide', saveViewPrefs);
+document.addEventListener('visibilitychange', () => { if (document.hidden) saveViewPrefs(); });
+
 /* ============================================================== SESSION */
 let saveT = null;
 function saveSoon(){ clearTimeout(saveT); saveT = setTimeout(saveSession, 700); }
 /** The whole case: both vendors, cross, overrides, and layout. */
 function sessionPayload(){
   return { v:1, at:Date.now(), rows:state.rows, overrides:state.overrides,
-           expanded:state.expanded, widths:state.widths, widthsB:state.widthsB, ui:state.ui,
+           expanded:state.expanded, ui:sharedUi(),
            alt:state.alt, cross:state.cross };
 }
 let localFullWarned = false;
 function saveSession(){
   if (!activeSessionId) ensureActiveSession();
   clearTimeout(saveT);
+  saveViewPrefs();
   const wroteLocal = setSessionData(activeSessionId, sessionPayload());
   if (!wroteLocal && !localFullWarned) {
     localFullWarned = true;
@@ -6166,8 +6217,13 @@ function saveSession(){
   markSaved();
   queueCloudPush(activeSessionId);
 }
+let viewShownFor = null;   // case whose local view is on screen
 function loadSession(silent){
   ensureActiveSession();
+  const sameCase = viewShownFor === activeSessionId;
+  if (sameCase) saveViewPrefs();          // reloading the same case (e.g. a cloud update): keep what is on screen
+  applyViewPrefs(activeSessionId);
+  viewShownFor = activeSessionId;
   try {
     const s = getSessionData(activeSessionId);
     if (!s) { if (!silent) toast('No saved data in this session yet.', true); return false; }
@@ -6175,9 +6231,9 @@ function loadSession(silent){
     state.rows = s.rows; state.overrides = s.overrides || {}; state.expanded = s.expanded || {};
     state.alt   = adoptAlt(s.alt);
     state.cross = adoptCross(s.cross);
-    if (s.widths) Object.assign(state.widths, s.widths);
-    if (s.widthsB) Object.assign(state.widthsB, s.widthsB);
-    if (s.ui) Object.assign(state.ui, s.ui, { tab:'normalization' });
+    /* only the shared settings come from the case; the view stays this browser's own */
+    if (s.ui) Object.keys(s.ui).forEach(k => { if (!VIEW_KEY_SET.has(k)) state.ui[k] = s.ui[k]; });
+    if (!sameCase) state.ui.tab = 'normalization';
     bumpSeq(state.rows); bumpSeq(state.alt.rows);
     return true;
   } catch (e) { if (!silent) toast('That session could not be read.', true); return false; }
@@ -6199,6 +6255,7 @@ function switchSession(id){
   const idx = loadSessionsIndex();
   if (idx) { idx.activeId = id; saveSessionsIndex(idx); }
   if (!loadSession(true)) blankWorkingState();
+  syncViewControls();
   checked.clear(); checkedB.clear();
   cur = null; sel = null;
   aggOpen.clear();
@@ -6249,7 +6306,7 @@ function deleteSession(id){
   if (idx.activeId === id) idx.activeId = idx.sessions.length ? idx.sessions[0].id : null;
   saveSessionsIndex(idx);
   if (wasActive) {
-    if (idx.activeId) { activeSessionId = idx.activeId; loadSession(true); refresh(); markSaved(); updateCaseHeader(); }
+    if (idx.activeId) { activeSessionId = idx.activeId; loadSession(true); syncViewControls(); refresh(); markSaved(); updateCaseHeader(); }
     else createSession('New case');
   }
 }
@@ -6349,7 +6406,7 @@ function renderSessionManagerBody(){
   syncBtn.addEventListener('click', async () => {
     syncBtn.disabled = true; syncBtn.textContent = 'Refreshing\u2026';
     const changed = await cloudSync();
-    if (changed) { loadSession(true); refresh(); }
+    if (changed) { loadSession(true); syncViewControls(); refresh(); }
     openSessionManager();
     toast(cloudState === 'ok' ? 'Cases refreshed from the cloud.' : 'Could not reach the cloud database.', cloudState !== 'ok');
   });
@@ -6442,7 +6499,7 @@ function importProjectAsSession(){
         saveSessionsIndex(idx);
         setSessionData(id, {
           v:1, at:Date.now(), rows:s.rows, overrides:s.overrides || {}, expanded:s.expanded || {},
-          widths:state.widths, widthsB:state.widthsB, ui:state.ui,
+          ui:sharedUi(),
           alt:s.alt || { rows:[], overrides:{}, expanded:{} }, cross:s.cross || {}
         });
         switchSession(id);
@@ -7066,6 +7123,7 @@ function renderCrosses(){
   });
   t.appendChild(tb);
   pane.appendChild(t);
+  makeColsResizable(t, [...htr.children], 'xsRelColWidths');
 
   const foot = el('div', null, 'Usage and net sales come from the source side\u2019s own rows. An item whose Crossed To reaches more than one facility is counted under each relationship it takes part in, so relationship figures are not a single network total.');
   foot.style.cssText = 'padding:10px 12px;font-size:11.5px;color:var(--ink-3)';
@@ -7098,13 +7156,74 @@ function renderCrosses(){
   pane.scrollTop = keep;
 }
 
+/* ------------------------------------------ Excel-style column widths
+   Used by both Crosses tables. Drag a header's right edge to resize, double-
+   click it to fit the column to its widest cell. Widths are remembered per
+   table in this browser only (they are part of the local view, see VIEW). */
+function makeColsResizable(table, leafThs, storeName){
+  if (!leafThs.length) return;
+  const store = state.ui[storeName] || (state.ui[storeName] = {});
+  const keyOf = i => i + ':' + leafThs[i].textContent.trim();
+  /* natural widths first (auto layout), then lock to fixed layout */
+  const natural = leafThs.map(th => Math.ceil(th.getBoundingClientRect().width));
+  const cg = el('colgroup');
+  const cols = leafThs.map((th, i) => {
+    const c = el('col');
+    const w = store[keyOf(i)] || Math.min(Math.max(natural[i], 40), 360);
+    c.style.width = w + 'px';
+    cg.appendChild(c);
+    return c;
+  });
+  table.insertBefore(cg, table.firstChild);
+  table.classList.add('xsFixed');
+  const total = () => { table.style.width = cols.reduce((n, c) => n + parseInt(c.style.width, 10), 0) + 'px'; };
+  total();
+  const cellsOf = i => [leafThs[i]].concat([...table.rows].map(r => r.cells.length === leafThs.length ? r.cells[i] : null).filter(Boolean));
+  const setW = (i, w) => { w = Math.max(28, Math.min(900, Math.round(w))); cols[i].style.width = w + 'px'; store[keyOf(i)] = w; total(); };
+  leafThs.forEach((th, i) => {
+    th.classList.add('xsRz');
+    const grip = el('span', 'xsGrip');
+    grip.title = 'Drag to resize \u00b7 double-click to fit';
+    grip.addEventListener('click', e => e.stopPropagation());
+    grip.addEventListener('mousedown', e => {
+      if (e.button !== 0) return;
+      e.preventDefault(); e.stopPropagation();
+      const x0 = e.clientX, w0 = parseInt(cols[i].style.width, 10);
+      grip.classList.add('active'); document.body.classList.add('xsResizing');
+      const move = ev => setW(i, w0 + ev.clientX - x0);
+      const up = () => {
+        document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up);
+        grip.classList.remove('active'); document.body.classList.remove('xsResizing');
+        saveViewPrefs();
+      };
+      document.addEventListener('mousemove', move); document.addEventListener('mouseup', up);
+    });
+    grip.addEventListener('dblclick', e => {
+      e.preventDefault(); e.stopPropagation();
+      const was = cols[i].style.width;
+      cols[i].style.width = '4000px';            // let every cell show in full, then measure
+      const contentW = c => {
+        const kids = [...c.childNodes].filter(n => !(n.classList && n.classList.contains('xsGrip')));
+        if (!kids.length) return 0;
+        const r = document.createRange(); r.setStartBefore(kids[0]); r.setEndAfter(kids[kids.length - 1]);
+        const cs = getComputedStyle(c);
+        return r.getBoundingClientRect().width + parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+      };
+      const need = Math.max(...cellsOf(i).map(contentW));
+      cols[i].style.width = was;
+      setW(i, need + 6);
+      saveViewPrefs();
+    });
+    th.appendChild(grip);
+  });
+}
+
 /* ===================================== USAGE PRICE COMPARISON (Crosses tab)
    Facility A + Vendor (the usage basis) vs Facility B + Vendor (the price).
-   One row per Facility A item (Item # + Facility + Vendor). Its cross at
-   Facility B is found through the item's own Crossed To value:
-     1. Crossed To = an Item # (then SKU #, then MFG #) bought at Facility B
-     2. otherwise the same Item # bought at Facility B
-     3. otherwise a Facility B item whose Crossed To points back at this item
+   One row per Facility A item (Item # + Facility + Vendor) that HAS a
+   Crossed To value \u2014 items with a blank Crossed To are skipped entirely.
+   The cross at Facility B is found only through that Crossed To value:
+   an Item # (then SKU #, then MFG #) bought at Facility B.
    Facility B is priced with Facility A's usage:
      B each price     = B net sales / B eaches (its own history)
      B Total Net Sales = A eaches x B each price
@@ -7165,16 +7284,17 @@ function xuOrdered(it){
 }
 
 function xuCompare(lines, A, B){
-  const aItems = xuItems(lines.filter(l => xuIn(l, A)));
+  const aAll = xuItems(lines.filter(l => xuIn(l, A)));
+  const aItems = aAll.filter(it => it.xtos.size);          // only items with a Crossed To are crossed
+  const skipped = aAll.length - aItems.length;
   const bItems = xuItems(lines.filter(l => xuIn(l, B)));
   const idx = () => new Map();
-  const byItem = idx(), bySku = idx(), byMfg = idx(), byXto = idx();
+  const byItem = idx(), bySku = idx(), byMfg = idx();
   const put = (m, k, it) => { if (!k) return; (m.get(k) || m.set(k, []).get(k)).push(it); };
   bItems.forEach(it => {
     put(byItem, normIdent(it.item), it);
     it.skus.forEach(v => put(bySku, v, it));
     it.mfgs.forEach(v => put(byMfg, v, it));
-    it.xtos.forEach(v => put(byXto, normIdent(v), it));
   });
 
   const rows = aItems.map(a => {
@@ -7183,11 +7303,6 @@ function xuCompare(lines, A, B){
       const n = normIdent(x);
       const hit = byItem.get(n) || bySku.get(n) || byMfg.get(n);
       if (hit) { match = hit; via = 'Crossed To ' + x + ' = ' + (byItem.get(n) ? 'Item #' : bySku.get(n) ? 'SKU #' : 'MFG #'); break; }
-    }
-    if (!match.length && byItem.get(normIdent(a.item))) { match = byItem.get(normIdent(a.item)); via = 'Same Item # at Facility B'; }
-    if (!match.length) {
-      const keys = [normIdent(a.item), ...a.skus, ...a.mfgs].filter(Boolean);
-      for (const k of keys) if (byXto.get(k)) { match = byXto.get(k); via = 'Facility B item is Crossed To this item'; break; }
     }
     match = match.filter(b => b.key !== a.key);   // never cross an item to itself
     const aEach = a.eaches > 0 ? a.net / a.eaches : null;
@@ -7221,6 +7336,7 @@ function xuCompare(lines, A, B){
     T.best += Math.min(r.a.net, r.bTotal); T.save += Math.max(0, r.a.net - r.bTotal);
     if (r.best === 'B') T.bestB++; else if (r.best === 'A') T.bestA++; else T.same++;
   });
+  T.skipped = skipped;
   return { rows, T };
 }
 
@@ -7284,7 +7400,8 @@ function renderUsageCompare(pane, cards){
 
   /* ---- summary cards ---- */
   const card = (n, l, sub, cls) => { const c = xsCard(n, l, cls); if (sub) c.appendChild(el('div', 's', sub)); return c; };
-  cards.appendChild(card(fmtMoney(T.aNet), 'Facility A spend', aL + ' \u2014 ' + res.rows.length + ' item' + (res.rows.length === 1 ? '' : 's'), 'base'));
+  cards.appendChild(card(fmtMoney(T.aNet), 'Facility A spend', aL + ' \u2014 ' + res.rows.length + ' item' + (res.rows.length === 1 ? '' : 's') + ' with a Crossed To' +
+    (T.skipped ? ' (' + T.skipped + ' blank skipped)' : ''), 'base'));
   cards.appendChild(card(fmtMoney(T.aNetCrossed), 'A spend on crossed items', T.crossed + ' crossed item' + (T.crossed === 1 ? '' : 's')));
   const d = T.bTotal - T.aNetCrossed;
   cards.appendChild(card(fmtMoney(T.bTotal), 'Same usage at Facility B', bL + ' \u2014 ' + (d <= 0 ? 'saves ' : 'costs ') + fmtMoney(Math.abs(d)),
@@ -7292,7 +7409,11 @@ function renderUsageCompare(pane, cards){
   cards.appendChild(card(fmtMoney(T.save), 'Savings at best price', 'A lower on ' + T.bestA + ' \u00b7 B lower on ' + T.bestB + (T.same ? ' \u00b7 same on ' + T.same : ''), T.save > 0.005 ? 'save' : ''));
   cards.appendChild(card(String(T.noCross), 'No cross', T.noCross ? 'Facility A items with no match at B' : 'Every item is crossed', T.noCross ? 'err' : 'ok'));
 
-  if (!res.rows.length) { pane.appendChild(emptyNote('Facility A has no items with this facility and vendor.')); return; }
+  if (!res.rows.length) {
+    pane.appendChild(emptyNote(T.skipped ? 'None of Facility A\u2019s ' + T.skipped + ' item' + (T.skipped === 1 ? '' : 's') + ' has a Crossed To value, so there is nothing to cross.'
+                                          : 'Facility A has no items with this facility and vendor.'));
+    return;
+  }
 
   /* ---- table ---- */
   const q = String(state.ui.xsSearch || '').trim().toLowerCase();
@@ -7320,7 +7441,7 @@ function renderUsageCompare(pane, cards){
     const a = r.a, tr = el('tr', r.cross ? null : 'nocross');
     /* comparison */
     td(tr, r.aEach === null ? '\u2014' : fmtPrice(r.aEach), 'num' + (r.best === 'A' ? ' best' : ''));
-    if (!r.cross) td(tr, 'NO CROSS', 'nc', 'No Facility B item matches this item\u2019s Crossed To, Item #, SKU # or MFG #');
+    if (!r.cross) td(tr, 'NO CROSS', 'nc', 'Crossed To ' + join(a.xtos) + ' is not an Item #, SKU # or MFG # bought at ' + bL);
     else td(tr, r.bEach === null ? '\u2014' : fmtPrice(r.bEach), 'num' + (r.best === 'B' ? ' best' : ''));
     const bp = el('td');
     if (!r.cross) { bp.textContent = 'NO CROSS'; bp.className = 'nc'; }
@@ -7332,7 +7453,7 @@ function renderUsageCompare(pane, cards){
     td(tr, fmtQty(r.aOrd.qty), 'num sideStart', r.aOrd.mixed ? 'Mixed UOM (' + r.aOrd.mixed + ') \u2014 shown in eaches' : fmtQty(a.eaches) + ' eaches');
     td(tr, r.aOrd.um);
     td(tr, a.fac); td(tr, a.ven);
-    td(tr, a.item, null, a.xtos.size ? 'Crossed To: ' + join(a.xtos) : 'Crossed To is blank');
+    td(tr, a.item, null, 'Crossed To: ' + join(a.xtos));
     td(tr, a.desc, 'desc', a.desc);
     td(tr, join(a.packs) || '\u2014');
     td(tr, r.aEach === null ? '\u2014' : fmtPrice(r.aEach), 'num');
@@ -7340,7 +7461,7 @@ function renderUsageCompare(pane, cards){
     /* Facility B */
     if (!r.cross) {
       td(tr, '', 'num sideStart nc'); td(tr, '', 'nc'); td(tr, '', 'nc'); td(tr, '', 'nc');
-      td(tr, 'NO CROSS', 'nc', a.xtos.size ? 'Crossed To ' + join(a.xtos) + ' is not bought at ' + bL : 'Crossed To is blank');
+      td(tr, 'NO CROSS', 'nc', 'Crossed To ' + join(a.xtos) + ' is not bought at ' + bL);
       td(tr, '', 'nc'); td(tr, '', 'nc'); td(tr, '', 'num nc'); td(tr, '', 'num nc');
     } else {
       const m = r.match, one = m.length === 1;
@@ -7370,9 +7491,10 @@ function renderUsageCompare(pane, cards){
   tb.appendChild(tt);
   t.appendChild(tb);
   pane.appendChild(t);
+  makeColsResizable(t, [...h2.children], 'xuColWidths');
   pane.appendChild(el('div', 'xuFoot',
-    'Each row is one Facility A item. Its cross is the Facility B item its Crossed To points at (by Item #, then SKU #, then MFG #); ' +
-    'if none, the same Item # at Facility B; if none, a Facility B item whose Crossed To points back at it. Hover Item Number Crossed to see which rule matched. ' +
+    'Each row is one Facility A item that has a Crossed To value; items with a blank Crossed To are skipped' +
+    (T.skipped ? ' (' + T.skipped + ' here)' : '') + '. The cross is the Facility B item its Crossed To points at (by Item #, then SKU #, then MFG #). Hover Item Number Crossed to see the match. ' +
     'Facility B is priced with Facility A\u2019s usage: its Order Qty is A\u2019s eaches in B\u2019s own ordering unit, and its Total Net Sales = A\u2019s eaches \u00d7 B\u2019s each price. ' +
     'Items with no match at Facility B are marked NO CROSS.' + (T.noPrice ? ' ' + T.noPrice + ' crossed item' + (T.noPrice === 1 ? ' has' : 's have') + ' no usable each price and ' + (T.noPrice === 1 ? 'is' : 'are') + ' left out of the totals.' : '')));
   pane.scrollTop = keep;
@@ -7406,6 +7528,10 @@ $('#segXsView').addEventListener('click', e => {
   saveSoon(); renderCrosses();
 });
 $('#btnXuCopy').addEventListener('click', xuCopyTable);
+$('#btnXsWidths').addEventListener('click', () => {
+  state.ui[state.ui.xsView === 'usage' ? 'xuColWidths' : 'xsRelColWidths'] = {};
+  saveViewPrefs(); renderCrosses(); toast('Column widths reset.');
+});
 
 let xsSearchT = null;
 $('#xsSearch').addEventListener('input', e => {
@@ -7422,10 +7548,8 @@ $('#btnXsCollapse').addEventListener('click', () => { xsOpen.clear(); renderCros
 $('#btnXsSetup').addEventListener('click', () => openCrossSetup(exportExcel));
 
 /* ================================================================== INIT */
-function init(){
-  loadSession(true);
-  if (!['normalization','aggregated','output','crosses'].includes(state.ui.tab)) state.ui.tab = 'normalization';
-  updateCaseHeader();
+/** Put the toolbar controls in line with this browser's view of the case. */
+function syncViewControls(){
   $('#chkFreeze').checked = state.ui.freeze;
   $('#chkOnlyIssues').checked = state.ui.issuesOnly;
   $('#search').value = state.ui.search || '';
@@ -7435,6 +7559,12 @@ function init(){
   $('#chkAggSelected').checked = !!state.ui.aggSelectedOnly;
   [...$('#segMode').children].forEach(x => x.classList.toggle('on', x.dataset.mode === state.ui.mode));
   syncToolbarVisibility();
+}
+function init(){
+  loadSession(true);
+  if (!['normalization','aggregated','output','crosses'].includes(state.ui.tab)) state.ui.tab = 'normalization';
+  updateCaseHeader();
+  syncViewControls();
   initBulkFieldSelect();
   initGroupFieldSelect();
   refresh();
@@ -7451,7 +7581,7 @@ function init(){
       activeSessionId = next.id; changed = true;
     }
     updateCaseHeader();
-    if (changed) { loadSession(true); refresh(); markSaved(); }
+    if (changed) { loadSession(true); syncViewControls(); refresh(); markSaved(); }
     if (cloudState === 'missing') toast('Cloud table not set up yet \u2014 open Cases\u2026 for the one-time setup SQL.', true);
   });
 }
