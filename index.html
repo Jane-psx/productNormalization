@@ -662,7 +662,11 @@ table.sugTable tr.tot td{font-weight:600;border-top:1px solid var(--line)}
 .cpSummary b{color:var(--navy-2);font-family:var(--mono)}
 .cpEmpty{padding:16px 14px;color:var(--ink-3);font-size:12.5px;text-align:center}
 .modal header{padding:12px 15px;border-bottom:1px solid var(--line);display:flex;align-items:center;background:#f6f8fa}
-.modal header h3{margin:0;font-size:14px;font-weight:600}
+.modal header h3{margin:0;font-size:14px;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#modalNav{margin-left:auto;display:flex;align-items:center;gap:6px;padding-left:12px;flex:none}
+#modalNav:empty{display:none}
+#modalNav .navBtn{width:30px;height:26px;padding:0;font-size:16px;line-height:1;font-weight:600}
+#modalNav .navPos{font-size:12px;color:var(--ink-2);min-width:64px;text-align:center;font-variant-numeric:tabular-nums}
 .modal .body{padding:15px;overflow-y:auto;overflow-x:hidden;min-width:0}
 .modal .foot{padding:11px 15px;border-top:1px solid var(--line);display:flex;gap:8px;justify-content:flex-end;background:#f6f8fa}
 .modal textarea{
@@ -1119,7 +1123,7 @@ table.compareRow tfoot td.cCol{background:#f3ecfb}
 <!-- ============ MODAL ============ -->
 <div class="scrim" id="scrim">
   <div class="modal" id="modal">
-    <header><h3 id="modalTitle">—</h3></header>
+    <header><h3 id="modalTitle">—</h3><span id="modalNav"></span></header>
     <div class="body" id="modalBody"></div>
     <div class="foot" id="modalFoot"></div>
   </div>
@@ -3116,7 +3120,7 @@ function buildRowEl(item, vIdx, lefts, fz){
         c.textContent = text;
         if (col.k === 'orderedUM' && g.umConflict) c.classList.add('err');
       }
-      c.addEventListener('dblclick', () => openEditorFor(g.key));
+      c.addEventListener('dblclick', () => openSheetEditor(g.key));
     } else {
       if (col.k === 'originalData') {
         const badge = originalDataBadge(text, item.row.itemNumber || 'row ' + item.n);
@@ -4265,7 +4269,11 @@ function xuSideOfRow(row){
   if (xuHighlight.B && xuHighlight.B.ids.has(row.id)) return 'B';
   return null;
 }
-function xuTag(side){ const t = el('span', 'xTag x' + side, side); t.title = side === 'A' ? 'Facility A \u2014 ' + xuHighlight.A.label : 'Facility B \u2014 ' + xuHighlight.B.label; return t; }
+function xuTag(side){
+  const t = el('span', 'xTag x' + side, side), h = xuHighlight && xuHighlight[side];
+  t.title = (side === 'A' ? 'Facility A' : 'Facility B') + (h ? ' \u2014 ' + h.label : ' \u2014 NO CROSS');
+  return t;
+}
 function xuLegend(g){
   if (!xuHighlight) return null;
   const inHere = side => xuHighlight[side] && g.rows.some(r => xuHighlight[side].ids.has(r.id));
@@ -5000,7 +5008,9 @@ function toggleEditor(key){
   if (aggOpen.has(key)) aggOpen.delete(key); else aggOpen.add(key);
   renderAggregated();
 }
-function openEditorFor(key){
+/* nav = { ids:() => [...], cur:id, go:id => void, noun:'item' } adds < > buttons
+   to the editor header to step through the list it was opened from. */
+function openEditorFor(key, nav){
   const g = derived.byKey[key]; if (!g) return;
   overrideModalKey = key;
   srcSel = null;
@@ -5008,6 +5018,41 @@ function openEditorFor(key){
   showModal('Override \u2014 ' + groupTitle(g), buildEditorPanel(g), [
     { label:'Done', cls:'btn primary', fn:hideModal }
   ], { wide:true });
+  if (nav) renderModalNav(nav);
+}
+function renderModalNav(nav){
+  const box = $('#modalNav'); box.innerHTML = '';
+  const ids = nav.ids(), i = ids.indexOf(nav.cur), n = ids.length;
+  const step = d => {
+    const list = nav.ids();                       // re-read: edits may have changed the list
+    let j = list.indexOf(nav.cur);
+    j = j < 0 ? (d > 0 ? 0 : list.length - 1) : j + d;
+    if (j < 0 || j >= list.length) return;
+    const pending = document.activeElement;       // commit an open cell edit first
+    if (pending && pending.tagName === 'INPUT' && pending.blur) pending.blur();
+    nav.go(list[j]);
+  };
+  const prev = el('button', 'btn navBtn', '<'), next = el('button', 'btn navBtn', '>');
+  prev.type = next.type = 'button';
+  prev.title = 'Previous ' + (nav.noun || 'item'); next.title = 'Next ' + (nav.noun || 'item');
+  prev.setAttribute('aria-label', prev.title); next.setAttribute('aria-label', next.title);
+  prev.disabled = !n || i === 0; next.disabled = !n || i === n - 1;
+  prev.addEventListener('click', () => step(-1)); next.addEventListener('click', () => step(1));
+  box.appendChild(prev);
+  box.appendChild(el('span', 'navPos', (i < 0 ? '\u2013' : (i + 1).toLocaleString()) + ' of ' + n.toLocaleString()));
+  box.appendChild(next);
+}
+/** Keys of the groups the Items List is currently showing, in on-screen order. */
+function sheetNavKeys(){
+  const keys = [], seen = new Set();
+  derived.visible.forEach(it => {
+    const k = it.type === 'group' ? it.group.key : it.gkey;
+    if (!seen.has(k) && derived.byKey[k]) { seen.add(k); keys.push(k); }
+  });
+  return keys;
+}
+function openSheetEditor(key){
+  openEditorFor(key, { ids:sheetNavKeys, cur:key, go:openSheetEditor, noun:groupFieldCol().name });
 }
 function refreshUmList(){
   const dl = $('#umList'); if (!dl) return;
@@ -6160,6 +6205,7 @@ function showCalc(item, col){
 let crossPairModalKeys = null;   // { aKey, bKey } while the Cross pair-editor modal is open, else null
 function showModal(title, bodyNode, buttons, opts){
   $('#modalTitle').textContent = title;
+  $('#modalNav').innerHTML = '';
   const mb = $('#modalBody'); mb.innerHTML = ''; mb.appendChild(bodyNode);
   const mf = $('#modalFoot'); mf.innerHTML = '';
   (buttons || []).forEach(b => {
@@ -7328,6 +7374,7 @@ function xuSetupPanel(lines, onChange){
 }
 
 let xuLast = null;   // { res, A, B } of the last render, for Copy table
+let xuNavRows = [];  // rows on screen, in order: { id, open(side) } for the editor's < > buttons
 const XU_HEAD_A = ['Order Qty', 'Order UOM', 'Facility A', 'Vendor', 'Item Number', 'Description', 'Pack size', 'Each Price', 'Total Net Sales'];
 const XU_HEAD_B = ['Order Qty', 'Order UOM', 'Facility B', 'Vendor', 'Item Number Crossed', 'Description', 'Pack size', 'Each Price', 'Total Net Sales'];
 
@@ -7385,6 +7432,7 @@ function renderUsageCompare(pane, cards){
     const tr = el('tr'), x = el('td', null, 'No item matches that search.');
     x.colSpan = 21; x.style.cssText = 'padding:12px;color:var(--ink-3)'; tr.appendChild(x); tb.appendChild(tr);
   }
+  xuNavRows = [];
   rows.forEach(r => {
     const a = r.a, tr = el('tr', 'xuRow' + (r.cross ? '' : ' nocross'));
     /* click opens the same Ordered QTY / UM editor as the Items List: the
@@ -7396,18 +7444,22 @@ function renderUsageCompare(pane, cards){
     tr.addEventListener('click', e => {
       if (e.target.closest('.xsGrip') || document.body.classList.contains('xsResizing')) return;
       const cell = e.target.closest('td');
-      const onB = cell && cell.cellIndex >= 12 && keyB;
-      openCross(onB ? keyB : keyA);
+      openCross(cell && cell.cellIndex >= 12 ? 'B' : 'A');
     });
-    tr.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); openCross(keyA); } });
-    const openCross = key => {
+    tr.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); openCross('A'); } });
+    /* side = which half was clicked; < > keep to that side while it exists */
+    const openCross = side => {
       xuHighlight = {
         A:{ label:aL, items:a.item, ids:new Set(a.rows.map(x => x.id)) },
         B:r.cross ? { label:bL, items:[...new Set(r.match.map(m => m.item))].join(', '),
                       ids:new Set(r.match.flatMap(m => m.rows.map(x => x.id))) } : null
       };
-      openEditorFor(key);
+      openEditorFor(side === 'B' && keyB ? keyB : keyA, {
+        ids:() => xuNavRows.map(x => x.id), cur:a.key, noun:'cross row',
+        go:id => { const x = xuNavRows.find(n => n.id === id); if (x) x.open(side); }
+      });
     };
+    xuNavRows.push({ id:a.key, open:openCross });
     /* comparison */
     td(tr, r.aEach === null ? '\u2014' : fmtPrice(r.aEach), 'num' + (r.best === 'A' ? ' best' : ''));
     if (!r.cross) td(tr, 'NO CROSS', 'nc', 'No ' + bL + ' item is in the Crossed To group \u201c' + a.group + '\u201d');
