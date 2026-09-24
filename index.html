@@ -722,6 +722,24 @@ table.xuTable td.nc{background:#fbe3e1;color:var(--err);font-weight:700;letter-s
 table.xuTable tr.nocross > td{background:#fdf1f0}
 table.xuTable tr.nocross > td.nc{background:#f9d6d2}
 table.xuTable td.desc{max-width:260px}
+/* crossed rows inside the editor opened from Crosses */
+.xTag{display:inline-block;min-width:14px;padding:0 4px;margin-left:4px;border-radius:3px;font-size:10px;font-weight:700;line-height:15px;
+  text-align:center;color:#fff;vertical-align:1px;font-family:var(--sans, inherit)}
+.xTag.xA{background:#1f6feb}.xTag.xB{background:#8250df}
+.combTable td .xTag{margin:0 6px 0 0}
+.srcTable tr.xhlA > td,.combTable tr.xhlA > td{background:#e7f0fd}
+.srcTable tr.xhlB > td,.combTable tr.xhlB > td{background:#f1e9fc}
+.srcTable tr.xhlA > td:first-child,.combTable tr.xhlA > td:first-child{box-shadow:inset 3px 0 0 #1f6feb}
+.srcTable tr.xhlB > td:first-child,.combTable tr.xhlB > td:first-child{box-shadow:inset 3px 0 0 #8250df}
+.srcTable tr.xhl > td.gcell.sel{background:rgba(31,111,235,.2)}
+.srcTable tr.xhl > td.gcell.edited{color:var(--ovr)}
+.xhlLegend{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 10px;font-size:12px;color:var(--ink-2)}
+.xhlLegend .lbl{color:var(--ink-3)}
+.xhlChip{display:inline-flex;align-items:center;gap:6px;padding:3px 9px 3px 4px;border-radius:3px;border:1px solid var(--line)}
+.xhlChip .xTag{margin:0}
+.xhlChip.xA{background:#e7f0fd;border-color:#b6cff5}
+.xhlChip.xB{background:#f1e9fc;border-color:#d4c1f0}
+.xhlChip.away{opacity:.65;border-style:dashed}
 table.xuTable tr.xuRow{cursor:pointer}
 table.xuTable tr.xuRow:hover > td:not(.best):not(.nc){background:#eef4fc}
 table.xuTable tr.xuRow.nocross:hover > td:not(.nc){background:#fbe6e4}
@@ -4238,6 +4256,33 @@ function restoreGridFocus(){
   if (w) { s.focusPending = false; w.focus({ preventScroll:true }); }
 }
 
+/* While an editor is open from the Crosses table, the rows that make up that
+   cross are tagged A / B so the crossed facility + vendor stand out. */
+let xuHighlight = null;   // { A:{label, items, ids:Set}, B:{...}|null } or null
+function xuSideOfRow(row){
+  if (!xuHighlight || !row) return null;
+  if (xuHighlight.A && xuHighlight.A.ids.has(row.id)) return 'A';
+  if (xuHighlight.B && xuHighlight.B.ids.has(row.id)) return 'B';
+  return null;
+}
+function xuTag(side){ const t = el('span', 'xTag x' + side, side); t.title = side === 'A' ? 'Facility A \u2014 ' + xuHighlight.A.label : 'Facility B \u2014 ' + xuHighlight.B.label; return t; }
+function xuLegend(g){
+  if (!xuHighlight) return null;
+  const inHere = side => xuHighlight[side] && g.rows.some(r => xuHighlight[side].ids.has(r.id));
+  const box = el('div', 'xhlLegend');
+  box.appendChild(el('span', 'lbl', 'Crossed in this comparison:'));
+  ['A', 'B'].forEach(side => {
+    const h = xuHighlight[side];
+    const chip = el('span', 'xhlChip x' + side + (inHere(side) ? '' : ' away'));
+    chip.appendChild(xuTag(side));
+    chip.appendChild(el('span', null, h ? (side === 'A' ? 'Facility A' : 'Facility B') + ' \u2014 ' + h.label + ' \u00b7 ' + h.items
+                                        : 'Facility B \u2014 NO CROSS'));
+    if (h && !inHere(side)) chip.title = 'Not in this group \u2014 click the ' + (side === 'A' ? 'Facility A' : 'Facility B') + ' side of the row in Crosses to open it';
+    box.appendChild(chip);
+  });
+  return box;
+}
+
 function srcEditTable(g){
   const box = el('div');
   const wrap = el('div', 'srcTableWrap');
@@ -4479,8 +4524,10 @@ function srcEditTable(g){
 
   g.detail.forEach((d, r) => {
     const row = d.row;
-    const tr = el('tr');
+    const side = xuSideOfRow(row);
+    const tr = el('tr', side ? 'xhl xhl' + side : null);
     const idx = el('td', 'idxCell', String(state.rows.indexOf(row) + 1));
+    if (side) idx.appendChild(xuTag(side));
     idx.title = 'Click to select this row\u2019s Ordered QTY and UM';
     idx.addEventListener('mousedown', e => {
       if (e.button !== 0) return; e.preventDefault();
@@ -4694,14 +4741,17 @@ function combinedLineItemsTable(g){
     b.raw.forEach((r, um) => { const x = totRaw.get(um) || { sum:0, n:0 }; x.sum += r.sum; x.n += r.n; totRaw.set(um, x); });
     const openKey = g.key + PAIR_SEP + b.pk;
     const open = combinedOpen.has(openKey);
-    const tr = el('tr', 'combRow' + (open ? ' open' : ''));
+    const bSide = xuHighlight ? (b.detail.some(d => xuSideOfRow(d.row) === 'A') ? 'A' : b.detail.some(d => xuSideOfRow(d.row) === 'B') ? 'B' : null) : null;
+    const tr = el('tr', 'combRow' + (open ? ' open' : '') + (bSide ? ' xhl xhl' + bSide : ''));
     tr.tabIndex = 0;
     tr.title = open ? 'Click to close these line items' : 'Click to edit the Ordered QTY / UM of these ' + b.detail.length + ' line item' + (b.detail.length === 1 ? '' : 's');
     const toggle = () => { if (open) combinedOpen.delete(openKey); else combinedOpen.add(openKey); refresh(); };
     tr.addEventListener('click', toggle);
     tr.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); toggle(); } });
     tr.appendChild(el('td', 'caret', open ? '\u25be' : '\u25b8'));
-    tr.appendChild(el('td', null, b.facility));
+    const facTd = el('td', null, b.facility);
+    if (bSide) facTd.insertBefore(xuTag(bSide), facTd.firstChild);
+    tr.appendChild(facTd);
     tr.appendChild(el('td', null, b.vendor));
     const itemList = [...b.items.keys()];
     const itTd = el('td', 'items', itemList.length <= 3 ? itemList.join(', ')
@@ -4838,6 +4888,8 @@ function buildEditorPanel(g){
 
   /* --- source rows: editable Ordered QTY / UM --- */
   const secSrc = el('div', 'block');
+  const leg = xuLegend(g);
+  if (leg) secSrc.appendChild(leg);
   const srcHead = el('div', 'edSubhead');
   const combined = state.ui.lineItemView === 'combined';
   const nPairs = combined ? combineByFacilityVendor(g).length : 0;
@@ -6121,6 +6173,7 @@ function showModal(title, bodyNode, buttons, opts){
 function hideModal(){
   $('#scrim').classList.remove('on');
   overrideModalKey = null;
+  xuHighlight = null;
 }
 $('#scrim').addEventListener('mousedown', e => { if (e.target === $('#scrim')) hideModal(); });
 
@@ -7344,9 +7397,17 @@ function renderUsageCompare(pane, cards){
       if (e.target.closest('.xsGrip') || document.body.classList.contains('xsResizing')) return;
       const cell = e.target.closest('td');
       const onB = cell && cell.cellIndex >= 12 && keyB;
-      openEditorFor(onB ? keyB : keyA);
+      openCross(onB ? keyB : keyA);
     });
-    tr.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); openEditorFor(keyA); } });
+    tr.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); openCross(keyA); } });
+    const openCross = key => {
+      xuHighlight = {
+        A:{ label:aL, items:a.item, ids:new Set(a.rows.map(x => x.id)) },
+        B:r.cross ? { label:bL, items:[...new Set(r.match.map(m => m.item))].join(', '),
+                      ids:new Set(r.match.flatMap(m => m.rows.map(x => x.id))) } : null
+      };
+      openEditorFor(key);
+    };
     /* comparison */
     td(tr, r.aEach === null ? '\u2014' : fmtPrice(r.aEach), 'num' + (r.best === 'A' ? ' best' : ''));
     if (!r.cross) td(tr, 'NO CROSS', 'nc', 'No ' + bL + ' item is in the Crossed To group \u201c' + a.group + '\u201d');
