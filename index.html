@@ -267,6 +267,12 @@ main{flex:1;min-height:0;display:flex;overflow:hidden}
   font-size:12.5px;line-height:1;cursor:cell;user-select:none;
 }
 .c.z-analysed{background:var(--zone-analysed)}
+.c.z-xto{background:#f6f2fc;color:#4b2f7a}
+.c.z-xto.nomatch{color:var(--warn);font-style:italic}
+.hcell.z-xto{background:#ebe3f7}
+.zonebar .z-xto{background:#ebe3f7}
+table.grid th.z-xto{background:#ebe3f7}
+table.grid td.z-xto{background:#f6f2fc}
 .c.z-computed{background:var(--zone-computed);color:var(--navy-2);font-family:var(--mono);font-size:11.5px}
 .c.z-orig{background:#f5f4f1;color:#5a5346;font-size:11.5px;text-align:left}
 .c.num{justify-content:flex-end;font-variant-numeric:tabular-nums}
@@ -1043,8 +1049,8 @@ table.compareRow tfoot td.cCol{background:#f3ecfb}
   <section class="view" id="view-output">
     <div class="paneToolbar">
       <div class="seg" id="segOut">
-        <button data-out="agg" id="btnOutAggLabel" class="on">Vendor A · one row per Item #</button>
-        <button data-out="detail">Vendor A · source detail</button>
+        <button data-out="agg" id="btnOutAggLabel" class="on">Items List · one row per Item #</button>
+        <button data-out="detail">Items List · source detail</button>
       </div>
       <span class="sep"></span>
       <button class="btn primary" id="btnCopyOut">Copy final output</button>
@@ -1152,6 +1158,12 @@ const COLS = [
   { k:'skuNumber',        L:'H3',name:'SKU Number',       zone:'vendor',              w:140 },
   { k:'crossedTo',        L:'H4',name:'Crossed To',       zone:'vendor',              w:160 },
   { k:'category',         L:'H5',name:'Category',         zone:'vendor',              w:140 },
+  /* Read-only lookups: the Crossed To value is looked up as an Item # (then SKU #,
+     then MFG #) across the Items List, and the facility / vendor / category of the
+     item(s) it points at are shown here, so each cross can be checked. */
+  { k:'xtoFacility',      L:'H6',name:'Crossed To Facility', zone:'xto', calc:true, look:true, w:150 },
+  { k:'xtoVendor',        L:'H7',name:'Crossed To Vendor',   zone:'xto', calc:true, look:true, w:160 },
+  { k:'xtoCategory',      L:'H8',name:'Crossed To Category', zone:'xto', calc:true, look:true, w:150 },
   { k:'factorQty',        L:'I', name:'Factor QTY',       zone:'analysed', num:true,  w:82  },
   { k:'factorUM',         L:'J', name:'Factor UM',        zone:'analysed',            w:74  },
   { k:'packagingDetails', L:'K', name:'Packaging Details',zone:'analysed',            w:196 },
@@ -1183,7 +1195,7 @@ const COLS_B = [
   { k:'description',      L:'F', name:'ITEM DESCRIPTION', zone:'vendor',              w:196 },
   { k:'pkgQty',           L:'G', name:'Pkg Qty',          zone:'vendor',   num:true,  w:62  },
   { k:'um',               L:'H', name:'UM',               zone:'vendor',              w:52  },
-  { k:'vendorAItem',      L:'X', name:'Vendor A Item #',  zone:'vendor',              w:172 },
+  { k:'vendorAItem',      L:'X', name:'Items List Item #',  zone:'vendor',              w:172 },
   { k:'factorQty',        L:'I', name:'Factor QTY',       zone:'analysed', num:true,  w:82  },
   { k:'factorUM',         L:'J', name:'Factor UM',        zone:'analysed',            w:74  },
   { k:'packagingDetails', L:'K', name:'Packaging Details',zone:'analysed',            w:196 },
@@ -1687,7 +1699,7 @@ function rowIssuesB(row, calc){
   if (!isBlank(row.netSales) && toNum(row.netSales) === null) add('error', 'Net Sales "' + row.netSales + '" is not a number.');
   if (!isBlank(row.factorQty) && toNum(row.factorQty) === null) add('error', 'Factor QTY "' + row.factorQty + '" is not a number.');
   if (isBlank(row.packagingDetails)) add('warn', 'Missing Packaging Details \u2014 no pack size to read.');
-  if (isBlank(row.vendorAItem)) add('warn', 'Missing Vendor A Item # \u2014 this row will not cross to anything.');
+  if (isBlank(row.vendorAItem)) add('warn', 'Missing Items List Item # \u2014 this row will not cross to anything.');
   if (calc.baselineEaches.v === 0 && !calc.baselineEaches.blank && !calc.baselineEaches.err)
     add('warn', 'Baseline Eaches calculated as 0.');
   if (calc.eachPrice.err) add('error', 'Each Price: ' + calc.eachPrice.err);
@@ -2150,6 +2162,7 @@ function rebuild(){
   pruneChecked();
   derived = buildDerived(state.rows, state.overrides, state.expanded, rowCache);
   derived.crossInfo = buildCrossLinks(derived.groups);
+  xtoCache = null;
   buildVisible();
   pruneCheckedB();
   derivedAlt = buildDerivedB(state.alt.rows, state.alt.overrides, state.alt.expanded, altRowCache);
@@ -2302,17 +2315,19 @@ const colLeft   = () => geo().lefts;
 const totalWidth = () => geo().total;
 const frozenCount = () => state.ui.freeze ? 4 : 0;   // gutter + A:D
 
-function zoneClass(c){ return c.zone === 'analysed' ? ' z-analysed' : c.zone === 'computed' ? ' z-computed' : c.zone === 'orig' ? ' z-orig' : ''; }
+function zoneClass(c){ return c.zone === 'xto' ? ' z-xto' : c.zone === 'analysed' ? ' z-analysed' : c.zone === 'computed' ? ' z-computed' : c.zone === 'orig' ? ' z-orig' : ''; }
 
 function renderZonebar(){
   zonebar.innerHTML = '';
   const w = state.widths;
   const vend = CHK_W + GUTTER_W + w.orderedQty + w.orderedUM + w.netSales + w.itemNumber + w.mfgCatalog + w.description + w.pkgQty + w.um +
     w.facility + w.vendorName + w.skuNumber + w.crossedTo + w.category;
+  const xto  = w.xtoFacility + w.xtoVendor + w.xtoCategory;
   const ana  = w.factorQty + w.factorUM + w.packagingDetails;
   const comp = w.innerPack + w.orderedQtyNorm + w.eachPrice + w.totalNetSales;
   const orig = w.originalData;
   [['z-vendor','Vendor data · A:H', vend, 'What you pasted or typed \u2014 the source data.'],
+   ['z-xto','Crossed To lookup', xto, 'Facility, vendor and category of the item the Crossed To value points at \u2014 read-only.'],
    ['z-analysed','Analysed data · I:K', ana, 'Packaging read out of Packaging Details \u2014 edit if the read is wrong.'],
    ['z-computed','Computed values · L:O', comp, 'Calculated from the columns to the left \u2014 read-only.'],
    ['z-orig','Original data · P', orig, 'Record of source rows an Aggregate merged away \u2014 read-only.']]
@@ -2363,7 +2378,9 @@ function renderHead(){
     filtBtn.addEventListener('mousedown', e => e.stopPropagation());
     filtBtn.addEventListener('click', e => { e.stopPropagation(); openColumnFilter(c); });
     h.appendChild(filtBtn);
-    h.title = c.calc
+    h.title = c.look
+      ? c.name + ' \u2014 looked up from Crossed To: the ' + XTO_LOOK[c.k].replace('vendorName', 'vendor') + ' of the item whose Item # (or SKU # / MFG #) matches. Read-only.'
+      : c.calc
       ? c.name + ' (column ' + c.L + ') \u2014 calculated from the workbook formula. Click a cell, then "Show calculation" in the status bar.'
       : c.meta
         ? c.name + ' (column ' + c.L + ') \u2014 read-only record of the rows replaced by Aggregate.'
@@ -2452,8 +2469,48 @@ function openColumnFilter(col){
   ]);
 }
 
+/* --------------------------------------------------- Crossed To lookup */
+const XTO_LOOK = { xtoFacility:'facility', xtoVendor:'vendorName', xtoCategory:'category' };
+let xtoCache = null;   // rebuilt lazily after every rebuild()
+function xtoIndex(){
+  if (xtoCache) return xtoCache;
+  const mk = () => new Map();
+  const ix = { item:mk(), sku:mk(), mfg:mk(), res:new Map() };
+  const add = (m, v, r) => { const n = normIdent(v); if (!n) return; (m.get(n) || m.set(n, []).get(n)).push(r); };
+  state.rows.forEach(r => { add(ix.item, r.itemNumber, r); add(ix.sku, r.skuNumber, r); add(ix.mfg, r.mfgCatalog, r); });
+  return (xtoCache = ix);
+}
+/** What a Crossed To value points at: matched on Item # first, then SKU #, then MFG #. */
+function xtoResolve(value){
+  const n = normIdent(value);
+  if (!n) return null;
+  const ix = xtoIndex();
+  if (ix.res.has(n)) return ix.res.get(n);
+  const via = ix.item.has(n) ? 'Item #' : ix.sku.has(n) ? 'SKU #' : ix.mfg.has(n) ? 'MFG #' : null;
+  const rows = via === 'Item #' ? ix.item.get(n) : via === 'SKU #' ? ix.sku.get(n) : via ? ix.mfg.get(n) : [];
+  const out = { via, n:rows.length, vals:{} };
+  Object.keys(XTO_LOOK).forEach(k => {
+    const f = XTO_LOOK[k];
+    out.vals[k] = [...new Set(rows.map(r => { const t = String(r[f] == null ? '' : r[f]).trim(); return t || '(blank)'; }))]
+      .sort((a, b) => a.localeCompare(b, undefined, { numeric:true }));
+  });
+  ix.res.set(n, out);
+  return out;
+}
+function xtoValueOf(item){
+  if (item.type === 'group') return item.group.resolved.crossedTo ? item.group.resolved.crossedTo.value : '';
+  return item.detail ? item.detail.eff.crossedTo : item.row.crossedTo;
+}
+function xtoText(crossedTo, k){
+  const r = xtoResolve(crossedTo);
+  if (!r) return '';
+  if (!r.via) return '(not found)';
+  return r.vals[k].join(', ');
+}
+
 /* ------------------------------------------------------------- cell values */
 function cellDisplay(item, col){
+  if (col.look) return xtoText(xtoValueOf(item), col.k);
   if (item.type === 'group') {
     const g = item.group;
     if (col.k === state.ui.groupField) return keyLabel(g.key);
@@ -2484,6 +2541,7 @@ function cellDisplay(item, col){
 }
 
 function cellRaw(item, col){
+  if (col.look) return xtoText(xtoValueOf(item), col.k);
   if (item.type === 'group') {
     const g = item.group;
     if (col.k === state.ui.groupField) return keyLabel(g.key);
@@ -2571,7 +2629,7 @@ function buildAggregatePreviewB(rows){
     if (d.length > 1) blocking.push({ label: fieldLabel(k), detail: d.map(x => '\u201c' + x.v + '\u201d \u00d7' + x.n).join(', ') });
   });
   const vaItems = distinctVals(rows, 'vendorAItem');
-  if (vaItems.length > 1) blocking.push({ label:'Vendor A Item #', detail: vaItems.map(x => '\u201c' + x.v + '\u201d \u00d7' + x.n).join(', ') });
+  if (vaItems.length > 1) blocking.push({ label:'Items List Item #', detail: vaItems.map(x => '\u201c' + x.v + '\u201d \u00d7' + x.n).join(', ') });
 
   const watch = [];
   ['itemNumber', 'mfgCatalog', 'description'].forEach(k => {
@@ -2614,7 +2672,7 @@ function showAggregatePreview(kind){
 
   const t = el('table', 'aggPreviewTable');
   const th = el('tr');
-  ['Item #', 'Catalog #', 'Description', 'Packaging Details', kind === 'A' ? 'Ordered Qty' : 'Vendor A Item #', 'Net Sales']
+  ['Item #', 'Catalog #', 'Description', 'Packaging Details', kind === 'A' ? 'Ordered Qty' : 'Items List Item #', 'Net Sales']
     .forEach(h => th.appendChild(el('th', null, h)));
   t.appendChild(th);
   rows.forEach(r => t.appendChild(aggPreviewRow(r, kind)));
@@ -2836,7 +2894,7 @@ function aggregateCheckedB(){
   }
   const vaItems = distinctVals(rows, 'vendorAItem');
   if (vaItems.length > 1) {
-    toast('Cannot aggregate: these rows cross to different Vendor A Item #s (' +
+    toast('Cannot aggregate: these rows cross to different Items List Item #s (' +
           vaItems.map(x => x.v).join(', ') + '). Merging would drop one of the crosswalks.', true);
     return;
   }
@@ -2976,6 +3034,7 @@ function buildRowEl(item, vIdx, lefts, fz){
 
     const text = cellDisplay(item, col);
     if (/^#(VALUE|DIV\/0|REF|NUM|NAME)/.test(text)) c.classList.add('err');
+    if (col.look && text === '(not found)') c.classList.add('nomatch');
 
     if (isGroup) {
       if (col.k === state.ui.groupField) {
@@ -3225,6 +3284,7 @@ function beginEdit(seed){
     const item = visItem(cur.r);
     if (item && item.type === 'group') toast('Group rows are a view over the source rows. Edit this ' + groupFieldCol().name + ' on the Aggregated tab (double-click to jump there).');
     else if (COLS[cur.c].meta) toast('Original Data is written automatically when rows are aggregated.');
+    else if (COLS[cur.c].look) toast(COLS[cur.c].name + ' is looked up from Crossed To \u2014 change Crossed To to change it.');
     else if (COLS[cur.c].calc) toast(COLS[cur.c].name + ' is calculated from columns A:K.');
     return;
   }
@@ -3315,6 +3375,8 @@ function stripHeader(matrix){
 
 function applyMatrix(matrix, startRowIndex, startCol){
   matrix = stripHeader(matrix);
+  /* startCol is a sheet column; input keys skip the read-only columns in between */
+  startCol = COLS.slice(0, startCol).filter(c => !c.calc && !c.meta).length;
   if (!matrix.length) { toast('Nothing to paste.', true); return; }
   const widest = Math.max(...matrix.map(r => r.length));
   const room = COLS.length - startCol;
@@ -4888,6 +4950,9 @@ const OUT_COLS = [
   { k:'skuNumber',       h:'SKU Number'        },
   { k:'crossedTo',       h:'Crossed To'        },
   { k:'category',        h:'Category'          },
+  { k:'xtoFacility',     h:'Crossed To Facility' },
+  { k:'xtoVendor',       h:'Crossed To Vendor'   },
+  { k:'xtoCategory',     h:'Crossed To Category' },
   { k:'factorQty',       h:'Factor QTY',       num:true, zone:'analysed' },
   { k:'factorUM',        h:'Factor UM',        zone:'analysed' },
   { k:'packagingDetails',h:'Packaging Details',zone:'analysed' },
@@ -4899,6 +4964,7 @@ const OUT_COLS = [
 ];
 
 function aggValue(g, k, raw){
+  if (XTO_LOOK[k]) return xtoText(g.resolved.crossedTo ? g.resolved.crossedTo.value : '', k);
   if (k === state.ui.groupField) return keyLabel(g.key);
   switch (k) {
     case 'orderedQty':     return raw ? String(g.sumRawQty) : fmtQty(g.sumRawQty);
@@ -4913,6 +4979,7 @@ function aggValue(g, k, raw){
   }
 }
 function detailValue(d, k, raw){
+  if (XTO_LOOK[k]) return xtoText(d.eff.crossedTo, k);
   const col = COL_BY_KEY[k];
   if (col && col.calc) return raw ? resRaw(d.calc[k]) : resText(d.calc[k], col.fmt);
   if (k === 'netSales') { const n = toNum(d.row.netSales); return raw ? (n === null ? '' : String(n)) : (n === null ? '' : fmtMoney(n)); }
@@ -4931,7 +4998,7 @@ function outMatrix(mode, raw){
   return out;
 }
 function outHeaders(mode){
-  return OUT_COLS.map(c => 'Vendor A \u2014 ' + c.h);
+  return OUT_COLS.map(c => 'Items List \u2014 ' + c.h);
 }
 function outMeta(mode){
   return OUT_COLS.map(c => ({ zone:c.zone, num:c.num }));
@@ -5837,9 +5904,9 @@ function renderCounts(){
 function collectProblems(){
   const items = [];
   derived.groups.forEach(g => {
-    if (g.issueLevel === 'error') items.push({ level:'error', label:'Vendor A \u2014 ' + keyLabel(g.key),
+    if (g.issueLevel === 'error') items.push({ level:'error', label:'Items List \u2014 ' + keyLabel(g.key),
       text:'This item has a data error.', go:() => { switchTab('normalization'); } });
-    else if (g.hasConflict && !g.hasOverride) items.push({ level:'warn', label:'Vendor A \u2014 ' + keyLabel(g.key),
+    else if (g.hasConflict && !g.hasOverride) items.push({ level:'warn', label:'Items List \u2014 ' + keyLabel(g.key),
       text:'Packaging conflict needs resolving.', go:() => { switchTab('aggregated'); aggOpen.add(g.key); renderAggregated(); } });
   });
   return items;
@@ -5901,7 +5968,7 @@ function renderRail(){
     : aWarn ? aWarn + ' conflict' + (aWarn === 1 ? '' : 's')
     : Ga.length + ' item' + (Ga.length === 1 ? '' : 's') + ' ready';
   const aDot = !state.rows.length ? '' : aErr ? 'err' : aWarn ? 'warn' : 'ok';
-  rail.appendChild(railStage('Vendor A', 'A', aStatus, aDot, () => switchTab(state.ui.lastSubA || 'normalization')));
+  rail.appendChild(railStage('Items List', 'A', aStatus, aDot, () => switchTab(state.ui.lastSubA || 'normalization')));
 
   // Crosses analysis — only items with a Crossed To value
   rail.appendChild(el('span', 'railDivider'));
@@ -5934,6 +6001,10 @@ function renderStatus(){
             for (let c = a.c1; c <= a.c2; c++) { const v = cellRaw(it, COLS[c]); if (/^-?\d+(\.\d+)?$/.test(v)) { sum += parseFloat(v); cnt++; } } }
         }
         add(rn + ' \u00d7 ' + cn + ' selected' + (cnt ? ' \u00b7 Sum <b>' + fmtQty(Math.round(sum * 1e6) / 1e6) + '</b>' : ''));
+      }
+      else if (col.look) {
+        const r = xtoResolve(xtoValueOf(item));
+        if (r) add(r.via ? 'Crossed To matched ' + r.n + ' row' + (r.n === 1 ? '' : 's') + ' by ' + r.via : '<span class="dot warn"></span>Crossed To matches no Item #, SKU # or MFG #');
       }
       else if (col.calc && item.type === 'row') {
         const btn = el('button', 'btn sm', 'Show calculation');
@@ -6178,7 +6249,7 @@ function deleteSession(id){
 function renderSessionManagerBody(){
   const idx = ensureSessionsIndex();
   const wrap = el('div');
-  wrap.appendChild(el('p', 'hint', 'Each case keeps its own Vendor A, Vendor B, and Cross data. Everything is saved to the shared cloud database under an automatic session key, so a case can be opened on any machine. Switching saves your current work first \u2014 nothing is lost.'));
+  wrap.appendChild(el('p', 'hint', 'Each case keeps its own Items List, Vendor B, and Cross data. Everything is saved to the shared cloud database under an automatic session key, so a case can be opened on any machine. Switching saves your current work first \u2014 nothing is lost.'));
   if (cloudState === 'missing' || cloudState === 'err') {
     const box = el('div', 'cloudSetup');
     if (cloudState === 'missing') {
@@ -6504,7 +6575,7 @@ function renderGroupFieldUI(){
   const sel = $('#groupByField');
   if (sel.value !== state.ui.groupField) sel.value = state.ui.groupField;
   const lbl = $('#btnOutAggLabel');
-  if (lbl) lbl.textContent = 'Vendor A \u00b7 one row per ' + groupFieldCol().name;
+  if (lbl) lbl.textContent = 'Items List \u00b7 one row per ' + groupFieldCol().name;
   const dupBtn = $('#btnFindDupA');
   if (dupBtn) dupBtn.title = 'Find and tick the next multi-row ' + groupFieldCol().name + ' with no packaging/UM conflict \u2014 a safe, ready-to-merge candidate.';
 }
