@@ -758,6 +758,9 @@ table.xuTable td.desc{max-width:260px}
 .xhlChip.xA{background:#e7f0fd;border-color:#b6cff5}
 .xhlChip.xB{background:#f1e9fc;border-color:#d4c1f0}
 .xhlChip.away{opacity:.65;border-style:dashed}
+.xhlChip.jump{opacity:1;cursor:pointer}
+.xhlChip.jump:hover{border-style:solid;box-shadow:0 0 0 2px rgba(130,80,223,.15)}
+.xhlChip .jumpHint{font-size:11px;font-weight:600;color:var(--accent);margin-left:2px}
 table.xuTable tr.xuRow{cursor:pointer}
 table.xuTable tr.xuRow:hover > td:not(.best):not(.nc){background:#eef4fc}
 table.xuTable tr.xuRow.nocross:hover > td:not(.nc){background:#fbe6e4}
@@ -1124,6 +1127,7 @@ table.compareRow tfoot td.cCol{background:#f3ecfb}
       <input id="xsSearch" type="search" placeholder="Item # &middot; description &middot; facility &middot; vendor" autocomplete="off">
     </div>
     <button class="btn" id="btnXsWidths" title="Put every column in this table back to its automatic width">Reset widths</button>
+    <label class="chk" title="List Facility A items that have no match at Facility B (NO CROSS). Off: only items that exist on both sides are listed."><input type="checkbox" id="chkXuNoCross"> Show NO CROSS <span class="count" id="cntXuNoCross"></span></label>
     <button class="btn" id="btnXuCopy" title="Copy the comparison table (product rows and totals) to paste into Excel">Copy table</button>
     <span class="sep"></span>
     <button class="btn" id="btnXsSetup" title="Open the Facility + Vendor cross setup used by the Excel workbook">Cross product comparison&hellip;</button>
@@ -1810,7 +1814,7 @@ const state = {
   ui: { mode:'grouped', tab:'normalization', search:'', colFilters:{}, groupField:'itemNumber',
         lineItemCols:['packagingDetails','factorQty','facility','vendorName','description'],
         lineItemColWidths:{},
-        lineItemView:'each', lineItemCombineStat:'sum', hideNoCross:true,
+        lineItemView:'each', lineItemCombineStat:'sum', hideNoCross:true, xuShowNoCross:false,
         freeze:true, issuesOnly:false, outMode:'agg', aggSearch:'', aggAttn:false, aggSelectedOnly:false,
         modeB:'grouped', searchB:'', sortKeyB:null, sortDirB:1, freezeB:true, issuesOnlyB:false,
         aggSearchB:'', aggAttnB:false, aggSelectedOnlyB:false, lastSubA:'normalization', lastSubB:'normalizationB' },
@@ -4327,7 +4331,15 @@ function xuLegend(g){
     chip.appendChild(xuTag(side));
     chip.appendChild(el('span', null, h ? (side === 'A' ? 'Facility A' : 'Facility B') + ' \u2014 ' + h.label + ' \u00b7 ' + h.items
                                         : 'Facility B \u2014 NO CROSS'));
-    if (h && !inHere(side)) chip.title = 'Not in this group \u2014 click the ' + (side === 'A' ? 'Facility A' : 'Facility B') + ' side of the row in Crosses to open it';
+    if (h && !inHere(side) && h.key && derived.byKey[h.key]) {
+      chip.classList.add('jump');
+      chip.title = 'These rows are in group ' + keyLabel(h.key) + ' \u2014 click to open it';
+      chip.tabIndex = 0;
+      const go = () => openEditorFor(h.key, modalNavCur);
+      chip.addEventListener('click', go);
+      chip.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); go(); } });
+      chip.appendChild(el('span', 'jumpHint', 'open \u2192'));
+    }
     box.appendChild(chip);
   });
   return box;
@@ -5077,8 +5089,10 @@ function toggleEditor(key){
 }
 /* nav = { ids:() => [...], cur:id, go:id => void, noun:'item' } adds < > buttons
    to the editor header to step through the list it was opened from. */
+let modalNavCur = null;   // the < > list the open editor belongs to
 function openEditorFor(key, nav){
   const g = derived.byKey[key]; if (!g) return;
+  modalNavCur = nav || null;
   overrideModalKey = key;
   srcSel = null;
   refreshUmList();
@@ -6349,7 +6363,7 @@ function resNum(res){
 const VIEW_UI_KEYS = ['tab','mode','search','colFilters','freeze','issuesOnly','outMode','aggSearch','aggAttn','aggSelectedOnly',
   'modeB','searchB','sortKeyB','sortDirB','freezeB','issuesOnlyB','aggSearchB','aggAttnB','aggSelectedOnlyB','lastSubA','lastSubB',
   'lineItemCols','lineItemColWidths','lineItemView','lineItemCombineStat',
-  'hideNoCross','xsView','xsSearch','xuBase','xuSides','xuColWidths','xsRelColWidths'];
+  'hideNoCross','xuShowNoCross','xsView','xsSearch','xuBase','xuSides','xuColWidths','xsRelColWidths'];
 const VIEW_KEY_SET = new Set(VIEW_UI_KEYS);
 const clone = o => JSON.parse(JSON.stringify(o === undefined ? null : o));
 const pickView = ui => { const o = {}; VIEW_UI_KEYS.forEach(k => { if (ui[k] !== undefined) o[k] = ui[k]; }); return o; };
@@ -7482,7 +7496,7 @@ function renderUsageCompare(pane, cards){
   const card = (n, l, sub, cls) => { const c = xsCard(n, l, cls); if (sub) c.appendChild(el('div', 's', sub)); return c; };
   const plural = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
   /* 1 */ cards.appendChild(card(fmtMoney(T.aNet), 'Facility A spend',
-    aL + ' \u2014 ' + plural(res.rows.length, 'item') + (T.noCross ? ', ' + T.noCross + ' NO CROSS' : '') +
+    aL + ' \u2014 ' + plural(res.rows.length, 'item') + (T.noCross ? ', ' + T.noCross + ' NO CROSS' + (state.ui.xuShowNoCross ? '' : ' (not listed)') : '') +
     (T.skipped ? ' (' + T.skipped + ' blank Crossed To skipped)' : ''), 'base'));
   /* 2 */ cards.appendChild(card(fmtMoney(T.aNetCrossed), 'Facility A spend (crossed)',
     plural(T.crossed, 'crossed item') + ' at Facility A prices'));
@@ -7509,7 +7523,13 @@ function renderUsageCompare(pane, cards){
 
   /* ---- table ---- */
   const q = String(state.ui.xsSearch || '').trim().toLowerCase();
-  const rows = q ? res.rows.filter(r => r.search.indexOf(q) >= 0) : res.rows;
+  /* only items that exist on BOTH sides, unless Show NO CROSS is ticked */
+  const showNC = !!state.ui.xuShowNoCross;
+  $('#chkXuNoCross').checked = showNC;
+  $('#cntXuNoCross').textContent = T.noCross ? String(T.noCross) : '';
+  const listed = showNC ? res.rows : res.rows.filter(r => r.cross);
+  const rows = q ? listed.filter(r => r.search.indexOf(q) >= 0) : listed;
+  const listedNet = listed.reduce((n, r) => n + r.a.net, 0);
   const t = el('table', 'grid xuTable');
   const thead = el('thead'), h1 = el('tr'), h2 = el('tr', 'xuH2');
   const grp = (txt, span, cls) => { const x = el('th', 'side ' + (cls || ''), txt); x.colSpan = span; h1.appendChild(x); };
@@ -7548,8 +7568,8 @@ function renderUsageCompare(pane, cards){
     /* side = which half was clicked; < > keep to that side while it exists */
     const openCross = side => {
       xuHighlight = {
-        A:{ label:aL, items:a.item, ids:new Set(a.rows.map(x => x.id)) },
-        B:r.cross ? { label:bL, items:[...new Set(r.match.map(m => m.item))].join(', '),
+        A:{ label:aL, items:a.item, key:keyA, ids:new Set(a.rows.map(x => x.id)) },
+        B:r.cross ? { label:bL, items:[...new Set(r.match.map(m => m.item))].join(', '), key:keyB,
                       ids:new Set(r.match.flatMap(m => m.rows.map(x => x.id))) } : null
       };
       openEditorFor(side === 'B' && keyB ? keyB : keyA, {
@@ -7603,9 +7623,9 @@ function renderUsageCompare(pane, cards){
   const tt = el('tr', 'xuTot');
   td(tt, ''); td(tt, ''); td(tt, T.bestB + ' B \u00b7 ' + T.bestA + ' A');
   td(tt, 'Total', 'sideStart'); for (let i = 0; i < 7; i++) td(tt, '');
-  td(tt, fmtMoney(T.aNet), 'num', 'All Facility A items (' + fmtMoney(T.aNetCrossed) + ' on crossed items)');
+  td(tt, fmtMoney(listedNet), 'num', showNC ? 'All Facility A items listed (' + fmtMoney(T.aNetCrossed) + ' on crossed items)' : 'Facility A items that exist on both sides');
   td(tt, T.crossed + ' crossed', 'sideStart');
-  td(tt, T.noCross ? T.noCross + ' no cross' : '', T.noCross ? 'nc' : '');
+  td(tt, showNC && T.noCross ? T.noCross + ' no cross' : '', showNC && T.noCross ? 'nc' : '');
   for (let i = 0; i < 6; i++) td(tt, '');
   td(tt, fmtMoney(T.bTotal), 'num' + (T.bTotal < T.aNetCrossed - 0.005 ? ' better' : T.bTotal > T.aNetCrossed + 0.005 ? ' worse' : ''),
      'Versus ' + fmtMoney(T.aNetCrossed) + ' at Facility A on the same crossed items');
@@ -7630,7 +7650,7 @@ function xuCopyTable(){
   const n = v => v == null ? '' : String(Math.round(v * 10000) / 10000);
   const j = set => [...set].join(', ');
   const out = [head.join('\t')];
-  res.rows.forEach(r => {
+  res.rows.filter(r => r.cross || state.ui.xuShowNoCross).forEach(r => {
     const a = r.a;
     const c = [n(r.aEach), r.cross ? n(r.bEach) : 'NO CROSS',
                !r.cross ? 'NO CROSS' : r.best === 'A' ? 'Facility A' : r.best === 'B' ? 'Facility B' : r.best === 'Same' ? 'Same' : 'No price',
@@ -7646,6 +7666,7 @@ function xuCopyTable(){
   copyText(out.join('\n'), 'Copied ' + res.rows.length + ' items');
 }
 $('#btnXuCopy').addEventListener('click', xuCopyTable);
+$('#chkXuNoCross').addEventListener('change', e => { state.ui.xuShowNoCross = e.target.checked; saveViewPrefs(); renderCrosses(); });
 $('#btnXsWidths').addEventListener('click', () => {
   state.ui.xuColWidths = {};
   saveViewPrefs(); renderCrosses(); toast('Column widths reset.');
