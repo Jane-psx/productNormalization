@@ -622,6 +622,11 @@ table.sugTable tr.tot td{font-weight:600;border-top:1px solid var(--line)}
 .srcTable{table-layout:fixed;border-collapse:collapse;font-size:11.5px}
 .srcTable td,.srcTable th{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .srcTable tbody td{vertical-align:top}
+.cpyBtn{float:right;margin:0 0 0 6px;padding:0 4px;border:1px solid transparent;border-radius:3px;background:transparent;
+  color:var(--ink-3);font-size:12px;line-height:16px;cursor:pointer}
+.cpyBtn:hover{color:var(--accent);background:#e7f0fd;border-color:#b6cff5}
+.cpyBtn.done{color:var(--ok);background:var(--ok-bg)}
+.cpyBtn:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .srcTable td.wrapCell{white-space:normal;overflow-wrap:anywhere;text-overflow:clip;line-height:1.35}
 .srcTable th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3);
              position:relative;padding:4px 12px 4px 5px;border-bottom:1px solid var(--line)}
@@ -3578,6 +3583,25 @@ function selectionTSV(){
   return out.join('\n');
 }
 
+/** Small copy button: Item #, MFG #, Item Description, Vendor Name as one
+ *  tab-separated line per item (pastes into Excel as four cells). */
+function itemCopyBtn(items){
+  const list = Array.isArray(items) ? items : [items];
+  const clean = v => String(v == null ? '' : v).replace(/[\t\r\n]+/g, ' ').trim();
+  const b = el('button', 'cpyBtn', '\u29c9');
+  b.type = 'button';
+  b.title = 'Copy Item #, MFG #, Item Description and Vendor Name' + (list.length > 1 ? ' (' + list.length + ' items)' : '');
+  b.setAttribute('aria-label', b.title);
+  ['mousedown', 'dblclick', 'keydown'].forEach(ev => b.addEventListener(ev, e => e.stopPropagation()));
+  b.addEventListener('click', e => {
+    e.preventDefault(); e.stopPropagation();
+    const text = list.map(x => [x.item, x.mfg, x.desc, x.vendor].map(clean).join('\t')).join('\n');
+    copyText(text, 'Copied ' + (list.length === 1 ? (clean(list[0].item) || 'item') : list.length + ' items') + ' \u2014 Item #, MFG #, description, vendor');
+    b.classList.add('done'); b.textContent = '\u2713';
+    setTimeout(() => { b.classList.remove('done'); b.textContent = '\u29c9'; }, 1200);
+  });
+  return b;
+}
 async function copyText(text, label){
   try {
     await navigator.clipboard.writeText(text);
@@ -4601,7 +4625,14 @@ function srcEditTable(g){
 
     tr.appendChild(el('td', 'n', fmtMoney(numOrZero(row.netSales))));
 
-    detailKeys.forEach(k => { const x = detailTd(row, d.eff, k); if (k === 'description') x.classList.add('wrapCell'); tr.appendChild(x); });
+    detailKeys.forEach(k => {
+      const x = detailTd(row, d.eff, k);
+      if (k === 'description') {
+        x.classList.add('wrapCell');
+        x.insertBefore(itemCopyBtn({ item:row.itemNumber, mfg:d.eff.mfgCatalog, desc:d.eff.description, vendor:d.eff.vendorName }), x.firstChild);
+      }
+      tr.appendChild(x);
+    });
 
     tr.appendChild(el('td', 'n', resText(d.calc.orderedQtyNorm, 'qty')));
     tr.appendChild(el('td', 'n', resText(d.calc.eachPrice, 'price')));
@@ -7318,12 +7349,12 @@ function xuItems(lines){
     let it = m.get(k);
     if (!it) {
       it = { key:k, group:l.xto, item:l.item || '(no Item #)', fac:l.fac, ven:l.ven, desc:l.desc, skus:new Set(), mfgs:new Set(), xtos:new Set(),
-             packs:new Set(), ums:new Map(), fums:new Set(), rows:[], rawQty:0, eaches:0, net:0, lines:0 };
+             packs:new Set(), ums:new Map(), fums:new Set(), rows:[], mfgRaw:new Set(), rawQty:0, eaches:0, net:0, lines:0 };
       m.set(k, it);
     }
     if (!it.desc && l.desc) it.desc = l.desc;
     if (normIdent(l.sku)) it.skus.add(normIdent(l.sku));
-    if (normIdent(l.mfg)) it.mfgs.add(normIdent(l.mfg));
+    if (normIdent(l.mfg)) { it.mfgs.add(normIdent(l.mfg)); it.mfgRaw.add(String(l.mfg).trim()); }
     if (l.xto) it.xtos.add(l.xto);
     if (l.pack) it.packs.add(l.pack);
     it.ums.set(l.um || '?', (it.ums.get(l.um || '?') || 0) + l.rawQty);
@@ -7542,7 +7573,8 @@ function renderUsageCompare(pane, cards){
     td(tr, r.aOrd.um);
     td(tr, a.fac); td(tr, a.ven);
     td(tr, a.item, null, 'Crossed To group: ' + a.group);
-    td(tr, a.desc, 'desc', a.desc);
+    const aDesc = td(tr, a.desc, 'desc', a.desc);
+    aDesc.insertBefore(itemCopyBtn({ item:a.item, mfg:[...a.mfgRaw].join(', '), desc:a.desc, vendor:a.ven }), aDesc.firstChild);
     td(tr, join(a.packs) || '\u2014');
     td(tr, r.aEach === null ? '\u2014' : fmtPrice(r.aEach), 'num');
     td(tr, fmtMoney(a.net), 'num');
@@ -7558,7 +7590,8 @@ function renderUsageCompare(pane, cards){
       td(tr, [...new Set(m.map(b => b.fac))].join(', '));
       td(tr, [...new Set(m.map(b => b.ven))].join(', '));
       td(tr, m.map(b => b.item).join(', '), null, r.via);
-      td(tr, one ? m[0].desc : m[0].desc + ' (+' + (m.length - 1) + ')', 'desc', m.map(b => b.item + ' \u2014 ' + b.desc).join('\n'));
+      const bDesc = td(tr, one ? m[0].desc : m[0].desc + ' (+' + (m.length - 1) + ')', 'desc', m.map(b => b.item + ' \u2014 ' + b.desc).join('\n'));
+      bDesc.insertBefore(itemCopyBtn(m.map(b => ({ item:b.item, mfg:[...b.mfgRaw].join(', '), desc:b.desc, vendor:b.ven }))), bDesc.firstChild);
       td(tr, [...new Set(m.flatMap(b => [...b.packs]))].join(', ') || '\u2014');
       td(tr, r.bEach === null ? '\u2014' : fmtPrice(r.bEach), 'num');
       td(tr, r.bTotal === null ? '\u2014' : fmtMoney(r.bTotal), 'num' + (r.diff > 0.005 ? ' better' : r.diff < -0.005 ? ' worse' : ''),
