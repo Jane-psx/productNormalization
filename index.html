@@ -3977,6 +3977,13 @@ function inlineOvrInput(g, k){
     if (ev.key === 'Escape') { ev.preventDefault(); inp.value = isOvr ? String(ov[k]) : ''; inp.blur(); return; }
     if (ev.key !== 'Enter') return;
     ev.preventDefault();
+    if (inp.closest('#modalBody')) {             // in the editor window: commit and let go of the field,
+      aggCellFocus = null;                        // so Left / Right step to the previous / next item
+      setOverride(g.key, k, inp.value);
+      const ae = document.activeElement;
+      if (ae && $('#modalBody').contains(ae) && ae.blur) ae.blur();
+      return;
+    }
     aggCellFocus = { key:g.key, field:k };
     if (!setOverride(g.key, k, inp.value)) restoreCellFocus();
   });
@@ -5026,6 +5033,8 @@ function openEditorFor(key, nav){
     { label:'Done', cls:'btn primary', fn:hideModal }
   ], { wide:true });
   if (nav) renderModalNav(nav);
+  const ae = document.activeElement;             // don't leave the sheet behind the window focused
+  if (ae && ae !== document.body && !$('#modal').contains(ae) && ae.blur) ae.blur();
 }
 function renderModalNav(nav){
   const box = $('#modalNav'); box.innerHTML = '';
@@ -5041,7 +5050,7 @@ function renderModalNav(nav){
   };
   const prev = el('button', 'btn navBtn', '<'), next = el('button', 'btn navBtn', '>');
   prev.type = next.type = 'button';
-  prev.title = 'Previous ' + (nav.noun || 'item'); next.title = 'Next ' + (nav.noun || 'item');
+  prev.title = 'Previous ' + (nav.noun || 'item') + ' (\u2190)'; next.title = 'Next ' + (nav.noun || 'item') + ' (\u2192)';
   prev.setAttribute('aria-label', prev.title); next.setAttribute('aria-label', next.title);
   prev.disabled = !n || i === 0; next.disabled = !n || i === n - 1;
   prev.addEventListener('click', () => step(-1)); next.addEventListener('click', () => step(1));
@@ -6947,6 +6956,23 @@ $('#chkHeaders').addEventListener('change', () => {});
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && $('#scrim').classList.contains('on')) hideModal();
 });
+/* Editor < > on the keyboard: plain Left / Right step to the previous / next
+   item whenever no field is being typed in \u2014 i.e. after Enter commits a
+   value or the field loses focus. Captured first so the line-item grid and
+   the sheet behind the window don't take the keys. Shift / Ctrl + arrows are
+   left alone (range selection in the grid); Up / Down still move in the grid. */
+document.addEventListener('keydown', e => {
+  if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+  if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+  if (!$('#scrim').classList.contains('on')) return;
+  const btns = $('#modalNav').querySelectorAll('.navBtn');
+  if (btns.length !== 2) return;
+  const t = e.target;
+  if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return;
+  e.preventDefault(); e.stopPropagation();
+  const b = btns[e.key === 'ArrowLeft' ? 0 : 1];
+  if (!b.disabled) b.click();
+}, true);
 window.addEventListener('resize', () => { viewportH = 0; renderRows(true); });
 
 /* =========================================================== SAMPLE DATA */
