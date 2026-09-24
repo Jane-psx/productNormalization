@@ -1173,9 +1173,8 @@ const COLS = [
   { k:'skuNumber',        L:'H3',name:'SKU Number',       zone:'vendor',              w:140 },
   { k:'crossedTo',        L:'H4',name:'Crossed To',       zone:'vendor',              w:160 },
   { k:'category',         L:'H5',name:'Category',         zone:'vendor',              w:140 },
-  /* Read-only lookups: the Crossed To value is looked up as an Item # (then SKU #,
-     then MFG #) across the Items List, and the facility / vendor / category of the
-     item(s) it points at are shown here, so each cross can be checked. */
+  /* Read-only lookups: the facility / vendor / category of the other items that
+     share this row's Crossed To value (its cross group), so each cross can be checked. */
   { k:'xtoFacility',      L:'H6',name:'Crossed To Facility', zone:'xto', calc:true, look:true, w:150 },
   { k:'xtoVendor',        L:'H7',name:'Crossed To Vendor',   zone:'xto', calc:true, look:true, w:160 },
   { k:'xtoCategory',      L:'H8',name:'Crossed To Category', zone:'xto', calc:true, look:true, w:150 },
@@ -2342,7 +2341,7 @@ function renderZonebar(){
   const comp = w.innerPack + w.orderedQtyNorm + w.eachPrice + w.totalNetSales;
   const orig = w.originalData;
   [['z-vendor','Vendor data · A:H', vend, 'What you pasted or typed \u2014 the source data.'],
-   ['z-xto','Crossed To lookup', xto, 'Facility, vendor and category of the item the Crossed To value points at \u2014 read-only.'],
+   ['z-xto','Crossed To lookup', xto, 'Facility, vendor and category of the other items with the same Crossed To value \u2014 read-only.'],
    ['z-analysed','Analysed data · I:K', ana, 'Packaging read out of Packaging Details \u2014 edit if the read is wrong.'],
    ['z-computed','Computed values · L:O', comp, 'Calculated from the columns to the left \u2014 read-only.'],
    ['z-orig','Original data · P', orig, 'Record of source rows an Aggregate merged away \u2014 read-only.']]
@@ -2394,7 +2393,7 @@ function renderHead(){
     filtBtn.addEventListener('click', e => { e.stopPropagation(); openColumnFilter(c); });
     h.appendChild(filtBtn);
     h.title = c.look
-      ? c.name + ' \u2014 looked up from Crossed To: the ' + XTO_LOOK[c.k].replace('vendorName', 'vendor') + ' of the item whose Item # (or SKU # / MFG #) matches. Read-only.'
+      ? c.name + ' \u2014 the ' + XTO_LOOK[c.k].replace('vendorName', 'vendor') + ' of the other items with the same Crossed To value (Group by: Crossed To). Read-only.'
       : c.calc
       ? c.name + ' (column ' + c.L + ') \u2014 calculated from the workbook formula. Click a cell, then "Show calculation" in the status bar.'
       : c.meta
@@ -2487,45 +2486,56 @@ function openColumnFilter(col){
 /* --------------------------------------------------- Crossed To lookup */
 const XTO_LOOK = { xtoFacility:'facility', xtoVendor:'vendorName', xtoCategory:'category' };
 let xtoCache = null;   // rebuilt lazily after every rebuild()
+/* Crossing follows "Group by: Crossed To": rows with the same (trimmed) Crossed
+   To value form one cross group. These lookups show the facility / vendor /
+   category of the OTHER items in that group (a different Item #). */
 function xtoIndex(){
   if (xtoCache) return xtoCache;
-  const mk = () => new Map();
-  const ix = { item:mk(), sku:mk(), mfg:mk(), res:new Map() };
-  const add = (m, v, r) => { const n = normIdent(v); if (!n) return; (m.get(n) || m.set(n, []).get(n)).push(r); };
-  state.rows.forEach(r => { add(ix.item, r.itemNumber, r); add(ix.sku, r.skuNumber, r); add(ix.mfg, r.mfgCatalog, r); });
+  const ix = { group:new Map() };
+  state.rows.forEach(r => {
+    const k = String(r.crossedTo == null ? '' : r.crossedTo).trim();
+    if (!k) return;
+    (ix.group.get(k) || ix.group.set(k, []).get(k)).push(r);
+  });
   return (xtoCache = ix);
 }
-/** What a Crossed To value points at: matched on Item # first, then SKU #, then MFG #. */
-function xtoResolve(value){
-  const n = normIdent(value);
-  if (!n) return null;
-  const ix = xtoIndex();
-  if (ix.res.has(n)) return ix.res.get(n);
-  const via = ix.item.has(n) ? 'Item #' : ix.sku.has(n) ? 'SKU #' : ix.mfg.has(n) ? 'MFG #' : null;
-  const rows = via === 'Item #' ? ix.item.get(n) : via === 'SKU #' ? ix.sku.get(n) : via ? ix.mfg.get(n) : [];
-  const out = { via, n:rows.length, vals:{} };
-  Object.keys(XTO_LOOK).forEach(k => {
-    const f = XTO_LOOK[k];
-    out.vals[k] = [...new Set(rows.map(r => { const t = String(r[f] == null ? '' : r[f]).trim(); return t || '(blank)'; }))]
-      .sort((a, b) => a.localeCompare(b, undefined, { numeric:true }));
+/** The other rows in a Crossed To group; ownItems = Item #s to leave out. */
+function xtoResolve(value, ownItems){
+  const k = String(value == null ? '' : value).trim();
+  if (!k) return null;
+  const members = xtoIndex().group.get(k) || [];
+  const own = new Set([...(ownItems || [])].map(normIdent));
+  const others = members.filter(r => !own.has(normIdent(r.itemNumber)));
+  const vals = {};
+  Object.keys(XTO_LOOK).forEach(c => {
+    const f = XTO_LOOK[c];
+    vals[c] = [...new Set(others.map(r => { const t = String(r[f] == null ? '' : r[f]).trim(); return t || '(blank)'; }))]
+      .sort((x, y) => x.localeCompare(y, undefined, { numeric:true }));
   });
-  ix.res.set(n, out);
-  return out;
+  return { group:k, n:others.length, items:new Set(others.map(r => String(r.itemNumber || '').trim())).size, vals };
 }
 function xtoValueOf(item){
-  if (item.type === 'group') return item.group.resolved.crossedTo ? item.group.resolved.crossedTo.value : '';
-  return item.detail ? item.detail.eff.crossedTo : item.row.crossedTo;
+  if (item.type === 'group') {
+    const g = item.group;
+    if (state.ui.groupField === 'crossedTo') return g.key === NOGROUP ? '' : g.key;
+    return g.resolved.crossedTo ? g.resolved.crossedTo.value : '';
+  }
+  return item.row.crossedTo;
 }
-function xtoText(crossedTo, k){
-  const r = xtoResolve(crossedTo);
+function xtoOwnItems(item){
+  if (item.type === 'group') return state.ui.groupField === 'crossedTo' ? [] : item.group.rows.map(r => r.itemNumber);
+  return [item.row.itemNumber];
+}
+function xtoText(crossedTo, k, ownItems){
+  const r = xtoResolve(crossedTo, ownItems);
   if (!r) return '';
-  if (!r.via) return '(not found)';
+  if (!r.n) return '(no cross)';
   return r.vals[k].join(', ');
 }
 
 /* ------------------------------------------------------------- cell values */
 function cellDisplay(item, col){
-  if (col.look) return xtoText(xtoValueOf(item), col.k);
+  if (col.look) return xtoText(xtoValueOf(item), col.k, xtoOwnItems(item));
   if (item.type === 'group') {
     const g = item.group;
     if (col.k === state.ui.groupField) return keyLabel(g.key);
@@ -2556,7 +2566,7 @@ function cellDisplay(item, col){
 }
 
 function cellRaw(item, col){
-  if (col.look) return xtoText(xtoValueOf(item), col.k);
+  if (col.look) return xtoText(xtoValueOf(item), col.k, xtoOwnItems(item));
   if (item.type === 'group') {
     const g = item.group;
     if (col.k === state.ui.groupField) return keyLabel(g.key);
@@ -3049,7 +3059,7 @@ function buildRowEl(item, vIdx, lefts, fz){
 
     const text = cellDisplay(item, col);
     if (/^#(VALUE|DIV\/0|REF|NUM|NAME)/.test(text)) c.classList.add('err');
-    if (col.look && text === '(not found)') c.classList.add('nomatch');
+    if (col.look && text === '(no cross)') c.classList.add('nomatch');
 
     if (isGroup) {
       if (col.k === state.ui.groupField) {
@@ -4979,7 +4989,7 @@ const OUT_COLS = [
 ];
 
 function aggValue(g, k, raw){
-  if (XTO_LOOK[k]) return xtoText(g.resolved.crossedTo ? g.resolved.crossedTo.value : '', k);
+  if (XTO_LOOK[k]) return xtoText(xtoValueOf({ type:'group', group:g }), k, xtoOwnItems({ type:'group', group:g }));
   if (k === state.ui.groupField) return keyLabel(g.key);
   switch (k) {
     case 'orderedQty':     return raw ? String(g.sumRawQty) : fmtQty(g.sumRawQty);
@@ -4994,7 +5004,7 @@ function aggValue(g, k, raw){
   }
 }
 function detailValue(d, k, raw){
-  if (XTO_LOOK[k]) return xtoText(d.eff.crossedTo, k);
+  if (XTO_LOOK[k]) return xtoText(d.row.crossedTo, k, [d.row.itemNumber]);
   const col = COL_BY_KEY[k];
   if (col && col.calc) return raw ? resRaw(d.calc[k]) : resText(d.calc[k], col.fmt);
   if (k === 'netSales') { const n = toNum(d.row.netSales); return raw ? (n === null ? '' : String(n)) : (n === null ? '' : fmtMoney(n)); }
@@ -6018,8 +6028,9 @@ function renderStatus(){
         add(rn + ' \u00d7 ' + cn + ' selected' + (cnt ? ' \u00b7 Sum <b>' + fmtQty(Math.round(sum * 1e6) / 1e6) + '</b>' : ''));
       }
       else if (col.look) {
-        const r = xtoResolve(xtoValueOf(item));
-        if (r) add(r.via ? 'Crossed To matched ' + r.n + ' row' + (r.n === 1 ? '' : 's') + ' by ' + r.via : '<span class="dot warn"></span>Crossed To matches no Item #, SKU # or MFG #');
+        const r = xtoResolve(xtoValueOf(item), xtoOwnItems(item));
+        if (r) add(r.n ? 'Crossed To group \u201c' + esc(r.group) + '\u201d \u2014 ' + r.items + ' other item' + (r.items === 1 ? '' : 's') + ', ' + r.n + ' row' + (r.n === 1 ? '' : 's')
+                       : '<span class="dot warn"></span>No other item shares Crossed To \u201c' + esc(r.group) + '\u201d');
       }
       else if (col.calc && item.type === 'row') {
         const btn = el('button', 'btn sm', 'Show calculation');
@@ -7220,10 +7231,10 @@ function makeColsResizable(table, leafThs, storeName){
 
 /* ===================================== USAGE PRICE COMPARISON (Crosses tab)
    Facility A + Vendor (the usage basis) vs Facility B + Vendor (the price).
-   One row per Facility A item (Item # + Facility + Vendor) that HAS a
-   Crossed To value \u2014 items with a blank Crossed To are skipped entirely.
-   The cross at Facility B is found only through that Crossed To value:
-   an Item # (then SKU #, then MFG #) bought at Facility B.
+   Crossing follows the Items List grouped by Crossed To: every row with the
+   same Crossed To value is one cross group. One row per Facility A item in a
+   group; its cross is every Facility B item in the SAME group. Rows with a
+   blank Crossed To are skipped entirely.
    Facility B is priced with Facility A's usage:
      B each price     = B net sales / B eaches (its own history)
      B Total Net Sales = A eaches x B each price
@@ -7247,24 +7258,29 @@ function xuLines(){
     const rq = toNum(r.orderedQty);
     out.push({
       item:String(r.itemNumber == null ? '' : r.itemNumber).trim(),
-      sku:e.skuNumber, mfg:e.mfgCatalog, xto:String(e.crossedTo == null ? '' : e.crossedTo).trim(),
+      sku:e.skuNumber, mfg:e.mfgCatalog,
+      /* the raw Crossed To, trimmed \u2014 exactly what "Group by: Crossed To" groups on */
+      xto:String(r.crossedTo == null ? '' : r.crossedTo).trim(),
       desc:String(e.description || '').trim(), pack:String(e.packagingDetails || '').trim(),
       fac:xlBlankLbl(e.facility), ven:xlBlankLbl(e.vendorName),
       rawQty:rq === null ? 0 : rq, um:String(r.orderedUM || '').trim().toUpperCase(),
+      /* the normalized unit: Ordered Quantity (M) is counted in Factor UM (blank = EA) */
+      fum:String(e.factorUM || '').trim().toUpperCase() || 'EA',
       eaches:typeof qv === 'number' && isFinite(qv) ? qv : 0, net:toNum(r.netSales) || 0
     });
   }));
   return out;
 }
-/** Sum lines into one entry per Item # + Facility + Vendor. */
+/** Sum lines into one entry per Crossed To group + Item # + Facility + Vendor,
+ *  so each entry belongs to exactly one Crossed To group. */
 function xuItems(lines){
   const m = new Map();
   lines.forEach(l => {
-    const k = normIdent(l.item) + PAIR_SEP + l.fac + PAIR_SEP + l.ven;
+    const k = l.xto + PAIR_SEP + normIdent(l.item) + PAIR_SEP + l.fac + PAIR_SEP + l.ven;
     let it = m.get(k);
     if (!it) {
-      it = { key:k, item:l.item || '(no Item #)', fac:l.fac, ven:l.ven, desc:l.desc, skus:new Set(), mfgs:new Set(), xtos:new Set(),
-             packs:new Set(), ums:new Map(), rawQty:0, eaches:0, net:0, lines:0 };
+      it = { key:k, group:l.xto, item:l.item || '(no Item #)', fac:l.fac, ven:l.ven, desc:l.desc, skus:new Set(), mfgs:new Set(), xtos:new Set(),
+             packs:new Set(), ums:new Map(), fums:new Set(), rawQty:0, eaches:0, net:0, lines:0 };
       m.set(k, it);
     }
     if (!it.desc && l.desc) it.desc = l.desc;
@@ -7273,51 +7289,44 @@ function xuItems(lines){
     if (l.xto) it.xtos.add(l.xto);
     if (l.pack) it.packs.add(l.pack);
     it.ums.set(l.um || '?', (it.ums.get(l.um || '?') || 0) + l.rawQty);
+    it.fums.add(l.fum);
     it.rawQty += l.rawQty; it.eaches += l.eaches; it.net += l.net; it.lines++;
   });
   return [...m.values()];
 }
-/** Ordered QTY + UOM as bought; mixed UOMs fall back to eaches. */
+/** Order Qty + UOM after normalization: Ordered Quantity (column M), in Factor UM.
+ *  This reflects every edit to Ordered QTY / UM and every packaging / factor
+ *  override, exactly as the Items List shows it. */
 function xuOrdered(it){
-  if (it.ums.size === 1) { const [um, q] = [...it.ums.entries()][0]; return { qty:q, um:um === '?' ? '' : um }; }
-  return { qty:it.eaches, um:'EA', mixed:[...it.ums.entries()].map(([u, q]) => fmtQty(q) + ' ' + u).join(' + ') };
+  return { qty:it.eaches, um:[...it.fums].join('/') || 'EA',
+           asBought:[...it.ums.entries()].map(([u, q]) => fmtQty(q) + ' ' + (u === '?' ? '' : u)).join(' + ') };
 }
 
 function xuCompare(lines, A, B){
   const aAll = xuItems(lines.filter(l => xuIn(l, A)));
-  const aItems = aAll.filter(it => it.xtos.size);          // only items with a Crossed To are crossed
-  const skipped = aAll.length - aItems.length;
-  const bItems = xuItems(lines.filter(l => xuIn(l, B)));
-  const idx = () => new Map();
-  const byItem = idx(), bySku = idx(), byMfg = idx();
-  const put = (m, k, it) => { if (!k) return; (m.get(k) || m.set(k, []).get(k)).push(it); };
-  bItems.forEach(it => {
-    put(byItem, normIdent(it.item), it);
-    it.skus.forEach(v => put(bySku, v, it));
-    it.mfgs.forEach(v => put(byMfg, v, it));
+  const aItems = aAll.filter(it => it.group !== '');       // only items with a Crossed To are crossed
+  const skipped = new Set(aAll.filter(it => it.group === '').map(it => normIdent(it.item) + PAIR_SEP + it.fac + PAIR_SEP + it.ven)).size;
+  /* Facility B items indexed by their Crossed To group */
+  const byGroup = new Map();
+  xuItems(lines.filter(l => xuIn(l, B))).forEach(it => {
+    if (it.group === '') return;
+    (byGroup.get(it.group) || byGroup.set(it.group, []).get(it.group)).push(it);
   });
 
   const rows = aItems.map(a => {
-    let match = [], via = '';
-    for (const x of a.xtos) {
-      const n = normIdent(x);
-      const hit = byItem.get(n) || bySku.get(n) || byMfg.get(n);
-      if (hit) { match = hit; via = 'Crossed To ' + x + ' = ' + (byItem.get(n) ? 'Item #' : bySku.get(n) ? 'SKU #' : 'MFG #'); break; }
-    }
-    match = match.filter(b => b.key !== a.key);   // never cross an item to itself
+    /* crossed = every Facility B item in the same Crossed To group */
+    const match = (byGroup.get(a.group) || []).filter(b => b.key !== a.key);   // never cross an item to itself
+    const via = 'Crossed To group \u201c' + a.group + '\u201d';
     const aEach = a.eaches > 0 ? a.net / a.eaches : null;
     const row = { a, aOrd:xuOrdered(a), aEach, match, via, cross:match.length > 0,
                   search:[a.item, a.desc, a.fac, a.ven, ...a.xtos, ...match.map(b => b.item + ' ' + b.desc)].join(' ').toLowerCase() };
     if (row.cross) {
       const bE = match.reduce((s, b) => s + b.eaches, 0), bN = match.reduce((s, b) => s + b.net, 0);
       row.bEach = bE > 0 ? bN / bE : null;
-      const bRaw = match.reduce((s, b) => s + b.rawQty, 0);
-      const bUms = new Set(); match.forEach(b => b.ums.forEach((q, u) => bUms.add(u)));
-      /* A's eaches expressed in B's ordering unit, using B's own eaches per unit */
-      if (bUms.size === 1 && bRaw > 0 && bE > 0) {
-        const u = [...bUms][0];
-        row.bOrd = { qty:a.eaches / (bE / bRaw), um:u === '?' ? '' : u };
-      } else row.bOrd = { qty:a.eaches, um:'EA' };
+      /* B is priced on A's normalized usage, in B's normalized unit */
+      const bF = new Set(); match.forEach(b => b.fums.forEach(u => bF.add(u)));
+      row.bOrd = { qty:a.eaches, um:[...bF].join('/') || 'EA' };
+      row.unitMismatch = row.bOrd.um !== row.aOrd.um;
       row.bTotal = row.bEach === null ? null : a.eaches * row.bEach;
       if (aEach !== null && row.bEach !== null)
         row.best = row.bEach < aEach - 1e-9 ? 'B' : aEach < row.bEach - 1e-9 ? 'A' : 'Same';
@@ -7427,7 +7436,8 @@ function renderUsageCompare(pane, cards){
   XU_HEAD_A.forEach((h, i) => h2.appendChild(el('th', (NUMH.has(h) ? 'num' : '') + (i === 0 ? ' sideStart' : ''), h)));
   XU_HEAD_B.forEach((h, i) => h2.appendChild(el('th', (NUMH.has(h) ? 'num' : '') + (i === 0 ? ' sideStart' : ''), h)));
   h2.children[18].title = 'Facility A usage (eaches) \u00d7 Facility B each price';
-  h2.children[12].title = 'Facility A usage, expressed in Facility B\u2019s own ordering unit';
+  h2.children[3].title = 'Ordered Quantity (column M) after normalization, in Factor UM';
+  h2.children[12].title = 'Facility A\u2019s normalized usage, used to price Facility B';
   thead.appendChild(h1); thead.appendChild(h2); t.appendChild(thead);
 
   const tb = el('tbody');
@@ -7441,7 +7451,7 @@ function renderUsageCompare(pane, cards){
     const a = r.a, tr = el('tr', r.cross ? null : 'nocross');
     /* comparison */
     td(tr, r.aEach === null ? '\u2014' : fmtPrice(r.aEach), 'num' + (r.best === 'A' ? ' best' : ''));
-    if (!r.cross) td(tr, 'NO CROSS', 'nc', 'Crossed To ' + join(a.xtos) + ' is not an Item #, SKU # or MFG # bought at ' + bL);
+    if (!r.cross) td(tr, 'NO CROSS', 'nc', 'No ' + bL + ' item is in the Crossed To group \u201c' + a.group + '\u201d');
     else td(tr, r.bEach === null ? '\u2014' : fmtPrice(r.bEach), 'num' + (r.best === 'B' ? ' best' : ''));
     const bp = el('td');
     if (!r.cross) { bp.textContent = 'NO CROSS'; bp.className = 'nc'; }
@@ -7450,10 +7460,10 @@ function renderUsageCompare(pane, cards){
       r.best === 'Same' ? 'Same' : r.best === 'A' ? 'Facility A' : 'Facility B'));
     tr.appendChild(bp);
     /* Facility A */
-    td(tr, fmtQty(r.aOrd.qty), 'num sideStart', r.aOrd.mixed ? 'Mixed UOM (' + r.aOrd.mixed + ') \u2014 shown in eaches' : fmtQty(a.eaches) + ' eaches');
+    td(tr, fmtQty(r.aOrd.qty), 'num sideStart', 'Ordered Quantity (M) after normalization \u2014 as bought: ' + (r.aOrd.asBought || '\u2014'));
     td(tr, r.aOrd.um);
     td(tr, a.fac); td(tr, a.ven);
-    td(tr, a.item, null, 'Crossed To: ' + join(a.xtos));
+    td(tr, a.item, null, 'Crossed To group: ' + a.group);
     td(tr, a.desc, 'desc', a.desc);
     td(tr, join(a.packs) || '\u2014');
     td(tr, r.aEach === null ? '\u2014' : fmtPrice(r.aEach), 'num');
@@ -7461,12 +7471,12 @@ function renderUsageCompare(pane, cards){
     /* Facility B */
     if (!r.cross) {
       td(tr, '', 'num sideStart nc'); td(tr, '', 'nc'); td(tr, '', 'nc'); td(tr, '', 'nc');
-      td(tr, 'NO CROSS', 'nc', 'Crossed To ' + join(a.xtos) + ' is not bought at ' + bL);
+      td(tr, 'NO CROSS', 'nc', 'No ' + bL + ' item is in the Crossed To group \u201c' + a.group + '\u201d');
       td(tr, '', 'nc'); td(tr, '', 'nc'); td(tr, '', 'num nc'); td(tr, '', 'num nc');
     } else {
       const m = r.match, one = m.length === 1;
-      td(tr, fmtQty(r.bOrd.qty), 'num sideStart', fmtQty(a.eaches) + ' eaches (Facility A usage)');
-      td(tr, r.bOrd.um);
+      td(tr, fmtQty(r.bOrd.qty), 'num sideStart', 'Facility A\u2019s normalized usage (' + fmtQty(a.eaches) + ' ' + r.aOrd.um + ')');
+      td(tr, r.bOrd.um, r.unitMismatch ? 'worse' : null, r.unitMismatch ? 'Facility B\u2019s normalized unit (' + r.bOrd.um + ') differs from Facility A\u2019s (' + r.aOrd.um + ') \u2014 check Factor UM on both items' : null);
       td(tr, [...new Set(m.map(b => b.fac))].join(', '));
       td(tr, [...new Set(m.map(b => b.ven))].join(', '));
       td(tr, m.map(b => b.item).join(', '), null, r.via);
@@ -7493,9 +7503,10 @@ function renderUsageCompare(pane, cards){
   pane.appendChild(t);
   makeColsResizable(t, [...h2.children], 'xuColWidths');
   pane.appendChild(el('div', 'xuFoot',
-    'Each row is one Facility A item that has a Crossed To value; items with a blank Crossed To are skipped' +
-    (T.skipped ? ' (' + T.skipped + ' here)' : '') + '. The cross is the Facility B item its Crossed To points at (by Item #, then SKU #, then MFG #). Hover Item Number Crossed to see the match. ' +
-    'Facility B is priced with Facility A\u2019s usage: its Order Qty is A\u2019s eaches in B\u2019s own ordering unit, and its Total Net Sales = A\u2019s eaches \u00d7 B\u2019s each price. ' +
+    'Crossing follows the Items List grouped by Crossed To: a Facility A item is crossed to every Facility B item with the same Crossed To value. ' +
+    'Items with a blank Crossed To are skipped' + (T.skipped ? ' (' + T.skipped + ' here)' : '') + '. Hover an Item Number to see its Crossed To group. ' +
+    'Order Qty and Order UOM are the normalized Ordered Quantity (column M) in Factor UM, so every Ordered QTY / UM edit and packaging override is included; hover Order Qty to see what was bought. ' +
+    'Facility B is priced with Facility A\u2019s usage: Total Net Sales = A\u2019s Order Qty \u00d7 B\u2019s each price. ' +
     'Items with no match at Facility B are marked NO CROSS.' + (T.noPrice ? ' ' + T.noPrice + ' crossed item' + (T.noPrice === 1 ? ' has' : 's have') + ' no usable each price and ' + (T.noPrice === 1 ? 'is' : 'are') + ' left out of the totals.' : '')));
   pane.scrollTop = keep;
 }
