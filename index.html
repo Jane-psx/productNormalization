@@ -722,6 +722,10 @@ table.xuTable td.nc{background:#fbe3e1;color:var(--err);font-weight:700;letter-s
 table.xuTable tr.nocross > td{background:#fdf1f0}
 table.xuTable tr.nocross > td.nc{background:#f9d6d2}
 table.xuTable td.desc{max-width:260px}
+table.xuTable tr.xuRow{cursor:pointer}
+table.xuTable tr.xuRow:hover > td:not(.best):not(.nc){background:#eef4fc}
+table.xuTable tr.xuRow.nocross:hover > td:not(.nc){background:#fbe6e4}
+table.xuTable tr.xuRow:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 table.xuTable th.xuCmpH{background:#e9eef5}
 table.xuTable th.xuAH{background:var(--zone-vendor-h)}
 table.xuTable th.xuBH{background:#ebe3f7}
@@ -7136,6 +7140,7 @@ function xuLines(){
     const qv = d.calc && d.calc.orderedQtyNorm && d.calc.orderedQtyNorm.v;
     const rq = toNum(r.orderedQty);
     out.push({
+      row:r,
       item:String(r.itemNumber == null ? '' : r.itemNumber).trim(),
       sku:e.skuNumber, mfg:e.mfgCatalog,
       /* the raw Crossed To, trimmed \u2014 exactly what "Group by: Crossed To" groups on */
@@ -7159,7 +7164,7 @@ function xuItems(lines){
     let it = m.get(k);
     if (!it) {
       it = { key:k, group:l.xto, item:l.item || '(no Item #)', fac:l.fac, ven:l.ven, desc:l.desc, skus:new Set(), mfgs:new Set(), xtos:new Set(),
-             packs:new Set(), ums:new Map(), fums:new Set(), rawQty:0, eaches:0, net:0, lines:0 };
+             packs:new Set(), ums:new Map(), fums:new Set(), rows:[], rawQty:0, eaches:0, net:0, lines:0 };
       m.set(k, it);
     }
     if (!it.desc && l.desc) it.desc = l.desc;
@@ -7169,6 +7174,7 @@ function xuItems(lines){
     if (l.pack) it.packs.add(l.pack);
     it.ums.set(l.um || '?', (it.ums.get(l.um || '?') || 0) + l.rawQty);
     it.fums.add(l.fum);
+    it.rows.push(l.row);
     it.rawQty += l.rawQty; it.eaches += l.eaches; it.net += l.net; it.lines++;
   });
   return [...m.values()];
@@ -7327,7 +7333,20 @@ function renderUsageCompare(pane, cards){
     x.colSpan = 21; x.style.cssText = 'padding:12px;color:var(--ink-3)'; tr.appendChild(x); tb.appendChild(tr);
   }
   rows.forEach(r => {
-    const a = r.a, tr = el('tr', r.cross ? null : 'nocross');
+    const a = r.a, tr = el('tr', 'xuRow' + (r.cross ? '' : ' nocross'));
+    /* click opens the same Ordered QTY / UM editor as the Items List: the
+       Facility A cells open A's group, the Facility B cells open B's group */
+    const keyA = itemKeyOf(a.rows[0]), keyB = r.cross ? itemKeyOf(r.match[0].rows[0]) : null;
+    tr.tabIndex = 0;
+    tr.title = 'Click to normalize Ordered QTY / UM \u2014 Facility A cells open ' + keyLabel(keyA) +
+      (keyB && keyB !== keyA ? ', Facility B cells open ' + keyLabel(keyB) : '');
+    tr.addEventListener('click', e => {
+      if (e.target.closest('.xsGrip') || document.body.classList.contains('xsResizing')) return;
+      const cell = e.target.closest('td');
+      const onB = cell && cell.cellIndex >= 12 && keyB;
+      openEditorFor(onB ? keyB : keyA);
+    });
+    tr.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); openEditorFor(keyA); } });
     /* comparison */
     td(tr, r.aEach === null ? '\u2014' : fmtPrice(r.aEach), 'num' + (r.best === 'A' ? ' best' : ''));
     if (!r.cross) td(tr, 'NO CROSS', 'nc', 'No ' + bL + ' item is in the Crossed To group \u201c' + a.group + '\u201d');
@@ -7384,6 +7403,7 @@ function renderUsageCompare(pane, cards){
   pane.appendChild(el('div', 'xuFoot',
     'Crossing follows the Items List grouped by Crossed To: a Facility A item is crossed to every Facility B item with the same Crossed To value. ' +
     'Items with a blank Crossed To are skipped' + (T.skipped ? ' (' + T.skipped + ' here)' : '') + '. Hover an Item Number to see its Crossed To group. ' +
+    'Click a row to normalize its Ordered QTY / UM in the same editor as the Items List (Facility B cells open the crossed item). ' +
     'Order Qty and Order UOM are the normalized Ordered Quantity (column M) in Factor UM, so every Ordered QTY / UM edit and packaging override is included; hover Order Qty to see what was bought. ' +
     'Facility B is priced with Facility A\u2019s usage: Total Net Sales = A\u2019s Order Qty \u00d7 B\u2019s each price. ' +
     'Items with no match at Facility B are marked NO CROSS.' + (T.noPrice ? ' ' + T.noPrice + ' crossed item' + (T.noPrice === 1 ? ' has' : 's have') + ' no usable each price and ' + (T.noPrice === 1 ? 'is' : 'are') + ' left out of the totals.' : '')));
