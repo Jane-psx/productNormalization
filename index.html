@@ -1006,6 +1006,24 @@ table.compareRow tfoot td.cCol{background:#f3ecfb}
     </div>
     <div class="pane" id="paneOut"></div>
   </section>
+
+  <!-- ============ CROSSES ANALYSIS ============ -->
+  <section class="view" id="view-crosses">
+  <div class="paneToolbar">
+    <b style="font-size:12px;color:var(--navy-2)">Crosses analysis</b>
+    <div class="search">
+      <span class="ico">&#8981;</span>
+      <input id="xsSearch" type="search" placeholder="Facility &middot; vendor &middot; item # &middot; Crossed To" autocomplete="off">
+    </div>
+    <button class="btn" id="btnXsExpand">Expand all</button>
+    <button class="btn" id="btnXsCollapse">Collapse all</button>
+    <span class="sep"></span>
+    <button class="btn" id="btnXsSetup" title="Open the Facility + Vendor cross setup used by the Excel workbook">Cross product comparison&hellip;</button>
+    <span class="note">Only items with a <b>Crossed To</b> value. Direction is kept: Facility A &rarr; Facility B is separate from B &rarr; A.</span>
+  </div>
+  <div class="cards" id="xsCards"></div>
+  <div class="pane" id="paneCrosses"></div>
+</section>
 </main>
 
 <!-- ============ MODAL ============ -->
@@ -2980,11 +2998,12 @@ function renderRows(force){
   body.appendChild(frag);
 }
 
-const viewDirty = { aggregated:true, output:true };
+const viewDirty = { aggregated:true, output:true, crosses:true };
 function renderActiveView(){
   const tab = state.ui.tab;
   if (tab === 'aggregated' && viewDirty.aggregated) { renderAggregated(); viewDirty.aggregated = false; }
   if (tab === 'output'     && viewDirty.output)     { renderOutput();     viewDirty.output = false; }
+  if (tab === 'crosses'    && viewDirty.crosses)    { renderCrosses();    viewDirty.crosses = false; }
 }
 function refresh(){
   rebuild();
@@ -2996,7 +3015,7 @@ function refresh(){
   renderGroupFieldUI();
   renderBulkBar();
   renderRail();
-  viewDirty.aggregated = viewDirty.output = true;
+  viewDirty.aggregated = viewDirty.output = viewDirty.crosses = true;
   renderActiveView();
   refreshOverrideModal();
   saveSoon();
@@ -5666,6 +5685,13 @@ function renderRail(){
   const aDot = !state.rows.length ? '' : aErr ? 'err' : aWarn ? 'warn' : 'ok';
   rail.appendChild(railStage('Vendor A', 'A', aStatus, aDot, () => switchTab(state.ui.lastSubA || 'normalization')));
 
+  // Crosses analysis — only items with a Crossed To value
+  rail.appendChild(el('span', 'railDivider'));
+  const xN = (() => { try { return state.rows.length ? xsTargets().size : 0; } catch (e) { return 0; } })();
+  rail.appendChild(railStage('Crosses', 'crosses',
+    !state.rows.length ? 'Not started' : xN ? xN + ' crossed item' + (xN === 1 ? '' : 's') : 'No Crossed To values',
+    !state.rows.length ? '' : xN ? 'ok' : '', () => switchTab('crosses')));
+
   // Final output — not a pipeline stage, so a plain divider rather than an arrow
   rail.appendChild(el('span', 'railDivider'));
   rail.appendChild(railStage('Final output', 'output', '', '', () => switchTab('output')));
@@ -6496,15 +6522,305 @@ $('#btnSample').addEventListener('click', () => {
   toast('Sample loaded. Item # 1083089 has four rows with a packaging conflict \u2014 open it to try an override.');
 });
 
+/* ========================================== CROSSES ANALYSIS (in-app view)
+   Directional Facility -> Facility analysis built ONLY from items whose
+   "Crossed To" is populated. Nothing is recoded: facilities, vendors, items
+   and Crossed To values are used exactly as entered. Targets are resolved
+   with the same rules as the sheet's cross badges (an identical Crossed To
+   text shared with another item, or a match on Item # / SKU # / MFG #). */
+const xsOpen = new Set();   // "from\u0001to" relationships currently expanded
+
+/** Per group: the groups its own Crossed To value points at (direction kept). */
+function xsTargets(){
+  const groups = derived.groups;
+  const identIndex = {}, xtoIndex = {};
+  const addIdx = (ix, val, k) => { const n = normIdent(val); if (!n) return; (ix[n] || (ix[n] = new Set())).add(k); };
+  groups.forEach(g => {
+    addIdx(identIndex, keyLabel(g.key), g.key);
+    addIdx(identIndex, g.resolved.skuNumber.value, g.key);
+    addIdx(identIndex, g.resolved.mfgCatalog.value, g.key);
+    addIdx(xtoIndex, g.resolved.crossedTo.value, g.key);
+  });
+  const out = new Map();
+  groups.forEach(g => {
+    const raw = (g.resolved.crossedTo && g.resolved.crossedTo.value) || '';
+    const n = normIdent(raw);
+    if (!n) return;                                   // blank Crossed To -> excluded
+    const set = new Set();
+    if (identIndex[n]) identIndex[n].forEach(k => { if (k !== g.key) set.add(k); });
+    if (xtoIndex[n])   xtoIndex[n].forEach(k => { if (k !== g.key) set.add(k); });
+    out.set(g.key, { raw:String(raw).trim(), keys:[...set] });
+  });
+  return out;
+}
+
+/** Sum a group's own rows into one bucket per Facility + Vendor side. */
+function xsSides(g){
+  const m = new Map();
+  g.detail.forEach(d => {
+    const fac = xlBlankLbl(d.eff.facility), ven = xlBlankLbl(d.eff.vendorName);
+    const k = fac + '\u0001' + ven;
+    let s = m.get(k);
+    if (!s) { s = { fac, ven, qty:0, net:0, lines:0, items:new Set() }; m.set(k, s); }
+    const qv = d.calc && d.calc.orderedQtyNorm && d.calc.orderedQtyNorm.v;
+    s.qty += (typeof qv === 'number' && isFinite(qv)) ? qv : 0;
+    s.net += toNum(d.row.netSales) || 0;
+    s.lines++;
+    s.items.add(keyLabel(g.key));
+  });
+  return m;
+}
+
+function xsBuild(){
+  const tg = xsTargets();
+  const rels = new Map();
+  const srcFacs = new Set(), toFacs = new Set();
+  let crossedItems = 0;
+  const exSelf = [], exMulti = [], exUnresolved = [];
+
+  tg.forEach((t, gkey) => {
+    const g = derived.byKey[gkey]; if (!g) return;
+    crossedItems++;
+    const item = keyLabel(gkey);
+    const desc = (g.resolved.description && g.resolved.description.value) || '';
+    const src = xsSides(g);
+    src.forEach(s => srcFacs.add(s.fac));
+
+    if (!t.keys.length) {
+      exUnresolved.push({ item, desc, xto:t.raw, facs:[...new Set([...src.values()].map(s => s.fac))].join(', ') });
+      return;                                         // nothing to point at
+    }
+    if (t.keys.length > 1) exMulti.push({ item, desc, xto:t.raw, n:t.keys.length,
+      to:t.keys.map(keyLabel).join(', ') });
+
+    const tgt = new Map();
+    t.keys.forEach(tk => {
+      const tGroup = derived.byKey[tk]; if (!tGroup) return;
+      xsSides(tGroup).forEach((s, k) => {
+        let d = tgt.get(k);
+        if (!d) { d = { fac:s.fac, ven:s.ven, items:new Set() }; tgt.set(k, d); }
+        s.items.forEach(x => d.items.add(x));
+      });
+    });
+    tgt.forEach(d => toFacs.add(d.fac));
+
+    src.forEach(s => tgt.forEach(d => {
+      const rk = s.fac + '\u0001' + d.fac;
+      let R = rels.get(rk);
+      if (!R) { R = { from:s.fac, to:d.fac, crosses:0, qty:0, net:0, items:new Set(), pairs:new Map() }; rels.set(rk, R); }
+      const pk = s.ven + '\u0001' + d.ven;
+      let P = R.pairs.get(pk);
+      if (!P) { P = { fromFac:s.fac, fromVen:s.ven, toFac:d.fac, toVen:d.ven, crosses:0, qty:0, net:0, rows:[] }; R.pairs.set(pk, P); }
+      R.crosses++; P.crosses++;
+      R.qty += s.qty; R.net += s.net; P.qty += s.qty; P.net += s.net;
+      R.items.add(item);
+      P.rows.push({ item, desc, xto:t.raw, qty:s.qty, net:s.net, toItems:[...d.items].join(', ') });
+      if (s.fac === d.fac) exSelf.push({ item, desc, xto:t.raw, fac:s.fac, fromVen:s.ven, toVen:d.ven });
+    }));
+  });
+
+  const list = [...rels.values()].sort((a, b) => b.net - a.net || b.crosses - a.crosses ||
+    a.from.localeCompare(b.from) || a.to.localeCompare(b.to));
+  list.forEach(R => {
+    R.key = R.from + '\u0001' + R.to;
+    R.pairList = [...R.pairs.values()].sort((a, b) => b.net - a.net || b.crosses - a.crosses);
+    R.pairList.forEach(P => P.rows.sort((a, b) => b.net - a.net || String(a.item).localeCompare(String(b.item))));
+    R.reciprocal = rels.has(R.to + '\u0001' + R.from) && R.from !== R.to;
+  });
+  const exRecip = list.filter(R => R.reciprocal).map(R => ({ from:R.from, to:R.to, crosses:R.crosses }));
+
+  return { rels:list, crossedItems, srcFacs:srcFacs.size, toFacs:toFacs.size,
+           exSelf, exMulti, exUnresolved, exRecip };
+}
+
+function xsMatches(R, q){
+  if (!q) return true;
+  if ((R.from + ' ' + R.to).toLowerCase().indexOf(q) >= 0) return true;
+  return R.pairList.some(P => (P.fromVen + ' ' + P.toVen).toLowerCase().indexOf(q) >= 0 ||
+    P.rows.some(r => (r.item + ' ' + r.desc + ' ' + r.xto + ' ' + r.toItems).toLowerCase().indexOf(q) >= 0));
+}
+
+function xsCard(n, label, cls){
+  const c = el('div', 'card' + (cls ? ' ' + cls : ''));
+  c.appendChild(el('div', 'n', n));
+  c.appendChild(el('div', 'l', label));
+  return c;
+}
+
+function xsExceptionTable(title, note, heads, rows){
+  const wrap = el('div');
+  wrap.style.cssText = 'padding:0 12px 14px';
+  const h = el('div', null, title);
+  h.style.cssText = 'font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3);margin:12px 0 4px';
+  wrap.appendChild(h);
+  const p = el('div', null, note);
+  p.style.cssText = 'font-size:11.5px;color:var(--ink-3);margin-bottom:5px';
+  wrap.appendChild(p);
+  const t = el('table', 'sugTable');
+  const tr = el('tr'); heads.forEach(x => tr.appendChild(el('th', null, x)));
+  const th = el('thead'); th.appendChild(tr); t.appendChild(th);
+  const tb = el('tbody');
+  rows.slice(0, 200).forEach(r => {
+    const x = el('tr'); r.forEach(v => x.appendChild(el('td', null, v == null ? '' : String(v)))); tb.appendChild(x);
+  });
+  if (rows.length > 200) {
+    const x = el('tr'), td = el('td', null, 'Showing the first 200 of ' + rows.length + '.');
+    td.colSpan = heads.length; x.appendChild(td); tb.appendChild(x);
+  }
+  t.appendChild(tb); wrap.appendChild(t);
+  return wrap;
+}
+
+function renderCrosses(){
+  const pane = $('#paneCrosses'), cards = $('#xsCards');
+  const keep = pane.scrollTop;
+  pane.innerHTML = ''; cards.innerHTML = '';
+  if (!derived.groups.length) { pane.appendChild(emptyNote('Nothing to analyse yet. Paste your range on the Sheet tab.')); return; }
+
+  const M = xsBuild();
+  if (!M.crossedItems) {
+    pane.appendChild(emptyNote('No item has a Crossed To value yet. Items with a blank Crossed To are excluded from this analysis.'));
+    return;
+  }
+  cards.appendChild(xsCard(M.crossedItems.toLocaleString(), 'Crossed items'));
+  cards.appendChild(xsCard(M.srcFacs.toLocaleString(), 'Source facilities'));
+  cards.appendChild(xsCard(M.toFacs.toLocaleString(), 'Crossed-to facilities'));
+  cards.appendChild(xsCard(M.rels.length.toLocaleString(), 'Facility \u2192 facility relationships'));
+  const exN = M.exUnresolved.length + M.exSelf.length;
+  cards.appendChild(xsCard(exN.toLocaleString(), 'Crossed-to exceptions', exN ? 'warn' : ''));
+
+  const q = String(state.ui.xsSearch || '').trim().toLowerCase();
+  const rels = M.rels.filter(R => xsMatches(R, q));
+
+  const t = el('table', 'grid aggTable');
+  const heads = ['', 'From facility', 'To facility', 'Crosses', 'Items', 'Usage (ordered qty)', 'Net sales'];
+  const thead = el('thead'), htr = el('tr');
+  heads.forEach((h, i) => htr.appendChild(el('th', i === 0 ? 'tw' : (i >= 3 ? 'num' : ''), h)));
+  thead.appendChild(htr); t.appendChild(thead);
+  const tb = el('tbody');
+
+  if (!rels.length) {
+    const tr = el('tr'), td = el('td', null, 'No facility relationship matches that search.');
+    td.colSpan = heads.length; td.style.cssText = 'padding:12px;color:var(--ink-3)';
+    tr.appendChild(td); tb.appendChild(tr);
+  }
+
+  rels.forEach(R => {
+    const open = xsOpen.has(R.key);
+    const tr = el('tr', 'aggRow' + (open ? ' open' : ''));
+    tr.appendChild(el('td', 'tw', open ? '\u25bc' : '\u25b6'));
+    tr.appendChild(el('td', 'z-analysed', R.from));
+    const toTd = el('td', 'z-analysed', R.to);
+    if (R.reciprocal) { const b = el('span', null, ' \u21c4'); b.title = 'A reciprocal ' + R.to + ' \u2192 ' + R.from + ' relationship also exists; both are kept separate.'; toTd.appendChild(b); }
+    if (R.from === R.to) toTd.classList.add('errcell');
+    tr.appendChild(toTd);
+    tr.appendChild(el('td', 'num', R.crosses.toLocaleString()));
+    tr.appendChild(el('td', 'num', R.items.size.toLocaleString()));
+    tr.appendChild(el('td', 'num z-computed', fmtQty(R.qty)));
+    tr.appendChild(el('td', 'num z-computed', fmtMoney(R.net)));
+    tr.title = (open ? 'Click to close' : 'Click to open') + ' the Facility + Vendor detail for ' + R.from + ' \u2192 ' + R.to;
+    tr.addEventListener('click', () => { if (open) xsOpen.delete(R.key); else xsOpen.add(R.key); renderCrosses(); });
+    tb.appendChild(tr);
+
+    if (open) {
+      const er = el('tr', 'edRow'), td = el('td', 'edcell');
+      td.colSpan = heads.length;
+      const box = el('div');
+      box.style.cssText = 'padding:10px 12px';
+      const cap = el('div', null, R.from.toUpperCase() + ' \u2192 ' + R.to.toUpperCase());
+      cap.style.cssText = 'font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--navy-2);margin-bottom:6px';
+      box.appendChild(cap);
+      const dt = el('table', 'sugTable');
+      const dh = el('tr');
+      ['Source facility + vendor', 'Crossed-to facility + vendor', 'Crosses', 'Usage', 'Net sales'].forEach((h, i) =>
+        dh.appendChild(el('th', i >= 2 ? 'n' : '', h)));
+      const dth = el('thead'); dth.appendChild(dh); dt.appendChild(dth);
+      const dtb = el('tbody');
+      R.pairList.forEach(P => {
+        const ptr = el('tr');
+        ptr.appendChild(el('td', null, P.fromFac + ' + ' + P.fromVen));
+        ptr.appendChild(el('td', 'arrow', P.toFac + ' + ' + P.toVen));
+        ptr.appendChild(el('td', 'n', P.crosses.toLocaleString()));
+        ptr.appendChild(el('td', 'n', fmtQty(P.qty)));
+        ptr.appendChild(el('td', 'n', fmtMoney(P.net)));
+        dtb.appendChild(ptr);
+        P.rows.forEach(r => {
+          const rtr = el('tr');
+          const c1 = el('td', null, '\u2014 ' + r.item + (r.desc ? '  ' + r.desc : ''));
+          c1.style.color = 'var(--ink-2)';
+          rtr.appendChild(c1);
+          const c2 = el('td', null, 'Crossed To \u201c' + r.xto + '\u201d' + (r.toItems ? '  \u2192 ' + r.toItems : ''));
+          c2.style.color = 'var(--ink-3)';
+          rtr.appendChild(c2);
+          rtr.appendChild(el('td', 'n', ''));
+          rtr.appendChild(el('td', 'n', fmtQty(r.qty)));
+          rtr.appendChild(el('td', 'n', fmtMoney(r.net)));
+          dtb.appendChild(rtr);
+        });
+      });
+      dt.appendChild(dtb);
+      box.appendChild(dt);
+      td.appendChild(box); er.appendChild(td); tb.appendChild(er);
+    }
+  });
+  t.appendChild(tb);
+  pane.appendChild(t);
+
+  const foot = el('div', null, 'Usage and net sales come from the source side\u2019s own rows. An item whose Crossed To reaches more than one facility is counted under each relationship it takes part in, so relationship figures are not a single network total.');
+  foot.style.cssText = 'padding:10px 12px;font-size:11.5px;color:var(--ink-3)';
+  pane.appendChild(foot);
+
+  if (M.exUnresolved.length)
+    pane.appendChild(xsExceptionTable('Crossed To not matched (' + M.exUnresolved.length + ')',
+      'These Crossed To values are not shared by another item and do not match an Item #, SKU # or MFG #, so no crossed-to facility can be read. Nothing is corrected or recoded here.',
+      ['Item #', 'Description', 'Crossed To', 'Source facility'],
+      M.exUnresolved.map(x => [x.item, x.desc, x.xto, x.facs])));
+
+  if (M.exSelf.length)
+    pane.appendChild(xsExceptionTable('Same facility on both sides (' + M.exSelf.length + ')',
+      'The source facility and the crossed-to facility are identical. Listed for review only.',
+      ['Item #', 'Description', 'Crossed To', 'Facility', 'From vendor', 'To vendor'],
+      M.exSelf.map(x => [x.item, x.desc, x.xto, x.fac, x.fromVen, x.toVen])));
+
+  if (M.exRecip.length)
+    pane.appendChild(xsExceptionTable('Reciprocal relationships (' + M.exRecip.length + ')',
+      'Both directions exist between these facilities. They stay separate relationships.',
+      ['From facility', 'To facility', 'Crosses'],
+      M.exRecip.map(x => [x.from, x.to, x.crosses.toLocaleString()])));
+
+  if (M.exMulti.length)
+    pane.appendChild(xsExceptionTable('Multiple cross relationships (' + M.exMulti.length + ')',
+      'One Crossed To value reaches more than one item, so the item appears in every relationship it links to.',
+      ['Item #', 'Description', 'Crossed To', 'Linked items', 'Count'],
+      M.exMulti.map(x => [x.item, x.desc, x.xto, x.to, x.n])));
+
+  pane.scrollTop = keep;
+}
+
+let xsSearchT = null;
+$('#xsSearch').addEventListener('input', e => {
+  clearTimeout(xsSearchT);
+  const v = e.target.value;
+  xsSearchT = setTimeout(() => { state.ui.xsSearch = v; renderCrosses(); }, 140);
+});
+$('#btnXsExpand').addEventListener('click', () => {
+  const M = xsBuild();
+  M.rels.forEach(R => xsOpen.add(R.key));
+  renderCrosses();
+});
+$('#btnXsCollapse').addEventListener('click', () => { xsOpen.clear(); renderCrosses(); });
+$('#btnXsSetup').addEventListener('click', () => openCrossSetup(exportExcel));
+
 /* ================================================================== INIT */
 function init(){
   loadSession(true);
-  if (!['normalization','aggregated','output'].includes(state.ui.tab)) state.ui.tab = 'normalization';
+  if (!['normalization','aggregated','output','crosses'].includes(state.ui.tab)) state.ui.tab = 'normalization';
   updateCaseHeader();
   $('#chkFreeze').checked = state.ui.freeze;
   $('#chkOnlyIssues').checked = state.ui.issuesOnly;
   $('#search').value = state.ui.search || '';
   $('#aggSearch').value = state.ui.aggSearch || '';
+  $('#xsSearch').value = state.ui.xsSearch || '';
   $('#chkAggAttn').checked = !!state.ui.aggAttn;
   $('#chkAggSelected').checked = !!state.ui.aggSelectedOnly;
   [...$('#segMode').children].forEach(x => x.classList.toggle('on', x.dataset.mode === state.ui.mode));
