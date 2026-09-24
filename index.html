@@ -693,8 +693,6 @@ table.sugTable tr.tot td{font-weight:600;border-top:1px solid var(--line)}
 
 /* ---------- audit ---------- */
 /* ---------- usage price comparison (Crosses tab) ---------- */
-#view-crosses.xsUsage .xsRelOnly{display:none}
-#view-crosses:not(.xsUsage) .xsUsageOnly{display:none}
 .xuSetup{padding:12px 14px 10px;border-bottom:1px solid var(--line);background:#f8fafc;display:flex;flex-direction:column;gap:7px}
 .xuLine{display:grid;grid-template-columns:118px minmax(150px,240px) minmax(150px,240px) auto;gap:8px;align-items:center;font-size:12.5px}
 .xuLine > .lbl{font-weight:600;color:var(--navy-2)}
@@ -988,6 +986,7 @@ table.compareRow tfoot td.cCol{background:#f3ecfb}
     <input id="search" type="search" placeholder="Item # · catalog # · description · packaging" autocomplete="off">
   </div>
   <label class="chk"><input type="checkbox" id="chkOnlyIssues"> Issues only</label>
+  <label class="chk" title="Hide items whose Crossed To value no other item shares (shown as (no cross) in the Crossed To lookup columns). Rows with a blank Crossed To stay listed."><input type="checkbox" id="chkHideNoCross"> Hide no-cross items <span class="count" id="cntNoCross"></span></label>
   <button class="btn sm" id="btnClearColFilters" style="display:none" title="Remove every column filter">Filters: <span id="colFilterCount">0</span> &middot; Clear</button>
   <span class="sep"></span>
   <div class="moreMenu">
@@ -1079,23 +1078,16 @@ table.compareRow tfoot td.cCol{background:#f3ecfb}
   <!-- ============ CROSSES ANALYSIS ============ -->
   <section class="view" id="view-crosses">
   <div class="paneToolbar">
-    <b style="font-size:12px;color:var(--navy-2)">Crosses analysis</b>
-    <div class="seg" id="segXsView">
-      <button data-xsview="rel" class="on">Facility relationships</button>
-      <button data-xsview="usage">Facility A vs B pricing</button>
-    </div>
+    <b style="font-size:12px;color:var(--navy-2)">Facility A vs B pricing</b>
     <div class="search">
       <span class="ico">&#8981;</span>
-      <input id="xsSearch" type="search" placeholder="Facility &middot; vendor &middot; item # &middot; Crossed To" autocomplete="off">
+      <input id="xsSearch" type="search" placeholder="Item # &middot; description &middot; facility &middot; vendor" autocomplete="off">
     </div>
-    <button class="btn xsRelOnly" id="btnXsExpand">Expand all</button>
-    <button class="btn xsRelOnly" id="btnXsCollapse">Collapse all</button>
     <button class="btn" id="btnXsWidths" title="Put every column in this table back to its automatic width">Reset widths</button>
-    <button class="btn xsUsageOnly" id="btnXuCopy" title="Copy the comparison table (product rows and totals) to paste into Excel">Copy table</button>
+    <button class="btn" id="btnXuCopy" title="Copy the comparison table (product rows and totals) to paste into Excel">Copy table</button>
     <span class="sep"></span>
     <button class="btn" id="btnXsSetup" title="Open the Facility + Vendor cross setup used by the Excel workbook">Cross product comparison&hellip;</button>
-    <span class="note xsRelOnly">Only items with a <b>Crossed To</b> value. Direction is kept: Facility A &rarr; Facility B is separate from B &rarr; A.</span>
-    <span class="note xsUsageOnly">Facility A&rsquo;s usage priced at Facility B&rsquo;s crossed item. Lowest each price in green; <b style="color:var(--err)">NO CROSS</b> in red.</span>
+    <span class="note">Facility A&rsquo;s usage priced at Facility B&rsquo;s crossed item. Lowest each price in green; <b style="color:var(--err)">NO CROSS</b> in red.</span>
   </div>
   <div class="cards" id="xsCards"></div>
   <div class="pane" id="paneCrosses"></div>
@@ -1778,7 +1770,7 @@ const state = {
   ui: { mode:'grouped', tab:'normalization', search:'', colFilters:{}, groupField:'itemNumber',
         lineItemCols:['packagingDetails','factorQty','facility','vendorName','description'],
         lineItemColWidths:{},
-        lineItemView:'each', lineItemCombineStat:'sum',
+        lineItemView:'each', lineItemCombineStat:'sum', hideNoCross:true,
         freeze:true, issuesOnly:false, outMode:'agg', aggSearch:'', aggAttn:false, aggSelectedOnly:false,
         modeB:'grouped', searchB:'', sortKeyB:null, sortDirB:1, freezeB:true, issuesOnlyB:false,
         aggSearchB:'', aggAttnB:false, aggSelectedOnlyB:false, lastSubA:'normalization', lastSubB:'normalizationB' },
@@ -2241,8 +2233,17 @@ function matchesSearchB(g, q){
 }
 
 /** flattened list of what the grid actually draws */
+/** A row whose Crossed To value no other item shares \u2014 "(no cross)" in the lookup columns. */
+function isNoCrossRow(r){
+  const x = xtoResolve(r.crossedTo, [r.itemNumber]);
+  return !!x && x.n === 0;
+}
 function buildVisible(){
   const out = [], q = state.ui.search.trim(), issuesOnly = state.ui.issuesOnly;
+  const hideNC = !!state.ui.hideNoCross;
+  let ncRows = 0;
+  const nc = new Set();
+  state.rows.forEach(r => { if (isNoCrossRow(r)) { nc.add(r.id); ncRows++; } });
 
   if (state.ui.mode === 'flat') {
     state.rows.forEach((r, i) => {
@@ -2250,6 +2251,7 @@ function buildVisible(){
                  .some(k => String(r[k] || '').toLowerCase().includes(q.toLowerCase()))) return;
       if (issuesOnly && worstLevel(derived.rowIssues[r.id]) === 'ok') return;
       if (!rowPassesColFilters(r)) return;
+      if (hideNC && nc.has(r.id)) return;
       out.push({ type:'row', row:r, n:i + 1, gkey:itemKeyOf(r) });
     });
   } else {
@@ -2257,11 +2259,14 @@ function buildVisible(){
       if (!matchesSearch(g, q)) return;
       if (!groupPassesColFilters(g)) return;
       if (issuesOnly && g.issueLevel === 'ok') return;
+      if (hideNC && g.rows.length && g.rows.every(r => nc.has(r.id))) return;   // every row in it is no-cross
       out.push({ type:'group', group:g });
       if (g.expanded) g.detail.forEach((d, i) => out.push({ type:'row', row:d.row, n:i + 1, gkey:g.key, detail:d }));
     });
   }
   derived.visible = out;
+  const cnt = document.getElementById('cntNoCross');
+  if (cnt) { cnt.textContent = ncRows ? String(ncRows) : ''; cnt.title = ncRows + ' row' + (ncRows === 1 ? '' : 's') + ' with no cross'; }
 }
 
 function sortValueB(g, key){
@@ -6172,7 +6177,7 @@ function resNum(res){
 const VIEW_UI_KEYS = ['tab','mode','search','colFilters','freeze','issuesOnly','outMode','aggSearch','aggAttn','aggSelectedOnly',
   'modeB','searchB','sortKeyB','sortDirB','freezeB','issuesOnlyB','aggSearchB','aggAttnB','aggSelectedOnlyB','lastSubA','lastSubB',
   'lineItemCols','lineItemColWidths','lineItemView','lineItemCombineStat',
-  'xsView','xsSearch','xuBase','xuSides','xuColWidths','xsRelColWidths'];
+  'hideNoCross','xsView','xsSearch','xuBase','xuSides','xuColWidths','xsRelColWidths'];
 const VIEW_KEY_SET = new Set(VIEW_UI_KEYS);
 const clone = o => JSON.parse(JSON.stringify(o === undefined ? null : o));
 const pickView = ui => { const o = {}; VIEW_UI_KEYS.forEach(k => { if (ui[k] !== undefined) o[k] = ui[k]; }); return o; };
@@ -6619,6 +6624,7 @@ $('#search').addEventListener('input', e => {
 });
 $('#chkFreeze').addEventListener('change', e => { state.ui.freeze = e.target.checked; invalidateGeo(); renderHead(); renderRows(true); });
 $('#chkOnlyIssues').addEventListener('change', e => { state.ui.issuesOnly = e.target.checked; cur = null; sel = null; buildVisible(); renderRows(true); renderStatus(); });
+$('#chkHideNoCross').addEventListener('change', e => { state.ui.hideNoCross = e.target.checked; cur = null; sel = null; buildVisible(); renderRows(true); renderStatus(); saveViewPrefs(); });
 $('#btnClearColFilters').addEventListener('click', clearAllColFilters);
 function renderColFilterIndicator(){
   const n = activeColFilterKeys().length;
@@ -7037,134 +7043,7 @@ function xsExceptionTable(title, note, heads, rows){
 }
 
 function renderCrosses(){
-  const pane = $('#paneCrosses'), cards = $('#xsCards');
-  const usageView = state.ui.xsView === 'usage';
-  $('#view-crosses').classList.toggle('xsUsage', usageView);
-  [...$('#segXsView').children].forEach(b => b.classList.toggle('on', b.dataset.xsview === (usageView ? 'usage' : 'rel')));
-  if (usageView) { renderUsageCompare(pane, cards); return; }
-  const keep = pane.scrollTop;
-  pane.innerHTML = ''; cards.innerHTML = '';
-  if (!derived.groups.length) { pane.appendChild(emptyNote('Nothing to analyse yet. Paste your range on the Sheet tab.')); return; }
-
-  const M = xsBuild();
-  if (!M.crossedItems) {
-    pane.appendChild(emptyNote('No item has a Crossed To value yet. Items with a blank Crossed To are excluded from this analysis.'));
-    return;
-  }
-  cards.appendChild(xsCard(M.crossedItems.toLocaleString(), 'Crossed items'));
-  cards.appendChild(xsCard(M.srcFacs.toLocaleString(), 'Source facilities'));
-  cards.appendChild(xsCard(M.toFacs.toLocaleString(), 'Crossed-to facilities'));
-  cards.appendChild(xsCard(M.rels.length.toLocaleString(), 'Facility \u2192 facility relationships'));
-  const exN = M.exUnresolved.length + M.exSelf.length;
-  cards.appendChild(xsCard(exN.toLocaleString(), 'Crossed-to exceptions', exN ? 'warn' : ''));
-
-  const q = String(state.ui.xsSearch || '').trim().toLowerCase();
-  const rels = M.rels.filter(R => xsMatches(R, q));
-
-  const t = el('table', 'grid aggTable');
-  const heads = ['', 'From facility', 'To facility', 'Crosses', 'Items', 'Usage (ordered qty)', 'Net sales'];
-  const thead = el('thead'), htr = el('tr');
-  heads.forEach((h, i) => htr.appendChild(el('th', i === 0 ? 'tw' : (i >= 3 ? 'num' : ''), h)));
-  thead.appendChild(htr); t.appendChild(thead);
-  const tb = el('tbody');
-
-  if (!rels.length) {
-    const tr = el('tr'), td = el('td', null, 'No facility relationship matches that search.');
-    td.colSpan = heads.length; td.style.cssText = 'padding:12px;color:var(--ink-3)';
-    tr.appendChild(td); tb.appendChild(tr);
-  }
-
-  rels.forEach(R => {
-    const open = xsOpen.has(R.key);
-    const tr = el('tr', 'aggRow' + (open ? ' open' : ''));
-    tr.appendChild(el('td', 'tw', open ? '\u25bc' : '\u25b6'));
-    tr.appendChild(el('td', 'z-analysed', R.from));
-    const toTd = el('td', 'z-analysed', R.to);
-    if (R.reciprocal) { const b = el('span', null, ' \u21c4'); b.title = 'A reciprocal ' + R.to + ' \u2192 ' + R.from + ' relationship also exists; both are kept separate.'; toTd.appendChild(b); }
-    if (R.from === R.to) toTd.classList.add('errcell');
-    tr.appendChild(toTd);
-    tr.appendChild(el('td', 'num', R.crosses.toLocaleString()));
-    tr.appendChild(el('td', 'num', R.items.size.toLocaleString()));
-    tr.appendChild(el('td', 'num z-computed', fmtQty(R.qty)));
-    tr.appendChild(el('td', 'num z-computed', fmtMoney(R.net)));
-    tr.title = (open ? 'Click to close' : 'Click to open') + ' the Facility + Vendor detail for ' + R.from + ' \u2192 ' + R.to;
-    tr.addEventListener('click', () => { if (open) xsOpen.delete(R.key); else xsOpen.add(R.key); renderCrosses(); });
-    tb.appendChild(tr);
-
-    if (open) {
-      const er = el('tr', 'edRow'), td = el('td', 'edcell');
-      td.colSpan = heads.length;
-      const box = el('div');
-      box.style.cssText = 'padding:10px 12px';
-      const cap = el('div', null, R.from.toUpperCase() + ' \u2192 ' + R.to.toUpperCase());
-      cap.style.cssText = 'font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--navy-2);margin-bottom:6px';
-      box.appendChild(cap);
-      const dt = el('table', 'sugTable');
-      const dh = el('tr');
-      ['Source facility + vendor', 'Crossed-to facility + vendor', 'Crosses', 'Usage', 'Net sales'].forEach((h, i) =>
-        dh.appendChild(el('th', i >= 2 ? 'n' : '', h)));
-      const dth = el('thead'); dth.appendChild(dh); dt.appendChild(dth);
-      const dtb = el('tbody');
-      R.pairList.forEach(P => {
-        const ptr = el('tr');
-        ptr.appendChild(el('td', null, P.fromFac + ' + ' + P.fromVen));
-        ptr.appendChild(el('td', 'arrow', P.toFac + ' + ' + P.toVen));
-        ptr.appendChild(el('td', 'n', P.crosses.toLocaleString()));
-        ptr.appendChild(el('td', 'n', fmtQty(P.qty)));
-        ptr.appendChild(el('td', 'n', fmtMoney(P.net)));
-        dtb.appendChild(ptr);
-        P.rows.forEach(r => {
-          const rtr = el('tr');
-          const c1 = el('td', null, '\u2014 ' + r.item + (r.desc ? '  ' + r.desc : ''));
-          c1.style.color = 'var(--ink-2)';
-          rtr.appendChild(c1);
-          const c2 = el('td', null, 'Crossed To \u201c' + r.xto + '\u201d' + (r.toItems ? '  \u2192 ' + r.toItems : ''));
-          c2.style.color = 'var(--ink-3)';
-          rtr.appendChild(c2);
-          rtr.appendChild(el('td', 'n', ''));
-          rtr.appendChild(el('td', 'n', fmtQty(r.qty)));
-          rtr.appendChild(el('td', 'n', fmtMoney(r.net)));
-          dtb.appendChild(rtr);
-        });
-      });
-      dt.appendChild(dtb);
-      box.appendChild(dt);
-      td.appendChild(box); er.appendChild(td); tb.appendChild(er);
-    }
-  });
-  t.appendChild(tb);
-  pane.appendChild(t);
-  makeColsResizable(t, [...htr.children], 'xsRelColWidths');
-
-  const foot = el('div', null, 'Usage and net sales come from the source side\u2019s own rows. An item whose Crossed To reaches more than one facility is counted under each relationship it takes part in, so relationship figures are not a single network total.');
-  foot.style.cssText = 'padding:10px 12px;font-size:11.5px;color:var(--ink-3)';
-  pane.appendChild(foot);
-
-  if (M.exUnresolved.length)
-    pane.appendChild(xsExceptionTable('Crossed To not matched (' + M.exUnresolved.length + ')',
-      'These Crossed To values are not shared by another item and do not match an Item #, SKU # or MFG #, so no crossed-to facility can be read. Nothing is corrected or recoded here.',
-      ['Item #', 'Description', 'Crossed To', 'Source facility'],
-      M.exUnresolved.map(x => [x.item, x.desc, x.xto, x.facs])));
-
-  if (M.exSelf.length)
-    pane.appendChild(xsExceptionTable('Same facility on both sides (' + M.exSelf.length + ')',
-      'The source facility and the crossed-to facility are identical. Listed for review only.',
-      ['Item #', 'Description', 'Crossed To', 'Facility', 'From vendor', 'To vendor'],
-      M.exSelf.map(x => [x.item, x.desc, x.xto, x.fac, x.fromVen, x.toVen])));
-
-  if (M.exRecip.length)
-    pane.appendChild(xsExceptionTable('Reciprocal relationships (' + M.exRecip.length + ')',
-      'Both directions exist between these facilities. They stay separate relationships.',
-      ['From facility', 'To facility', 'Crosses'],
-      M.exRecip.map(x => [x.from, x.to, x.crosses.toLocaleString()])));
-
-  if (M.exMulti.length)
-    pane.appendChild(xsExceptionTable('Multiple cross relationships (' + M.exMulti.length + ')',
-      'One Crossed To value reaches more than one item, so the item appears in every relationship it links to.',
-      ['Item #', 'Description', 'Crossed To', 'Linked items', 'Count'],
-      M.exMulti.map(x => [x.item, x.desc, x.xto, x.to, x.n])));
-
-  pane.scrollTop = keep;
+  renderUsageCompare($('#paneCrosses'), $('#xsCards'));
 }
 
 /* ------------------------------------------ Excel-style column widths
@@ -7533,14 +7412,9 @@ function xuCopyTable(){
   });
   copyText(out.join('\n'), 'Copied ' + res.rows.length + ' items');
 }
-$('#segXsView').addEventListener('click', e => {
-  const b = e.target.closest('button'); if (!b) return;
-  state.ui.xsView = b.dataset.xsview === 'usage' ? 'usage' : 'rel';
-  saveSoon(); renderCrosses();
-});
 $('#btnXuCopy').addEventListener('click', xuCopyTable);
 $('#btnXsWidths').addEventListener('click', () => {
-  state.ui[state.ui.xsView === 'usage' ? 'xuColWidths' : 'xsRelColWidths'] = {};
+  state.ui.xuColWidths = {};
   saveViewPrefs(); renderCrosses(); toast('Column widths reset.');
 });
 
@@ -7550,12 +7424,6 @@ $('#xsSearch').addEventListener('input', e => {
   const v = e.target.value;
   xsSearchT = setTimeout(() => { state.ui.xsSearch = v; renderCrosses(); }, 140);
 });
-$('#btnXsExpand').addEventListener('click', () => {
-  const M = xsBuild();
-  M.rels.forEach(R => xsOpen.add(R.key));
-  renderCrosses();
-});
-$('#btnXsCollapse').addEventListener('click', () => { xsOpen.clear(); renderCrosses(); });
 $('#btnXsSetup').addEventListener('click', () => openCrossSetup(exportExcel));
 
 /* ================================================================== INIT */
@@ -7563,6 +7431,7 @@ $('#btnXsSetup').addEventListener('click', () => openCrossSetup(exportExcel));
 function syncViewControls(){
   $('#chkFreeze').checked = state.ui.freeze;
   $('#chkOnlyIssues').checked = state.ui.issuesOnly;
+  $('#chkHideNoCross').checked = !!state.ui.hideNoCross;
   $('#search').value = state.ui.search || '';
   $('#aggSearch').value = state.ui.aggSearch || '';
   $('#xsSearch').value = state.ui.xsSearch || '';
