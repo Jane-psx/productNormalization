@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Product Normalization</title>
+<title>Product Normalization — Pricing</title>
 <style>
 /* ============================================================
    Product Normalization — styling
@@ -977,13 +977,72 @@ table.compareRow tfoot td.cCol{background:#f3ecfb}
 .altEmpty b{color:var(--ink)}
 .altIssues{font-size:11.5px;color:var(--warn);padding:7px 12px;border-top:1px solid var(--line-soft);background:var(--warn-bg)}
 .altIssues.err{color:var(--err);background:var(--err-bg)}
+
+/* ---------- pricing layer: Our Pricing / resolver / audit ---------- */
+.c.z-ours{background:#eef8f5;color:#0d5c4d}
+.c.z-ours.dimref{color:var(--ink-3);font-style:italic}
+.c.z-ours.badref{background:#fdf0e6;color:var(--warn);font-weight:600}
+.c.z-ours.adjref{color:var(--ovr);font-weight:600}
+.hcell.z-ours{background:#d7efe9}
+.zonebar .z-ours{background:#d7efe9;color:#0d5c4d}
+table.grid th.z-ours{background:#d7efe9;color:#0d5c4d}
+table.grid td.z-ours{background:#f2faf8}
+.ourTop{display:flex;flex-wrap:wrap;gap:10px;padding:10px 12px;border-bottom:1px solid var(--line);background:#fbfcfe;flex:none}
+.ourTop:empty{display:none}
+.progCard{border:1px solid var(--line);border-left:3px solid #0d5c4d;border-radius:3px;background:#fff;padding:7px 11px;font-size:12px;display:flex;flex-direction:column;gap:3px;max-width:720px}
+.progCard b{color:var(--navy-2)}
+.progCard .meta{color:var(--ink-3);font-size:11.5px}
+.progCard .tiers{display:flex;flex-wrap:wrap;gap:5px;margin-top:2px}
+.tierChip{display:inline-block;padding:1px 7px;border-radius:3px;background:#e3f3ee;color:#0d5c4d;font-size:11px;font-weight:600;cursor:help}
+.tierChip.adj{background:#f3ecfb;color:var(--ovr)}
+table.ourTable td{padding:2px 4px;max-width:none}
+table.ourTable th.ck,table.ourTable td.ck{width:26px;text-align:center}
+table.ourTable th.st,table.ourTable td.st{width:18px;text-align:center;cursor:help}
+table.ourTable th.key{background:#dbe8f7;color:var(--navy-2)}
+table.ourTable th.tierH{background:#d7efe9;color:#0d5c4d;text-align:right}
+table.ourTable th.tierH small{display:block;font-weight:400;font-size:10px;max-width:170px;white-space:normal;line-height:1.25;color:#3b7466}
+table.ourTable td.tierCell{background:#f2faf8}
+table.ourTable td.na{color:var(--line);text-align:center}
+.ourIn{border:1px solid transparent;background:transparent;padding:3px 5px;border-radius:2px;font-size:12.5px;min-width:0}
+.ourIn:hover{border-color:var(--line)}
+.ourIn:focus{border-color:var(--accent);background:#fff;outline:none}
+.ourIn.price{width:92px;text-align:right;font-variant-numeric:tabular-nums}
+.ourIn.need{background:#fffaf0}
+.ourIn.need::placeholder{color:var(--warn);font-style:italic}
+.ourIn.bad{background:var(--err-bg);color:var(--err)}
+.ourIn:disabled{color:var(--ink-3)}
+select.ourIn{max-width:170px}
+table.ourTable tr.ourRow.err td.st{background:var(--err-bg)}
+table.ourTable tr.ourRow.warn td.st{background:var(--warn-bg)}
+table.ourTable tr.ourGrp td{background:#fff8ea;color:#6b4a00;font-size:12px;padding:6px 8px;white-space:normal}
+table.ourTable tr.ourGrp.bad td{background:#fdecea;color:var(--err)}
+table.ourTable tr.ourGrp td b{margin-right:6px}
+table.ourTable tr.ourGrp td .btn{margin-left:10px}
+table.ourTable td.srcCell{font-size:11.5px;color:var(--ink-3)}
+table.ourTable td.srcCell .pill{margin-left:6px;cursor:pointer}
+.progEd{border:1px solid var(--line);border-radius:3px;padding:10px 12px;margin:0 0 12px;display:flex;flex-direction:column;gap:8px}
+.progRow{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end}
+.progEd label{display:flex;flex-direction:column;font-size:11px;color:var(--ink-3);gap:2px}
+.progEd input{border:1px solid var(--line);border-radius:3px;padding:4px 6px;font-size:12.5px;color:var(--ink)}
+.progSub{font-size:11px;font-weight:700;color:var(--ovr);margin-top:4px}
+.pricingBlock .kv{margin:6px 0}
+.ovrPrice{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:12px;margin-top:6px}
+.ovrPrice .aggIn{width:110px}
+.ovrPrice .hint{color:var(--ink-3);font-size:11px}
+.auditNote{padding:8px 12px;font-size:12px;color:var(--ink-2);background:#f2faf8;border-bottom:1px solid var(--line)}
+.xuMsg.ok{color:var(--ink-3)}
+.ocTable td.ovrcell{background:var(--ovr-bg);color:var(--ovr);font-weight:600}
+.c.z-ours.ctr{justify-content:flex-start;text-align:left}
+.c.z-ours.ctr.num{justify-content:flex-end;text-align:right}
+.ovrPrice .aggIn{border:1px solid var(--line);background:#fff}
+.r .c.flagtier{box-shadow:inset 0 0 0 1px var(--warn-line);background:#fffaf0}
 </style>
 </head>
 <body>
 
 <div class="appbar">
   <h1>Product Normalization</h1>
-  <span class="sub">Paste · Edit · Group · Override · Export</span>
+  <span class="sub">Price · Cross · Audit</span>
   <div class="caseBox">
     <input class="caseName" id="hdrCaseName" maxlength="80" placeholder="Name this case&hellip;" aria-label="Case name" title="Case name &mdash; type to rename; saved to the cloud with this session">
     <button class="caseKey" id="hdrCaseKey" title="Session key (created automatically). Click to copy."></button>
@@ -1029,7 +1088,7 @@ table.compareRow tfoot td.cCol{background:#f3ecfb}
     <input id="search" type="search" placeholder="Item # · catalog # · description · packaging" autocomplete="off">
   </div>
   <label class="chk"><input type="checkbox" id="chkOnlyIssues"> Issues only</label>
-  <label class="chk" title="Hide items whose Crossed To value no other item shares (shown as (no cross) in the Crossed To lookup columns). Rows with a blank Crossed To stay listed."><input type="checkbox" id="chkHideNoCross"> Hide no-cross items <span class="count" id="cntNoCross"></span></label>
+  <label class="chk" title="Hide items whose Crossed To does not match any Our Pricing Item #. Rows with a blank Crossed To stay listed."><input type="checkbox" id="chkHideNoCross"> Hide unmatched crosses <span class="count" id="cntNoCross"></span></label>
   <button class="btn sm" id="btnClearColFilters" style="display:none" title="Remove every column filter">Filters: <span id="colFilterCount">0</span> &middot; Clear</button>
   <span class="sep"></span>
   <div class="moreMenu">
@@ -1060,7 +1119,32 @@ table.compareRow tfoot td.cCol{background:#f3ecfb}
 </div>
 
 <main>
-  <!-- ============ NORMALIZATION ============ -->
+  <!-- ============ OUR PRICING ============ -->
+  <section class="view" id="view-our">
+    <div class="paneToolbar">
+      <button class="btn primary" id="btnOurImport" title="Import a price workbook (.xlsx) or CSV. An &ldquo;All Tiers&rdquo; sheet, or one sheet per tier, is read by column name.">Import price file&hellip;</button>
+      <input type="file" id="ourFile" accept=".xlsx,.xlsm,.csv,.tsv,.txt" hidden>
+      <button class="btn" id="btnOurPaste">Paste from Excel</button>
+      <button class="btn" id="btnOurAdd">Add item</button>
+      <span class="sep"></span>
+      <button class="btn" id="btnOurAgg" title="Combine the ticked records of the same Item #. Conflicting pricing blocks the merge; the originals are kept for the audit.">Aggregate ticked</button>
+      <button class="btn" id="btnOurDup">Find duplicates</button>
+      <button class="btn danger" id="btnOurDel">Delete ticked</button>
+      <span class="sep"></span>
+      <button class="btn" id="btnPrograms" title="Tier definitions, contracts, effective dates and order-level rules">Pricing programs&hellip;</button>
+      <span class="sep"></span>
+      <div class="search">
+        <span class="ico">&#8981;</span>
+        <input id="ourSearch" type="search" placeholder="Item # &middot; product code &middot; description" autocomplete="off">
+      </div>
+      <label class="chk"><input type="checkbox" id="chkOurIssues"> Issues only</label>
+      <span class="note" id="ourNote"></span>
+    </div>
+    <div class="ourTop" id="ourTop"></div>
+    <div class="pane" id="paneOur"></div>
+  </section>
+
+  <!-- ============ NORMALIZATION (Facility/Vendor Pricing) ============ -->
   <section class="view on" id="view-normalization">
     <div class="zonebar" id="zonebar"></div>
     <div class="sheet-scroll" id="scroll" tabindex="0">
@@ -1101,15 +1185,18 @@ table.compareRow tfoot td.cCol{background:#f3ecfb}
     <div class="pane" id="paneAgg"></div>
   </section>
 
-  <!-- ============ FINAL OUTPUT ============ -->
+  <!-- ============ AUDIT LOG (was Final Output) ============ -->
   <section class="view" id="view-output">
     <div class="paneToolbar">
       <div class="seg" id="segOut">
-        <button data-out="agg" id="btnOutAggLabel" class="on">Items List · one row per Item #</button>
-        <button data-out="detail">Items List · source detail</button>
+        <button data-out="audit" class="on" title="One traceable record per Facility/Vendor item">Audit trail</button>
+        <button data-out="auditSrc" title="The same trace, one line per source row">Source records</button>
+        <button data-out="events" title="Every change made in this case, with timestamps">Change history</button>
+        <button data-out="agg" id="btnOutAggLabel">Facility/Vendor list · one row per Item #</button>
+        <button data-out="detail">Facility/Vendor list · source detail</button>
       </div>
       <span class="sep"></span>
-      <button class="btn primary" id="btnCopyOut">Copy final output</button>
+      <button class="btn primary" id="btnCopyOut">Copy audit log</button>
       <button class="btn" id="btnXlsxOut" title="Formatted workbook: Summary, Aggregated, Source Detail">Download Excel</button>
       <button class="btn" id="btnCsvOut">Download CSV</button>
       <label class="chk"><input type="checkbox" id="chkHeaders" checked> Include header row</label>
@@ -1121,17 +1208,20 @@ table.compareRow tfoot td.cCol{background:#f3ecfb}
   <!-- ============ CROSSES ANALYSIS ============ -->
   <section class="view" id="view-crosses">
   <div class="paneToolbar">
-    <b style="font-size:12px;color:var(--navy-2)">Facility A vs B pricing</b>
+    <div class="seg" id="segXsMode" title="What Cross Analysis compares">
+      <button data-xs="ours" class="on">Our Pricing vs Facility/Vendor</button>
+      <button data-xs="fac">Facility A vs Facility B</button>
+    </div>
     <div class="search">
       <span class="ico">&#8981;</span>
       <input id="xsSearch" type="search" placeholder="Item # &middot; description &middot; facility &middot; vendor" autocomplete="off">
     </div>
     <button class="btn" id="btnXsWidths" title="Put every column in this table back to its automatic width">Reset widths</button>
-    <label class="chk" title="List Facility A items that have no match at Facility B (NO CROSS). Off: only items that exist on both sides are listed."><input type="checkbox" id="chkXuNoCross"> Show NO CROSS <span class="count" id="cntXuNoCross"></span></label>
+    <label class="chk" title="Also list items that could not be priced: no match on the other side, not crossed, tier required, invalid tier or no price."><input type="checkbox" id="chkXuNoCross"> Show unresolved <span class="count" id="cntXuNoCross"></span></label>
     <button class="btn" id="btnXuCopy" title="Copy the comparison table (product rows and totals) to paste into Excel">Copy table</button>
     <span class="sep"></span>
     <button class="btn" id="btnXsSetup" title="Open the Facility + Vendor cross setup used by the Excel workbook">Cross product comparison&hellip;</button>
-    <span class="note">Facility A&rsquo;s usage priced at Facility B&rsquo;s crossed item. Lowest each price in green; <b style="color:var(--err)">NO CROSS</b> in red.</span>
+    <span class="note" id="xsNote">Facility/Vendor usage priced at the crossed Our Pricing item and tier. Lowest each price in green; unresolved crosses in red.</span>
   </div>
   <div class="xsTop"><div id="xsSetup"></div><div class="cards" id="xsCards"></div></div>
   <div class="pane" id="paneCrosses"></div>
@@ -1148,6 +1238,9 @@ table.compareRow tfoot td.cCol{background:#f3ecfb}
 </div>
 
 <datalist id="umList"></datalist>
+<datalist id="ourItemList"></datalist>
+<datalist id="tierList"></datalist>
+<datalist id="channelList"><option value="Direct"></option><option value="Distributor"></option></datalist>
 
 <div id="toast"></div>
 
@@ -1207,13 +1300,21 @@ const COLS = [
   { k:'facility',         L:'H1',name:'Facility',         zone:'vendor',              w:140 },
   { k:'vendorName',       L:'H2',name:'Vendor Name',      zone:'vendor',              w:160 },
   { k:'skuNumber',        L:'H3',name:'SKU Number',       zone:'vendor',              w:140 },
-  { k:'crossedTo',        L:'H4',name:'Crossed To',       zone:'vendor',              w:160 },
+  { k:'crossedTo',        L:'H4',name:'Crossed To',       zone:'vendor',              w:150 },
+  { k:'tierToApply',      L:'T', name:'Tier to Apply',    zone:'vendor',              w:104 },
+  { k:'purchaseChannel',  L:'CH',name:'Channel',          zone:'vendor',              w:96  },
+  { k:'orderRef',         L:'OR',name:'Order Ref',        zone:'vendor',              w:92  },
   { k:'category',         L:'H5',name:'Category',         zone:'vendor',              w:140 },
   /* Read-only lookups: the facility / vendor / category of the other items that
      share this row's Crossed To value (its cross group), so each cross can be checked. */
   { k:'xtoFacility',      L:'H6',name:'Crossed To Facility', zone:'xto', calc:true, look:true, w:150 },
   { k:'xtoVendor',        L:'H7',name:'Crossed To Vendor',   zone:'xto', calc:true, look:true, w:160 },
   { k:'xtoCategory',      L:'H8',name:'Crossed To Category', zone:'xto', calc:true, look:true, w:150 },
+  /* Read-only lookups into Our Pricing through Crossed To + Tier to Apply (the pricing resolver). */
+  { k:'ourDesc',          L:'R1',name:'Our Pricing Item',    zone:'ours', calc:true, ref:true, w:230 },
+  { k:'ourPricing',       L:'R2',name:'Program \u00b7 Tier', zone:'ours', calc:true, ref:true, w:170 },
+  { k:'ourCasePrice',     L:'R3',name:'Contract Price',      zone:'ours', calc:true, ref:true, num:true, w:118 },
+  { k:'ourEachPrice',     L:'R4',name:'Contract Each',       zone:'ours', calc:true, ref:true, num:true, w:104 },
   { k:'factorQty',        L:'I', name:'Factor QTY',       zone:'analysed', num:true,  w:82  },
   { k:'factorUM',         L:'J', name:'Factor UM',        zone:'analysed',            w:74  },
   { k:'packagingDetails', L:'K', name:'Packaging Details',zone:'analysed',            w:196 },
@@ -1224,7 +1325,10 @@ const COLS = [
   { k:'originalData',     L:'P', name:'Original Data',    zone:'orig',     meta:true, w:300 }
 ];
 /* A:K are the editable input columns; P (Original Data) is written by Aggregate. */
-const INPUT_KEYS = COLS.filter(c => !c.calc && !c.meta).map(c => c.k);
+/* Pasted Excel ranges keep the workbook's column order: the three relationship
+   columns added with the pricing layer come after the original A:K inputs. */
+const APPENDED_INPUT_KEYS = ['tierToApply','purchaseChannel','orderRef'];
+const INPUT_KEYS = COLS.filter(c => !c.calc && !c.meta && !APPENDED_INPUT_KEYS.includes(c.k)).map(c => c.k).concat(APPENDED_INPUT_KEYS);
 const ROW_KEYS   = COLS.filter(c => !c.calc).map(c => c.k);
 
 /* -------------------------------------------------------- VENDOR B COLUMNS
@@ -1268,7 +1372,7 @@ const CHK_W = 30;
 
 /* fields that can be overridden at the Item # level */
 const PACK_KEYS = ['packagingDetails','pkgQty','um','factorQty','factorUM']; // drive L:O
-const ID_KEYS   = ['mfgCatalog','description','facility','vendorName','skuNumber','crossedTo','category']; // labelling only
+const ID_KEYS   = ['mfgCatalog','description','facility','vendorName','skuNumber','crossedTo','tierToApply','purchaseChannel','orderRef','category']; // labelling + cross relationship
 const OVR_KEYS  = PACK_KEYS.concat(ID_KEYS);
 const CONFLICT_KEYS = OVR_KEYS.concat(['orderedUM']);
 
@@ -1348,7 +1452,7 @@ function ensureActiveSession(){
 function isPlaceholderCase(id){
   const e = sessionEntry(id); if (!e || !e.auto) return false;
   const d = getSessionData(id);
-  return !d || ((!d.rows || !d.rows.length) && (!d.alt || !d.alt.rows || !d.alt.rows.length));
+  return !d || ((!d.rows || !d.rows.length) && (!d.alt || !d.alt.rows || !d.alt.rows.length) && (!d.our || !d.our.rows || !d.our.rows.length));
 }
 function currentSessionName(){
   const idx = loadSessionsIndex();
@@ -1814,8 +1918,9 @@ const state = {
   ui: { mode:'grouped', tab:'normalization', search:'', colFilters:{}, groupField:'itemNumber',
         lineItemCols:['packagingDetails','factorQty','facility','vendorName','description'],
         lineItemColWidths:{},
-        lineItemView:'each', lineItemCombineStat:'sum', hideNoCross:true, xuShowNoCross:false,
-        freeze:true, issuesOnly:false, outMode:'agg', aggSearch:'', aggAttn:false, aggSelectedOnly:false,
+        lineItemView:'each', lineItemCombineStat:'sum', hideNoCross:false, xuShowNoCross:false,
+        xsMode:'ours', ourSearch:'', ourIssuesOnly:false, ocFac:'', ocVen:'',
+        freeze:true, issuesOnly:false, outMode:'audit', aggSearch:'', aggAttn:false, aggSelectedOnly:false,
         modeB:'grouped', searchB:'', sortKeyB:null, sortDirB:1, freezeB:true, issuesOnlyB:false,
         aggSearchB:'', aggAttnB:false, aggSelectedOnlyB:false, lastSubA:'normalization', lastSubB:'normalizationB' },
   widths: Object.fromEntries(COLS.map(c => [c.k, c.w])),
@@ -1856,7 +1961,7 @@ const keyLabel  = key => key === NOGROUP ? '(no ' + groupFieldCol().name + ')' :
 
 function snapshot(){
   return JSON.stringify({ rows:state.rows, overrides:state.overrides, expanded:state.expanded,
-                          alt:state.alt, cross:state.cross });
+                          alt:state.alt, cross:state.cross, our:state.our, programs:state.programs });
 }
 let dirty = false;
 function markDirty(){
@@ -1880,6 +1985,8 @@ function restore(json){
   state.rows = s.rows; state.overrides = s.overrides; state.expanded = s.expanded;
   state.alt   = adoptAlt(s.alt);
   state.cross = adoptCross(s.cross);
+  if (s.our) { state.our = adoptOur(s.our); bumpOurSeq(state.our.rows); }
+  if (s.programs) state.programs = adoptPrograms(s.programs);
   bumpSeq(state.rows); bumpSeq(state.alt.rows);
 }
 /* snapshots and sessions written before the Cross feature simply have no alt/cross block */
@@ -2210,8 +2317,11 @@ function buildDerivedB(rows, overrides, expanded, cache){
 /* Vendor A is rebuilt exactly as before; the Alternative is rebuilt beside it. */
 function rebuild(){
   pruneChecked();
+  buildOurDerived();
   derived = buildDerived(state.rows, state.overrides, state.expanded, rowCache);
   derived.crossInfo = buildCrossLinks(derived.groups);
+  computeXref();
+  refreshOurItemList();
   xtoCache = null;
   buildVisible();
   pruneCheckedB();
@@ -2278,9 +2388,10 @@ function matchesSearchB(g, q){
 
 /** flattened list of what the grid actually draws */
 /** A row whose Crossed To value no other item shares \u2014 "(no cross)" in the lookup columns. */
+/* "Unmatched": a Crossed To that does not resolve to an Our Pricing Item #. */
 function isNoCrossRow(r){
-  const x = xtoResolve(r.crossedTo, [r.itemNumber]);
-  return !!x && x.n === 0;
+  const k = String(r.crossedTo == null ? '' : r.crossedTo).trim();
+  return !!k && !ourD.byKey.has(ourKey(k));
 }
 function buildVisible(){
   const out = [], q = state.ui.search.trim(), issuesOnly = state.ui.issuesOnly;
@@ -2378,19 +2489,21 @@ const colLeft   = () => geo().lefts;
 const totalWidth = () => geo().total;
 const frozenCount = () => state.ui.freeze ? 4 : 0;   // gutter + A:D
 
-function zoneClass(c){ return c.zone === 'xto' ? ' z-xto' : c.zone === 'analysed' ? ' z-analysed' : c.zone === 'computed' ? ' z-computed' : c.zone === 'orig' ? ' z-orig' : ''; }
+function zoneClass(c){ return c.zone === 'ours' ? ' z-ours' : c.zone === 'xto' ? ' z-xto' : c.zone === 'analysed' ? ' z-analysed' : c.zone === 'computed' ? ' z-computed' : c.zone === 'orig' ? ' z-orig' : ''; }
 
 function renderZonebar(){
   zonebar.innerHTML = '';
   const w = state.widths;
   const vend = CHK_W + GUTTER_W + w.orderedQty + w.orderedUM + w.netSales + w.itemNumber + w.mfgCatalog + w.description + w.pkgQty + w.um +
-    w.facility + w.vendorName + w.skuNumber + w.crossedTo + w.category;
+    w.facility + w.vendorName + w.skuNumber + w.crossedTo + w.tierToApply + w.purchaseChannel + w.orderRef + w.category;
   const xto  = w.xtoFacility + w.xtoVendor + w.xtoCategory;
+  const ours = w.ourDesc + w.ourPricing + w.ourCasePrice + w.ourEachPrice;
   const ana  = w.factorQty + w.factorUM + w.packagingDetails;
   const comp = w.innerPack + w.orderedQtyNorm + w.eachPrice + w.totalNetSales;
   const orig = w.originalData;
   [['z-vendor','Vendor data · A:H', vend, 'What you pasted or typed \u2014 the source data.'],
-   ['z-xto','Crossed To lookup', xto, 'Facility, vendor and category of the other items with the same Crossed To value \u2014 read-only.'],
+   ['z-xto','Also crossed to it', xto, 'Facility, vendor and category of the other Facility/Vendor items crossed to the same Our Pricing Item # \u2014 read-only.'],
+   ['z-ours','Our Pricing \u00b7 resolved', ours, 'Looked up from Our Pricing through Crossed To + Tier to Apply \u2014 read-only. The item row includes order adjustments and overrides.'],
    ['z-analysed','Analysed data · I:K', ana, 'Packaging read out of Packaging Details \u2014 edit if the read is wrong.'],
    ['z-computed','Computed values · L:O', comp, 'Calculated from the columns to the left \u2014 read-only.'],
    ['z-orig','Original data · P', orig, 'Record of source rows an Aggregate merged away \u2014 read-only.']]
@@ -2441,7 +2554,9 @@ function renderHead(){
     filtBtn.addEventListener('mousedown', e => e.stopPropagation());
     filtBtn.addEventListener('click', e => { e.stopPropagation(); openColumnFilter(c); });
     h.appendChild(filtBtn);
-    h.title = c.look
+    h.title = c.ref
+      ? c.name + ' \u2014 resolved from Our Pricing via Crossed To + Tier to Apply. Read-only; select a cell and use \u201cShow pricing trace\u201d for its provenance.'
+      : c.look
       ? c.name + ' \u2014 the ' + XTO_LOOK[c.k].replace('vendorName', 'vendor') + ' of the other items with the same Crossed To value (Group by: Crossed To). Read-only.'
       : c.calc
       ? c.name + ' (column ' + c.L + ') \u2014 calculated from the workbook formula. Click a cell, then "Show calculation" in the status bar.'
@@ -2578,12 +2693,13 @@ function xtoOwnItems(item){
 function xtoText(crossedTo, k, ownItems){
   const r = xtoResolve(crossedTo, ownItems);
   if (!r) return '';
-  if (!r.n) return '(no cross)';
+  if (!r.n) return '(none)';
   return r.vals[k].join(', ');
 }
 
 /* ------------------------------------------------------------- cell values */
 function cellDisplay(item, col){
+  if (col.ref) return refText(item, col.k, false);
   if (col.look) return xtoText(xtoValueOf(item), col.k, xtoOwnItems(item));
   if (item.type === 'group') {
     const g = item.group;
@@ -2615,6 +2731,7 @@ function cellDisplay(item, col){
 }
 
 function cellRaw(item, col){
+  if (col.ref) return refText(item, col.k, true);
   if (col.look) return xtoText(xtoValueOf(item), col.k, xtoOwnItems(item));
   if (item.type === 'group') {
     const g = item.group;
@@ -2679,8 +2796,9 @@ function buildAggregatePreviewA(rows){
   if (ums.length > 1) blocking.push({ label:'Ordered UM', detail: ums.map(u => '\u201c' + u.v + '\u201d \u00d7' + u.n).join(', ') });
   else if (ums.length === 1 && blankUM) blocking.push({ label:'Ordered UM', detail: blankUM + ' row' + (blankUM === 1 ? '' : 's') + ' blank, the rest \u201c' + ums[0].v + '\u201d' });
 
+  relConflicts(rows).forEach(x => blocking.push(x));
   const watch = [];
-  [...new Set([state.ui.groupField, 'itemNumber', ...PACK_KEYS, ...ID_KEYS])].forEach(k => {
+  [...new Set([state.ui.groupField, 'itemNumber', ...PACK_KEYS, ...ID_KEYS])].filter(k => !REL_KEYS.includes(k) || k === 'orderRef').forEach(k => {
     const d = distinctVals(rows, k);
     if (d.length > 1) watch.push({ label: fieldLabel(k), values:d, resolved:d[0].v });
   });
@@ -2695,6 +2813,19 @@ function buildAggregatePreviewA(rows){
     itemNumber: commonVal(rows, 'itemNumber'),
     resultLine: fmtQty(qty) + (ums.length ? ' ' + ums[0].v : '') + ' \u00b7 ' + fmtMoney(net) + ' Net Sales'
   };
+}
+/** Cross relationships must agree before Facility/Vendor rows are combined \u2014 never merged silently. */
+function relConflicts(rows){
+  const out = [];
+  const chk = (label, fn) => {
+    const m = new Map(); rows.forEach(r => { const v = fn(r); m.set(v, (m.get(v) || 0) + 1); });
+    if (m.size > 1) out.push({ label, detail:[...m.entries()].map(([v, n]) => '\u201c' + (v || '(blank)') + '\u201d \u00d7' + n).join(', ') + ' \u2014 review before aggregation' });
+  };
+  chk('Crossed To', r => normIdent(r.crossedTo));
+  chk('Tier to Apply', r => { const x = resolvePrice({ ourItemNumber:r.crossedTo, tierToApply:r.tierToApply }); return x.tier ? x.tier.name : String(r.tierToApply || '').trim(); });
+  chk('Pricing program', r => { const x = resolvePrice({ ourItemNumber:r.crossedTo, tierToApply:r.tierToApply }); return x.program ? progLabel(x.program) : x.group ? 'Standard' : ''; });
+  chk('Channel', r => normalizeChannel(r.purchaseChannel));
+  return out;
 }
 function buildAggregatePreviewB(rows){
   const blocking = [];
@@ -2792,6 +2923,7 @@ function findDuplicateGroups(kind){
   const packKeys = kind === 'A' ? PACK_KEYS : PACK_KEYS_B;
   return groups.filter(g => g.rows.length > 1
     && !packKeys.some(k => g.conflicts[k])
+    && (kind === 'A' ? !relConflicts(g.rows).length : true)
     && (kind === 'A' ? !g.umConflict : true));
 }
 let lastDupIndexA = -1, lastDupIndexB = -1;
@@ -2836,6 +2968,8 @@ function aggregateChecked(){
     return;
   }
   const um = ums.length ? ums[0].v : '';
+  const rc = relConflicts(rows);
+  if (rc.length) { toast('Cannot aggregate: ' + rc.map(x => x.label).join(', ') + ' differ across the ticked rows. Review before aggregation.', true); return; }
 
   const target = {};
   PACK_KEYS.forEach(k => target[k] = commonVal(rows, k));
@@ -2868,6 +3002,8 @@ function aggregateChecked(){
   state.rows[idx >= 0 ? idx : Math.min(at, state.rows.length)] = merged;
 
   rowCache.delete(merged.id);
+  logEvent('Facility/Vendor rows aggregated', 'Facility/Vendor ' + (merged.itemNumber || merged.id), rows.length + ' rows combined (' + rows.map(r => r.id).join(', ') +
+    ') \u2192 ' + fmtQty(qty) + (um ? ' ' + um : '') + '; Crossed To ' + (merged.crossedTo || '-') + ', Tier ' + (merged.tierToApply || '-'));
   checked.clear(); checked.add(merged.id);
   sel = null; cur = null;
   refresh();
@@ -3045,11 +3181,8 @@ function crossBadge(g){
     b.title = 'Crossed with: ' + (others.join(', ') || keyLabel(g.key));
     frag.appendChild(b);
   }
-  if (ci.broken) {
-    const b = el('span', 'pill warn', '\u26a0 unlinked');
-    b.title = '\u201c' + (g.resolved.crossedTo.value || '') + '\u201d isn\u2019t shared by any other row, and doesn\u2019t match an Item #, SKU #, or MFG # either.';
-    frag.appendChild(b);
-  }
+  const xp = xrefPill(derived.xref && derived.xref[g.key]);
+  if (xp) frag.appendChild(xp);
   return frag;
 }
 function buildRowEl(item, vIdx, lefts, fz){
@@ -3108,7 +3241,7 @@ function buildRowEl(item, vIdx, lefts, fz){
 
     const text = cellDisplay(item, col);
     if (/^#(VALUE|DIV\/0|REF|NUM|NAME)/.test(text)) c.classList.add('err');
-    if (col.look && text === '(no cross)') c.classList.add('nomatch');
+    if (col.ref) { c.className += refCellClass(item, col.k); c.title = provenanceText(refRes(item)); }
 
     if (isGroup) {
       if (col.k === state.ui.groupField) {
@@ -3131,6 +3264,11 @@ function buildRowEl(item, vIdx, lefts, fz){
         if (res.source === 'override') { c.classList.add('ovr'); c.appendChild(el('span', 'pill ovr', 'OVR')); }
         else if (g.conflicts[col.k]) c.appendChild(el('span', 'pill warn', '\u26a0'));
         if (col.k === 'crossedTo') c.appendChild(crossBadge(g));
+        if (col.k === 'tierToApply') {
+          const xr = derived.xref && derived.xref[g.key];
+          if (xr && (xr.state === 'tierRequired' || xr.state === 'tierInvalid')) { const p = xrefPill(xr); if (p) c.appendChild(p); }
+          else if (xr && xr.tier) c.title = tierLabel(xr.tier) + (xr.contract ? ' \u00b7 contract ' + xr.contract : '');
+        }
       } else if (col.k === 'originalData') {
         const badge = originalDataBadge(text, keyLabel(g.key));
         if (badge) c.appendChild(badge); else c.textContent = dash;
@@ -3151,6 +3289,11 @@ function buildRowEl(item, vIdx, lefts, fz){
           c.classList.add('flag');
       }
       if (item.detail && item.detail.eff[col.k] !== item.row[col.k]) c.classList.add('ovr');
+      if (col.k === 'tierToApply' || col.k === 'crossedTo') {
+        const rr = refRes(item);
+        if (rr && ((col.k === 'tierToApply' && (rr.state === 'tierRequired' || rr.state === 'tierInvalid')) ||
+                   (col.k === 'crossedTo' && rr.state === 'unmatched'))) { c.classList.add('flagtier'); c.title = rr.message; if (!text) c.textContent = 'Required'; }
+      }
     }
     r.appendChild(c);
   });
@@ -3187,9 +3330,10 @@ function renderRows(force){
   body.appendChild(frag);
 }
 
-const viewDirty = { aggregated:true, output:true, crosses:true };
+const viewDirty = { aggregated:true, output:true, crosses:true, our:true };
 function renderActiveView(){
   const tab = state.ui.tab;
+  if (tab === 'our'        && viewDirty.our)        { renderOur();        viewDirty.our = false; }
   if (tab === 'aggregated' && viewDirty.aggregated) { renderAggregated(); viewDirty.aggregated = false; }
   if (tab === 'output'     && viewDirty.output)     { renderOutput();     viewDirty.output = false; }
   if (tab === 'crosses'    && viewDirty.crosses)    { renderCrosses();    viewDirty.crosses = false; }
@@ -3204,7 +3348,7 @@ function refresh(){
   renderGroupFieldUI();
   renderBulkBar();
   renderRail();
-  viewDirty.aggregated = viewDirty.output = viewDirty.crosses = true;
+  viewDirty.aggregated = viewDirty.output = viewDirty.crosses = viewDirty.our = true;
   renderActiveView();
   refreshOverrideModal();
   saveSoon();
@@ -3358,7 +3502,7 @@ function beginEdit(seed){
     const item = visItem(cur.r);
     if (item && item.type === 'group') toast('Group rows are a view over the source rows. Edit this ' + groupFieldCol().name + ' on the Aggregated tab (double-click to jump there).');
     else if (COLS[cur.c].meta) toast('Original Data is written automatically when rows are aggregated.');
-    else if (COLS[cur.c].look) toast(COLS[cur.c].name + ' is looked up from Crossed To \u2014 change Crossed To to change it.');
+    else if (COLS[cur.c].look || COLS[cur.c].ref) toast(COLS[cur.c].name + ' is looked up from Crossed To \u2014 change Crossed To or Tier to Apply to change it.');
     else if (COLS[cur.c].calc) toast(COLS[cur.c].name + ' is calculated from columns A:K.');
     return;
   }
@@ -3369,6 +3513,8 @@ function beginEdit(seed){
   const inp = el('input', 'edit');
   inp.value = seed !== undefined ? seed : (t.item.row[t.col.k] == null ? '' : String(t.item.row[t.col.k]));
   inp.style.width = '100%'; inp.style.left = '0'; inp.style.top = '0';
+  const lid = listIdFor(t.col.k, t.item.detail ? t.item.detail.eff : t.item.row);
+  if (lid) { inp.setAttribute('list', lid); inp.style.minWidth = '150px'; }
   cell.style.position = 'relative';
   cell.appendChild(inp);
   inp.focus();
@@ -3391,12 +3537,15 @@ function cancelEdit(){
 function commitEdit(){
   if (!editor) return;
   const e = editor; editor = null;
-  const val = e.inp.value;
+  let val = e.inp.value;
   if (e.inp.parentNode) e.inp.parentNode.removeChild(e.inp);
   const row = state.rows.find(r => r.id === e.rowId);
+  if (row && REL_KEYS.includes(e.key)) val = normalizeRelInput(e.key, val, row);
   if (row && String(row[e.key] == null ? '' : row[e.key]) !== val) {
     pushUndo();
+    const was = row[e.key] == null ? '' : String(row[e.key]);
     row[e.key] = val;
+    if (REL_KEYS.includes(e.key)) logEvent(fieldLabel(e.key) + ' changed', 'Facility/Vendor ' + (row.itemNumber || row.id) + ' (' + row.id + ')', '\u201c' + was + '\u201d \u2192 \u201c' + val + '\u201d');
     refresh();
   } else renderRows(true);
 }
@@ -3449,8 +3598,9 @@ function stripHeader(matrix){
 
 function applyMatrix(matrix, startRowIndex, startCol){
   matrix = stripHeader(matrix);
-  /* startCol is a sheet column; input keys skip the read-only columns in between */
-  startCol = COLS.slice(0, startCol).filter(c => !c.calc && !c.meta).length;
+  /* startCol is a sheet column; map it to the first input key at or after it (paste order = INPUT_KEYS) */
+  { const firstIn = COLS.slice(startCol).find(c => !c.calc && !c.meta);
+    startCol = firstIn ? INPUT_KEYS.indexOf(firstIn.k) : INPUT_KEYS.length; }
   if (!matrix.length) { toast('Nothing to paste.', true); return; }
   const widest = Math.max(...matrix.map(r => r.length));
   const room = COLS.length - startCol;
@@ -3716,12 +3866,14 @@ function doUndo(){
   if (!undoStack.length) { toast('Nothing to undo.'); return; }
   redoStack.push(snapshot());
   restore(undoStack.pop());
+  logEvent('Undo', 'Case', 'Last change reverted');
   refresh(); toast('Undone.');
 }
 function doRedo(){
   if (!redoStack.length) { toast('Nothing to redo.'); return; }
   undoStack.push(snapshot());
   restore(redoStack.pop());
+  logEvent('Redo', 'Case', 'Change re-applied');
   refresh(); toast('Redone.');
 }
 
@@ -3923,7 +4075,9 @@ function bulkUpdateField(key, newVal){
   }
   const targets = rows.filter(r => String(r[key] == null ? '' : r[key]) !== out);
   if (!targets.length) { toast('Every ticked row already has that value.'); return; }
+  if (REL_KEYS.includes(key)) out = normalizeRelInput(key, out, rows[0]);
   pushUndo();
+  if (REL_KEYS.includes(key)) logEvent(col.name + ' bulk change', targets.length + ' Facility/Vendor rows', 'Set to \u201c' + out + '\u201d on ' + targets.map(r => r.itemNumber || r.id).join(', '));
   targets.forEach(r => {
     if (key === 'orderedQty' || key === 'orderedUM') { captureOrig(r); r[key] = out; settleOrig(r); }
     else { captureFieldOrig(r, key); r[key] = out; settleFieldOrig(r, key); }
@@ -3967,6 +4121,7 @@ function setOverride(key, k, val){
   const next = Object.assign({}, state.overrides[key] || {});
   if (v === '') delete next[k]; else next[k] = v;
   if (Object.keys(next).length) state.overrides[key] = next; else delete state.overrides[key];
+  logEvent(v === '' ? 'Field override cleared' : 'Field override set', 'Facility/Vendor ' + keyLabel(key), fieldLabel(k) + ': \u201c' + (cur == null ? '' : cur) + '\u201d \u2192 \u201c' + v + '\u201d');
   refresh();
   toast(v === '' ? fieldLabel(k) + ' override cleared.'
                  : fieldLabel(k) + ' overridden to "' + v + '" for ' + keyLabel(key) + '. Source rows unchanged.');
@@ -4001,7 +4156,9 @@ function inlineOvrInput(g, k){
   if (d && d.length > 1) inp.classList.add('conflict');
   inp.addEventListener('click', e => e.stopPropagation());
   inp.addEventListener('mousedown', e => e.stopPropagation());
-  inp.addEventListener('change', () => { aggCellFocus = null; setOverride(g.key, k, inp.value); });
+  if (REL_KEYS.includes(k)) { const lid = listIdFor(k, { crossedTo:gVal(g, 'crossedTo') }); if (lid) inp.setAttribute('list', lid); }
+  const ovVal = () => REL_KEYS.includes(k) && inp.value.trim() ? normalizeRelInput(k, inp.value, { crossedTo:gVal(g, 'crossedTo') }) : inp.value;
+  inp.addEventListener('change', () => { aggCellFocus = null; setOverride(g.key, k, ovVal()); });
   inp.addEventListener('keydown', ev => {
     ev.stopPropagation();
     if (ev.key === 'Escape') { ev.preventDefault(); inp.value = isOvr ? String(ov[k]) : ''; inp.blur(); return; }
@@ -4009,13 +4166,13 @@ function inlineOvrInput(g, k){
     ev.preventDefault();
     if (inp.closest('#modalBody')) {             // in the editor window: commit and let go of the field,
       aggCellFocus = null;                        // so Left / Right step to the previous / next item
-      setOverride(g.key, k, inp.value);
+      setOverride(g.key, k, ovVal());
       const ae = document.activeElement;
       if (ae && $('#modalBody').contains(ae) && ae.blur) ae.blur();
       return;
     }
     aggCellFocus = { key:g.key, field:k };
-    if (!setOverride(g.key, k, inp.value)) restoreCellFocus();
+    if (!setOverride(g.key, k, ovVal())) restoreCellFocus();
   });
   return inp;
 }
@@ -4941,6 +5098,9 @@ function buildEditorPanel(g){
       '. Each row keeps its own Ordered UM \u2014 the pack size converts them all to eaches. Edit the rows below to normalize the order by hand.' }));
   }
 
+  /* --- Our Pricing cross: resolved price, provenance, contract price override --- */
+  p.appendChild(pricingBlock(g));
+
   /* --- mixed-UM breakdown suggestion --- */
   const sug = umSuggestion(g);
   if (sug) p.appendChild(suggestionBox(g, sug));
@@ -5163,10 +5323,17 @@ const OUT_COLS = [
   { k:'vendorName',      h:'Vendor Name'       },
   { k:'skuNumber',       h:'SKU Number'        },
   { k:'crossedTo',       h:'Crossed To'        },
+  { k:'tierToApply',     h:'Tier to Apply'     },
+  { k:'purchaseChannel', h:'Channel'           },
+  { k:'orderRef',        h:'Order Ref'         },
   { k:'category',        h:'Category'          },
   { k:'xtoFacility',     h:'Crossed To Facility' },
   { k:'xtoVendor',       h:'Crossed To Vendor'   },
   { k:'xtoCategory',     h:'Crossed To Category' },
+  { k:'ourDesc',         h:'Our Pricing Item',  zone:'ours' },
+  { k:'ourPricing',      h:'Program \u00b7 Tier', zone:'ours' },
+  { k:'ourCasePrice',    h:'Contract Price',    zone:'ours', num:true },
+  { k:'ourEachPrice',    h:'Contract Each',     zone:'ours', num:true },
   { k:'factorQty',       h:'Factor QTY',       num:true, zone:'analysed' },
   { k:'factorUM',        h:'Factor UM',        zone:'analysed' },
   { k:'packagingDetails',h:'Packaging Details',zone:'analysed' },
@@ -5178,6 +5345,7 @@ const OUT_COLS = [
 ];
 
 function aggValue(g, k, raw){
+  if (COL_BY_KEY[k] && COL_BY_KEY[k].ref) return refText({ type:'group', group:g }, k, raw);
   if (XTO_LOOK[k]) return xtoText(xtoValueOf({ type:'group', group:g }), k, xtoOwnItems({ type:'group', group:g }));
   if (k === state.ui.groupField) return keyLabel(g.key);
   switch (k) {
@@ -5193,6 +5361,7 @@ function aggValue(g, k, raw){
   }
 }
 function detailValue(d, k, raw){
+  if (COL_BY_KEY[k] && COL_BY_KEY[k].ref) return refText({ type:'row', row:d.row, detail:d }, k, raw);
   if (XTO_LOOK[k]) return xtoText(d.row.crossedTo, k, [d.row.itemNumber]);
   const col = COL_BY_KEY[k];
   if (col && col.calc) return raw ? resRaw(d.calc[k]) : resText(d.calc[k], col.fmt);
@@ -5202,6 +5371,7 @@ function detailValue(d, k, raw){
 }
 
 function outMatrix(mode, raw){
+  if (mode === 'audit' || mode === 'auditSrc' || mode === 'events') return auditMatrix(mode, raw);
   const out = [];
   if (mode === 'agg') {
     derived.groups.forEach(g => out.push(OUT_COLS.map(c => aggValue(g, c.k, raw))));
@@ -5212,9 +5382,11 @@ function outMatrix(mode, raw){
   return out;
 }
 function outHeaders(mode){
-  return OUT_COLS.map(c => 'Items List \u2014 ' + c.h);
+  if (mode === 'audit' || mode === 'auditSrc' || mode === 'events') return auditHeaders(mode);
+  return OUT_COLS.map(c => 'Facility/Vendor \u2014 ' + c.h);
 }
 function outMeta(mode){
+  if (mode === 'audit' || mode === 'auditSrc' || mode === 'events') return auditMeta(mode);
   return OUT_COLS.map(c => ({ zone:c.zone, num:c.num }));
 }
 
@@ -5352,6 +5524,8 @@ function renderOutput(){
   const pane = $('#paneOut');
   pane.innerHTML = '';
   const mode = state.ui.outMode;
+  [...$('#segOut').children].forEach(x => x.classList.toggle('on', x.dataset.out === mode));
+  if (mode === 'audit' || mode === 'auditSrc' || mode === 'events') { renderAuditLog(pane); return; }
   const matrix = outMatrix(mode, false);
   if (!matrix.length) {
     pane.appendChild(emptyNote(mode.indexOf('alt') === 0 || mode === 'cross'
@@ -6093,6 +6267,7 @@ async function exportExcel(){
   });
   S.pageSetup = { orientation:'portrait', paperSize:9, fitToPage:true, fitToWidth:1, fitToHeight:1 };
 
+  addAuditSheets(wb);
   wb.views = [{ activeTab:1, firstSheet:0 }];
   const buf = await wb.xlsx.writeBuffer();
   const name = xlSafeSheetFile(caseName) + ' - normalized ' + stamp() + '.xlsx';
@@ -6117,11 +6292,20 @@ function renderCounts(){
    four separate places to remember to check. */
 function collectProblems(){
   const items = [];
+  const ourErr = state.our.rows.filter(r => ourIssueLevel(r) === 'error').length;
+  if (ourErr) items.push({ level:'error', label:'Our Pricing', text:ourErr + ' record' + (ourErr === 1 ? ' has' : 's have') + ' errors (missing Item #, bad price, or conflicting duplicates).',
+    go:() => { state.ui.ourIssuesOnly = true; $('#chkOurIssues').checked = true; switchTab('our'); } });
   derived.groups.forEach(g => {
-    if (g.issueLevel === 'error') items.push({ level:'error', label:'Items List \u2014 ' + keyLabel(g.key),
+    const r = derived.xref && derived.xref[g.key];
+    if (!r || r.state === 'ok' || r.state === 'notAssigned') return;
+    items.push({ level:XSTATE[r.state].level === 'error' ? 'error' : 'warn', label:'Facility/Vendor \u2014 ' + keyLabel(g.key),
+      text:XSTATE[r.state].label + '. ' + (r.message || ''), go:() => openSheetEditor(g.key) });
+  });
+  derived.groups.forEach(g => {
+    if (g.issueLevel === 'error') items.push({ level:'error', label:'Facility/Vendor \u2014 ' + keyLabel(g.key),
       text:'This item has a data error.', go:() => { switchTab('normalization'); } });
-    else if (g.hasConflict && !g.hasOverride) items.push({ level:'warn', label:'Items List \u2014 ' + keyLabel(g.key),
-      text:'Packaging conflict needs resolving.', go:() => { switchTab('aggregated'); aggOpen.add(g.key); renderAggregated(); } });
+    else if (g.hasConflict && !g.hasOverride) items.push({ level:'warn', label:'Facility/Vendor \u2014 ' + keyLabel(g.key),
+      text:(REL_KEYS.some(k => g.conflicts[k]) ? 'Source rows disagree on ' + REL_KEYS.filter(k => g.conflicts[k]).map(fieldLabel).join(', ') + ' \u2014 review.' : 'Packaging conflict needs resolving.'), go:() => { switchTab('aggregated'); aggOpen.add(g.key); renderAggregated(); } });
   });
   return items;
 }
@@ -6173,7 +6357,15 @@ function renderRail(){
   const rail = $('#rail');
   rail.innerHTML = '';
 
-  // Vendor A
+  // Our Pricing
+  const oRows = state.our.rows;
+  const oErr = oRows.filter(r => ourIssueLevel(r) === 'error').length, oWarn = oRows.filter(r => ourIssueLevel(r) === 'warn').length;
+  rail.appendChild(railStage('Our Pricing', 'our',
+    !oRows.length ? 'Not started' : oErr ? oErr + ' error' + (oErr === 1 ? '' : 's') : ourD.groups.length + ' item' + (ourD.groups.length === 1 ? '' : 's') + (oWarn ? ' \u00b7 ' + oWarn + ' to check' : ''),
+    !oRows.length ? '' : oErr ? 'err' : oWarn ? 'warn' : 'ok', () => switchTab('our')));
+  rail.appendChild(el('span', 'railDivider'));
+
+  // Facility/Vendor Pricing
   const Ga = derived.groups;
   const aErr = Ga.filter(g => g.issueLevel === 'error').length;
   const aWarn = Ga.filter(g => g.hasConflict && !g.hasOverride).length;
@@ -6182,18 +6374,20 @@ function renderRail(){
     : aWarn ? aWarn + ' conflict' + (aWarn === 1 ? '' : 's')
     : Ga.length + ' item' + (Ga.length === 1 ? '' : 's') + ' ready';
   const aDot = !state.rows.length ? '' : aErr ? 'err' : aWarn ? 'warn' : 'ok';
-  rail.appendChild(railStage('Items List', 'A', aStatus, aDot, () => switchTab(state.ui.lastSubA || 'normalization')));
+  rail.appendChild(railStage('Facility/Vendor Pricing', 'A', aStatus, aDot, () => switchTab(state.ui.lastSubA || 'normalization')));
 
-  // Crosses analysis — only items with a Crossed To value
+  // Cross Analysis
   rail.appendChild(el('span', 'railDivider'));
-  const xN = (() => { try { return state.rows.length ? xsTargets().size : 0; } catch (e) { return 0; } })();
-  rail.appendChild(railStage('Crosses', 'crosses',
-    !state.rows.length ? 'Not started' : xN ? xN + ' crossed item' + (xN === 1 ? '' : 's') : 'No Crossed To values',
-    !state.rows.length ? '' : xN ? 'ok' : '', () => switchTab('crosses')));
+  const X = derived.xref || {};
+  const xOk = Ga.filter(g => X[g.key] && X[g.key].state === 'ok').length;
+  const xBad = Ga.filter(g => X[g.key] && X[g.key].state !== 'ok' && X[g.key].state !== 'notAssigned').length;
+  rail.appendChild(railStage('Cross Analysis', 'crosses',
+    !state.rows.length ? 'Not started' : xOk + ' priced' + (xBad ? ' \u00b7 ' + xBad + ' unresolved' : '') ,
+    !state.rows.length ? '' : xBad ? 'warn' : xOk ? 'ok' : '', () => switchTab('crosses')));
 
-  // Final output — not a pipeline stage, so a plain divider rather than an arrow
+  // Audit Log
   rail.appendChild(el('span', 'railDivider'));
-  rail.appendChild(railStage('Final output', 'output', '', '', () => switchTab('output')));
+  rail.appendChild(railStage('Audit Log', 'output', state.auditEvents.length ? state.auditEvents.length + ' change' + (state.auditEvents.length === 1 ? '' : 's') + ' logged' : '', '', () => switchTab('output')));
 }
 
 /* ============================================================ STATUS BAR */
@@ -6215,6 +6409,11 @@ function renderStatus(){
             for (let c = a.c1; c <= a.c2; c++) { const v = cellRaw(it, COLS[c]); if (/^-?\d+(\.\d+)?$/.test(v)) { sum += parseFloat(v); cnt++; } } }
         }
         add(rn + ' \u00d7 ' + cn + ' selected' + (cnt ? ' \u00b7 Sum <b>' + fmtQty(Math.round(sum * 1e6) / 1e6) + '</b>' : ''));
+      }
+      else if (col.ref) {
+        const btn = el('button', 'btn sm', 'Show pricing trace');
+        btn.addEventListener('click', () => showPricingTrace(item));
+        s.appendChild(btn);
       }
       else if (col.look) {
         const r = xtoResolve(xtoValueOf(item), xtoOwnItems(item));
@@ -6363,7 +6562,8 @@ function resNum(res){
 const VIEW_UI_KEYS = ['tab','mode','search','colFilters','freeze','issuesOnly','outMode','aggSearch','aggAttn','aggSelectedOnly',
   'modeB','searchB','sortKeyB','sortDirB','freezeB','issuesOnlyB','aggSearchB','aggAttnB','aggSelectedOnlyB','lastSubA','lastSubB',
   'lineItemCols','lineItemColWidths','lineItemView','lineItemCombineStat',
-  'hideNoCross','xuShowNoCross','xsView','xsSearch','xuBase','xuSides','xuColWidths','xsRelColWidths'];
+  'hideNoCross','xuShowNoCross','xsView','xsSearch','xuBase','xuSides','xuColWidths','xsRelColWidths',
+  'xsMode','ourSearch','ourIssuesOnly','ocFac','ocVen','ocColWidths'];
 const VIEW_KEY_SET = new Set(VIEW_UI_KEYS);
 const clone = o => JSON.parse(JSON.stringify(o === undefined ? null : o));
 const pickView = ui => { const o = {}; VIEW_UI_KEYS.forEach(k => { if (ui[k] !== undefined) o[k] = ui[k]; }); return o; };
@@ -6403,7 +6603,8 @@ function saveSoon(){ clearTimeout(saveT); saveT = setTimeout(saveSession, 700); 
 function sessionPayload(){
   return { v:1, at:Date.now(), rows:state.rows, overrides:state.overrides,
            expanded:state.expanded, ui:sharedUi(),
-           alt:state.alt, cross:state.cross };
+           alt:state.alt, cross:state.cross,
+           our:state.our, programs:state.programs, auditEvents:state.auditEvents };
 }
 let localFullWarned = false;
 function saveSession(){
@@ -6429,8 +6630,11 @@ function loadSession(silent){
   try {
     const s = getSessionData(activeSessionId);
     if (!s) { if (!silent) toast('No saved data in this session yet.', true); return false; }
-    if (!s.rows || !s.rows.length) { if (!silent) toast('This session is empty.', true); return false; }
-    state.rows = s.rows; state.overrides = s.overrides || {}; state.expanded = s.expanded || {};
+    if ((!s.rows || !s.rows.length) && !(s.our && s.our.rows && s.our.rows.length)) { if (!silent) toast('This session is empty.', true); return false; }
+    state.rows = s.rows || []; state.overrides = s.overrides || {}; state.expanded = s.expanded || {};
+    state.our = adoptOur(s.our); bumpOurSeq(state.our.rows);
+    state.programs = adoptPrograms(s.programs);
+    state.auditEvents = Array.isArray(s.auditEvents) ? s.auditEvents : [];
     state.alt   = adoptAlt(s.alt);
     state.cross = adoptCross(s.cross);
     /* only the shared settings come from the case; the view stays this browser's own */
@@ -6443,6 +6647,7 @@ function loadSession(silent){
 
 function blankWorkingState(){
   state.rows = []; state.overrides = {}; state.expanded = {};
+  state.our = { rows:[] }; state.programs = clone(DEFAULT_PROGRAMS); state.auditEvents = [];
   state.alt = { rows:[], overrides:{}, expanded:{} };
   state.cross = { vendorA:null, vendorASig:null, vendorASavedAt:null,
                    vendorB:null, vendorBSig:null, vendorBSavedAt:null, remarks:{} };
@@ -6843,7 +7048,7 @@ function renderGroupFieldUI(){
   const sel = $('#groupByField');
   if (sel.value !== state.ui.groupField) sel.value = state.ui.groupField;
   const lbl = $('#btnOutAggLabel');
-  if (lbl) lbl.textContent = 'Items List \u00b7 one row per ' + groupFieldCol().name;
+  if (lbl) lbl.textContent = 'Facility/Vendor list \u00b7 one row per ' + groupFieldCol().name;
   const dupBtn = $('#btnFindDupA');
   if (dupBtn) dupBtn.title = 'Find and tick the next multi-row ' + groupFieldCol().name + ' with no packaging/UM conflict \u2014 a safe, ready-to-merge candidate.';
 }
@@ -7246,7 +7451,14 @@ function xsExceptionTable(title, note, heads, rows){
 }
 
 function renderCrosses(){
-  renderUsageCompare($('#paneCrosses'), $('#xsCards'));
+  const mode = state.ui.xsMode || 'ours';
+  [...$('#segXsMode').children].forEach(x => x.classList.toggle('on', x.dataset.xs === mode));
+  $('#btnXsSetup').style.display = mode === 'fac' ? '' : 'none';
+  $('#xsNote').innerHTML = mode === 'fac'
+    ? 'Facility A&rsquo;s usage priced at Facility B&rsquo;s item with the same Crossed To. Lowest each price in green; <b style="color:var(--err)">NO CROSS</b> in red.'
+    : 'Facility/Vendor usage priced at the crossed Our Pricing item and tier. Lowest each price in green; unresolved crosses in red.';
+  if (mode === 'fac') renderUsageCompare($('#paneCrosses'), $('#xsCards'));
+  else renderOurCompare($('#paneCrosses'), $('#xsCards'));
 }
 
 /* ------------------------------------------ Excel-style column widths
@@ -7482,7 +7694,7 @@ function renderUsageCompare(pane, cards){
   const keep = pane.scrollTop;
   pane.innerHTML = ''; cards.innerHTML = ''; $('#xsSetup').innerHTML = '';
   xuLast = null;
-  if (!derived.groups.length) { pane.appendChild(emptyNote('Nothing to compare yet. Paste your range on the Sheet tab.')); return; }
+  if (!derived.groups.length) { pane.appendChild(emptyNote('Nothing to compare yet. Paste your range on the Facility/Vendor Pricing sheet.')); return; }
   const lines = xuLines();
   $('#xsSetup').appendChild(xuSetupPanel(lines, () => { saveSoon(); renderCrosses(); }));
   const A = state.ui.xuBase, B = state.ui.xuSides[0];
@@ -7665,10 +7877,14 @@ function xuCopyTable(){
   });
   copyText(out.join('\n'), 'Copied ' + res.rows.length + ' items');
 }
-$('#btnXuCopy').addEventListener('click', xuCopyTable);
+$('#btnXuCopy').addEventListener('click', () => (state.ui.xsMode || 'ours') === 'fac' ? xuCopyTable() : ocCopyTable());
+$('#segXsMode').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  state.ui.xsMode = b.dataset.xs; saveViewPrefs(); renderCrosses();
+});
 $('#chkXuNoCross').addEventListener('change', e => { state.ui.xuShowNoCross = e.target.checked; saveViewPrefs(); renderCrosses(); });
 $('#btnXsWidths').addEventListener('click', () => {
-  state.ui.xuColWidths = {};
+  state.ui.xuColWidths = {}; state.ui.ocColWidths = {};
   saveViewPrefs(); renderCrosses(); toast('Column widths reset.');
 });
 
@@ -7679,6 +7895,1605 @@ $('#xsSearch').addEventListener('input', e => {
   xsSearchT = setTimeout(() => { state.ui.xsSearch = v; renderCrosses(); }, 140);
 });
 $('#btnXsSetup').addEventListener('click', () => openCrossSetup(exportExcel));
+
+/* ============================================================================
+   PRICING LAYER
+   Our Pricing (master catalog + tier schedules) -> Facility/Vendor Pricing
+   (Crossed To + Tier to Apply) -> resolver -> Cross Analysis -> Audit Log.
+
+   Architectural rules kept here on purpose:
+   1. Our Pricing owns products and their pricing, including tier schedules.
+   2. Facility/Vendor Pricing owns Crossed To (-> Our Pricing Item #) and
+      Tier to Apply. A vendor record never stores a tier price.
+   3. Tiers are contract/commitment levels, not quantity breaks.
+   4. Order-level adjustments (e.g. a direct-order surcharge under a minimum case count) are
+      applied after the base tier price is resolved, never baked into it.
+   5. Aggregation happens inside each section and never destroys the
+      source records it replaces.
+   ========================================================================= */
+
+/* ------------------------------------------------------ pricing programs */
+/* No built-in programs: every vendor's program (tiers, contracts, effective
+   date, order-level surcharge rules) is entered by the user in
+   "Pricing programs…" or created from an imported tier file. */
+const DEFAULT_PROGRAMS = [];
+const CHANNELS = ['Direct', 'Distributor'];
+const REL_KEYS = ['crossedTo', 'tierToApply', 'purchaseChannel', 'orderRef'];
+
+state.our = { rows:[] };
+state.programs = clone(DEFAULT_PROGRAMS);
+state.auditEvents = [];
+let ourSeq = 0;
+const newOurId = () => 'our-' + String(++ourSeq).padStart(6, '0');
+function bumpOurSeq(rows){
+  (rows || []).forEach(r => { const n = parseInt(String(r.id).slice(4), 10); if (n > ourSeq) ourSeq = n; });
+}
+function adoptOur(o){
+  o = o || {};
+  const rows = Array.isArray(o.rows) ? o.rows : [];
+  rows.forEach(r => { if (!r.prices || typeof r.prices !== 'object') r.prices = {}; });
+  return { rows };
+}
+function adoptPrograms(p){ return Array.isArray(p) ? p : clone(DEFAULT_PROGRAMS); }
+function programById(id){
+  const s = String(id == null ? '' : id).trim().toLowerCase();
+  if (!s) return null;
+  return state.programs.find(p => p.id.toLowerCase() === s || String(p.name).toLowerCase() === s ||
+                                   String(p.shortName || '').toLowerCase() === s) || null;
+}
+const progLabel = p => p ? (p.shortName || p.name) : '';
+const tierNum = t => { const m = String(t && t.name || '').match(/(\d+)/); return m ? m[1] : null; };
+/** Accepts "tier3", "Tier 3", "3", "T3", "Tier 3 \u2014 $250K\u2026" and returns the program's tier, else null. */
+function tierOf(program, v){
+  if (!program || !program.tiers || !program.tiers.length) return null;
+  const s = String(v == null ? '' : v).trim();
+  if (!s) return null;
+  const flat = s.toLowerCase().replace(/\s+/g, '');
+  let t = program.tiers.find(x => x.id.toLowerCase() === flat || String(x.name).toLowerCase().replace(/\s+/g, '') === flat);
+  if (t) return t;
+  const m = s.match(/^(?:tier|t)?\s*(\d+)\b/i);
+  if (m) t = program.tiers.find(x => tierNum(x) === m[1]);
+  return t || null;
+}
+const tierLabel = t => t ? t.name + ' \u2014 ' + t.description : '';
+const isCaseUnit = u => /^(cs|ca|case|cases)$/i.test(String(u || 'CS').trim());
+function priceNum(v){
+  if (isBlank(v)) return null;
+  const n = toNum(v);
+  return n === null ? NaN : n;
+}
+const okNum = n => typeof n === 'number' && isFinite(n);
+
+/* --------------------------------------------------------- audit events */
+function logEvent(type, target, detail){
+  state.auditEvents.push({ at:new Date().toISOString(), type, target:String(target == null ? '' : target), detail:String(detail == null ? '' : detail) });
+  if (state.auditEvents.length > 3000) state.auditEvents.splice(0, state.auditEvents.length - 3000);
+}
+
+/* ======================================================= OUR PRICING MODEL */
+const OUR_TEXT_FIELDS = [
+  { k:'itemNumber',       name:'Item #',           w:110 },
+  { k:'productCode',      name:'Product Code',     w:120 },
+  { k:'description',      name:'Description',      w:220 },
+  { k:'packagingDetails', name:'Packaging Details',w:140 },
+  { k:'factorQty',        name:'Factor QTY',       w:70, num:true },
+  { k:'priceUnit',        name:'Price Unit',       w:70 },
+  { k:'status',           name:'Status',           w:80 },
+  { k:'program',          name:'Pricing Program',  w:170 },
+  { k:'contract',         name:'Contract',         w:100 },
+  { k:'stdPrice',         name:'Standard Price',   w:100, num:true }
+];
+const OUR_FIELD_NAME = Object.fromEntries(OUR_TEXT_FIELDS.map(f => [f.k, f.name]));
+const ourKey = v => normIdent(v);
+function blankOurRow(){
+  const r = { id:newOurId(), prices:{} };
+  OUR_TEXT_FIELDS.forEach(f => r[f.k] = '');
+  return r;
+}
+/** Tier columns shown on Our Pricing: every tier of every program in use (or every program when nothing is loaded). */
+function ourTierCols(){
+  const used = new Set(state.our.rows.map(r => { const p = programById(r.program); return p ? p.id : null; }).filter(Boolean));
+  const progs = state.programs.filter(p => (p.tiers || []).length && (!used.size || used.has(p.id)));
+  const multi = progs.length > 1;
+  const out = [];
+  progs.forEach(p => p.tiers.forEach(t => out.push({ key:'price:' + p.id + ':' + t.id, program:p, tier:t,
+    name:t.name + (multi ? ' (' + progLabel(p) + ')' : '') })));
+  return out;
+}
+
+let ourD = { groups:[], byKey:new Map(), rowIssues:{} };
+/** The pricing fields that must agree before two records of one Item # can be combined. */
+function ourPricingSig(r){
+  const p = programById(r.program);
+  const parts = [p ? p.id : String(r.program || '').trim().toLowerCase(), String(r.priceUnit || '').trim().toUpperCase(),
+                 String(r.contract || '').trim()];
+  const pn = v => { const n = priceNum(v); return n === null ? '' : isNaN(n) ? '?' + String(v).trim() : String(n); };
+  if (p && (p.tiers || []).length) p.tiers.forEach(t => parts.push(t.id + '=' + pn((r.prices || {})[t.id])));
+  else parts.push('std=' + pn(r.stdPrice));
+  return parts.join('|');
+}
+function ourPricingDiffs(rows){
+  const diffs = [];
+  const chk = (label, fn) => {
+    const m = new Map();
+    rows.forEach(r => { const v = fn(r); m.set(v, (m.get(v) || 0) + 1); });
+    if (m.size > 1) diffs.push({ label, values:[...m.entries()].map(([v, n]) => ({ v: v === '' ? '(blank)' : v, n })) });
+  };
+  chk('Pricing Program', r => { const p = programById(r.program); return p ? progLabel(p) : String(r.program || '').trim(); });
+  chk('Price Unit', r => { const p = programById(r.program); return String(r.priceUnit || (p && p.priceUnit) || 'CS').trim().toUpperCase(); });
+  chk('Contract', r => String(r.contract || '').trim());
+  const progIds = new Set(rows.map(r => { const p = programById(r.program); return p ? p.id : ''; }));
+  if (progIds.size === 1) {
+    const p = programById([...progIds][0]);
+    if (p && (p.tiers || []).length) p.tiers.forEach(t => chk(t.name + ' price', r => {
+      const n = priceNum((r.prices || {})[t.id]); return n === null ? '' : isNaN(n) ? String(r.prices[t.id]) : fmtMoney(n); }));
+    else chk('Standard Price', r => { const n = priceNum(r.stdPrice); return n === null ? '' : isNaN(n) ? String(r.stdPrice) : fmtMoney(n); });
+  }
+  return diffs;
+}
+function buildOurDerived(){
+  const groups = [], byKey = new Map(), rowIssues = {};
+  state.our.rows.forEach(r => {
+    const k = ourKey(r.itemNumber) || ('\u0000' + r.id);
+    let g = byKey.get(k);
+    if (!g) { g = { key:k, item:String(r.itemNumber || '').trim(), rows:[] }; byKey.set(k, g); groups.push(g); }
+    g.rows.push(r);
+  });
+  groups.forEach(g => {
+    g.diffs = g.rows.length > 1 ? ourPricingDiffs(g.rows) : [];
+    g.priceConflict = g.diffs.length > 0;
+    g.rep = g.rows[0];
+    const ip = calcInnerPack(g.rep.packagingDetails, g.rep.factorQty);
+    g.epc = okNum(ip.v) && ip.v > 0 ? ip.v : null;
+  });
+  state.our.rows.forEach(r => {
+    const out = [];
+    const add = (level, text) => out.push({ level, text });
+    const g = byKey.get(ourKey(r.itemNumber) || ('\u0000' + r.id));
+    if (isBlank(r.itemNumber)) add('error', 'Missing Item # \u2014 nothing can cross to this record.');
+    const p = programById(r.program);
+    if (!isBlank(r.program) && !p) add('error', 'Pricing program \u201c' + r.program + '\u201d is not defined (Pricing programs\u2026).');
+    if (p && (p.tiers || []).length) {
+      const missing = [];
+      p.tiers.forEach(t => {
+        const n = priceNum((r.prices || {})[t.id]);
+        if (n === null) missing.push(t.name);
+        else if (isNaN(n)) add('error', t.name + ' price \u201c' + r.prices[t.id] + '\u201d is not a number.');
+      });
+      if (missing.length) add('warn', 'No price for ' + missing.join(', ') + ' \u2014 a cross using that tier shows \u201cNot Available\u201d.');
+    } else {
+      const n = priceNum(r.stdPrice);
+      if (n === null) add('warn', 'No standard price.');
+      else if (isNaN(n)) add('error', 'Standard Price \u201c' + r.stdPrice + '\u201d is not a number.');
+    }
+    if (!isBlank(r.factorQty) && toNum(r.factorQty) === null) add('error', 'Factor QTY \u201c' + r.factorQty + '\u201d is not a number.');
+    if (g && g.rows.length > 1) {
+      if (g.priceConflict) add('error', 'Item # appears ' + g.rows.length + ' times with different pricing (' + g.diffs.map(d => d.label).join(', ') + '). Fix one record, then aggregate.');
+      else add('warn', 'Item # appears ' + g.rows.length + ' times with the same pricing \u2014 aggregate them into one record.');
+    }
+    rowIssues[r.id] = out;
+  });
+  ourD = { groups, byKey, rowIssues };
+}
+
+/* ============================================================== RESOLVER */
+const XSTATE = {
+  ok:           { label:'Resolved',                   short:'',              level:'ok'    },
+  notAssigned:  { label:'Crossed To: Not Assigned',   short:'Not Assigned',  level:'info'  },
+  unmatched:    { label:'Not in Our Pricing',         short:'Unmatched',     level:'error' },
+  ourConflict:  { label:'Our Pricing conflict',       short:'Conflict',      level:'error' },
+  noProgram:    { label:'Pricing program missing',    short:'No program',    level:'error' },
+  tierRequired: { label:'Tier to Apply: Required',    short:'Tier Required', level:'warn'  },
+  tierInvalid:  { label:'Invalid Tier to Apply',      short:'Invalid Tier',  level:'error' },
+  noPrice:      { label:'Price: Not Available',       short:'Not Available', level:'warn'  },
+  relConflict:  { label:'Source rows disagree on the cross', short:'Rows disagree', level:'warn' }
+};
+/**
+ * Central pricing resolver. Pure: reads Our Pricing and the programs, never the UI.
+ * Returns the base (contract) price and its provenance. Order-level adjustments
+ * and overrides are layered on later by applyOrderAdjustments / the xref pass.
+ */
+function resolvePrice(q){
+  const out = { state:'ok', ourItemNumber:String(q.ourItemNumber == null ? '' : q.ourItemNumber).trim(),
+                tierInput:String(q.tierToApply == null ? '' : q.tierToApply).trim(),
+                notes:[], adjustments:[], pricingType:null, program:null, tier:null, basePrice:null };
+  const fail = (st, msg) => { out.state = st; out.message = msg; return out; };
+  if (!out.ourItemNumber) return fail('notAssigned', 'Crossed To is blank \u2014 no Our Pricing Item # has been assigned.');
+  const g = ourD.byKey.get(ourKey(out.ourItemNumber));
+  if (!g) return fail('unmatched', 'Crossed To \u201c' + out.ourItemNumber + '\u201d does not match any Item # in Our Pricing.');
+  const r = g.rep;
+  out.group = g; out.ourItem = r;
+  out.ourRecordIds = g.rows.map(x => x.id);
+  out.description = String(r.description || '').trim();
+  out.productCode = String(r.productCode || '').trim();
+  out.ourEachesPerCase = g.epc;
+  out.ourPackaging = String(r.packagingDetails || '').trim();
+  if (g.priceConflict) return fail('ourConflict', 'Our Pricing has ' + g.rows.length + ' records for Item # ' + g.item +
+    ' with different ' + g.diffs.map(d => d.label).join(', ') + '. Resolve them before this cross can be priced.');
+  if (!isBlank(r.program)) {
+    const p = programById(r.program);
+    if (!p) return fail('noProgram', 'Item # ' + g.item + ' names pricing program \u201c' + r.program + '\u201d, which is not defined.');
+    out.program = p;
+    out.effectiveDate = p.effectiveDate || '';
+    out.priceUnit = String(r.priceUnit || p.priceUnit || 'CS').trim().toUpperCase();
+    out.pricingType = (p.tiers || []).length ? 'tiered' : 'standard';
+  } else {
+    out.pricingType = 'standard';
+    out.priceUnit = String(r.priceUnit || 'CS').trim().toUpperCase();
+  }
+  if (out.pricingType === 'tiered') {
+    const p = out.program;
+    if (!out.tierInput) return fail('tierRequired', 'Item # ' + g.item + ' is tiered (' + progLabel(p) + '). Choose a Tier to Apply \u2014 no tier is assumed.');
+    const t = tierOf(p, out.tierInput);
+    if (!t) return fail('tierInvalid', '\u201c' + out.tierInput + '\u201d is not a tier of ' + progLabel(p) + ' (valid: ' + p.tiers.map(x => x.name).join(', ') + ').');
+    out.tier = t; out.contract = t.contract || '';
+    const n = priceNum((r.prices || {})[t.id]);
+    if (n === null || isNaN(n)) return fail('noPrice', 'Our Pricing has no usable ' + t.name + ' price for Item # ' + g.item + '.');
+    out.basePrice = n;
+  } else {
+    if (out.tierInput) out.notes.push('Tier to Apply \u201c' + out.tierInput + '\u201d is not used \u2014 Item # ' + g.item + ' has standard pricing.');
+    out.contract = String(r.contract || '').trim();
+    const n = priceNum(r.stdPrice);
+    if (n === null || isNaN(n)) return fail('noPrice', 'Our Pricing has no usable standard price for Item # ' + g.item + '.');
+    out.basePrice = n;
+  }
+  out.adjustedPrice = out.basePrice;
+  out.effectivePrice = out.basePrice;
+  return out;
+}
+const chanNorm = v => String(v || '').trim().toLowerCase();
+function normalizeChannel(v){
+  const s = chanNorm(v);
+  if (!s) return '';
+  if (s.startsWith('dir')) return 'Direct';
+  if (s.startsWith('dist')) return 'Distributor';
+  return String(v).trim();
+}
+/** Order-level adjustments: generic program rules evaluated against the order context. */
+function applyOrderAdjustments(res, ctx){
+  if (res.state !== 'ok' || !res.program) return;
+  (res.program.adjustments || []).forEach(a => {
+    if (a.type !== 'orderSurcharge') return;
+    const per = toNum(a.perCase) || 0, min = toNum(a.minCases) || 0;
+    const rec = { id:a.id, label:a.label, perCase:per, minCases:min, channel:a.channel, applied:false, status:'na', reason:'' };
+    const ch = String(ctx.channel || '').trim();
+    if (!isCaseUnit(res.priceUnit)) { rec.reason = 'Price unit is ' + res.priceUnit + ', not cases \u2014 per-case rule not evaluated.'; rec.status = 'unknown'; }
+    else if (!ch) { rec.status = 'unknown'; rec.reason = 'Channel not set \u2014 this rule only applies to ' + a.channel + ' purchases, so it was not applied.'; }
+    else if (!chanNorm(ch).startsWith(chanNorm(a.channel).slice(0, 3))) rec.reason = ch + ' purchase \u2014 rule applies to ' + a.channel + ' purchases only (distributor terms apply instead).';
+    else if (ctx.orderCases == null) { rec.status = 'unknown'; rec.reason = 'Order case count could not be determined (no case pack on the Our Pricing item and Ordered UM is not CS) \u2014 not applied.'; }
+    else if (ctx.orderCases < min) { rec.applied = true; rec.status = 'applied';
+      rec.reason = 'Order totals ' + fmtQty(Math.round(ctx.orderCases * 100) / 100) + ' cases (< ' + fmtQty(min) + ') \u2192 +' + fmtMoney(per) + '/case'; }
+    else rec.reason = 'Order totals ' + fmtQty(Math.round(ctx.orderCases * 100) / 100) + ' cases (\u2265 ' + fmtQty(min) + ') \u2014 no surcharge.';
+    res.adjustments.push(rec);
+    if (rec.applied) res.adjustedPrice += per;
+  });
+}
+function gVal(g, k){ return g.resolved[k] ? String(g.resolved[k].value == null ? '' : g.resolved[k].value).trim() : ''; }
+/** Resolve every Facility/Vendor group: base price -> order adjustments -> override -> expected totals. */
+function computeXref(){
+  const xr = {};
+  derived.groups.forEach(g => {
+    const res = resolvePrice({ ourItemNumber:gVal(g, 'crossedTo'), tierToApply:gVal(g, 'tierToApply') });
+    /* rows combined under one item must agree on the relationship \u2014 never priced on a majority vote */
+    const RK = { 'Crossed To':'crossedTo', 'Tier to Apply':'tierToApply', 'Pricing program':'crossedTo', 'Channel':'purchaseChannel' };
+    const rc = g.rows.length > 1 ? relConflicts(g.rows).filter(x => !(g.resolved[RK[x.label]] && g.resolved[RK[x.label]].source === 'override')) : [];
+    if (rc.length && res.state !== 'notAssigned') {
+      res.state = 'relConflict';
+      res.message = 'The ' + g.rows.length + ' source rows of this item disagree on ' + rc.map(x => x.label + ' (' + x.detail.replace(/ \u2014 review before aggregation$/, '') + ')').join('; ') +
+        '. Fix the rows or set an override on the item \u2014 it is not priced until then.';
+      res.basePrice = res.adjustedPrice = res.effectivePrice = null; res.tier = null; res.contract = '';
+    }
+    res.facility = gVal(g, 'facility'); res.vendor = gVal(g, 'vendorName');
+    res.channel = normalizeChannel(gVal(g, 'purchaseChannel')); res.orderRef = gVal(g, 'orderRef');
+    res.eaches = g.sumNorm;
+    res.observedTotal = g.sumNet;
+    res.observedEach = g.eachPrice && okNum(g.eachPrice.v) ? g.eachPrice.v : null;
+    let epc = res.ourEachesPerCase || null, src = epc ? 'our' : null;
+    if (!epc && g.innerPack && okNum(g.innerPack.v) && g.innerPack.v > 0) { epc = g.innerPack.v; src = 'vendor'; }
+    res.epc = epc; res.epcSource = src;
+    const um = gVal(g, 'orderedUM');
+    const qErr = g.orderedQtyNorm && g.orderedQtyNorm.err;
+    res.cases = qErr ? null : epc && okNum(g.sumNorm) ? g.sumNorm / epc
+              : (!g.umConflict && isCaseUnit(um) && um) ? g.sumRawQty : null;
+    xr[g.key] = res;
+  });
+  /* order buckets: same program + facility + vendor + channel + order ref = one order */
+  const buckets = new Map();
+  derived.groups.forEach(g => {
+    const r = xr[g.key];
+    if (r.state !== 'ok' || !r.program || !(r.program.adjustments || []).length) return;
+    const k = [r.program.id, normIdent(r.facility), normIdent(r.vendor), normIdent(r.channel), normIdent(r.orderRef)].join('\u0001');
+    (buckets.get(k) || buckets.set(k, []).get(k)).push(g.key);
+  });
+  buckets.forEach(keys => {
+    let total = 0, known = true;
+    keys.forEach(k => { const c = xr[k].cases; if (c == null) known = false; else total += c; });
+    keys.forEach(k => {
+      xr[k].orderCases = known ? total : null;
+      xr[k].orderLines = keys.length;
+      applyOrderAdjustments(xr[k], { channel:xr[k].channel, orderCases:known ? total : null });
+    });
+  });
+  derived.groups.forEach(g => {
+    const r = xr[g.key];
+    const ov = state.overrides[g.key] || {};
+    r.overrideRaw = ov.contractPrice === undefined ? '' : String(ov.contractPrice);
+    r.overrideReason = ov.contractPriceReason || '';
+    r.override = null;
+    if (r.state === 'ok') {
+      r.effectivePrice = r.adjustedPrice;
+      const on = priceNum(ov.contractPrice);
+      if (okNum(on)) { r.override = on; r.effectivePrice = on; }
+      else if (on !== null) r.notes.push('Override \u201c' + ov.contractPrice + '\u201d is not a number and was ignored.');
+      const perCase = isCaseUnit(r.priceUnit);
+      r.contractEach = perCase ? (r.epc ? r.effectivePrice / r.epc : null) : r.effectivePrice;
+      r.expectedTotal = r.contractEach == null || !okNum(r.eaches) ? null : r.contractEach * r.eaches;
+      r.diff = r.expectedTotal == null ? null : r.observedTotal - r.expectedTotal;     // + = Our Pricing is lower
+      r.eachDiff = r.contractEach == null || r.observedEach == null ? null : r.observedEach - r.contractEach;
+      r.savePct = r.diff == null || !(r.observedTotal > 0) ? null : r.diff / r.observedTotal * 100;
+      if (perCase && r.epcSource === 'vendor') r.notes.push('Our Pricing item has no packaging, so eaches per case came from the Facility/Vendor pack size (' + fmtQty(r.epc) + ').');
+      if (perCase && !r.epc) r.notes.push('No eaches-per-case is known (Our Pricing packaging is blank), so a contract each price cannot be calculated.');
+    } else if (!isBlank(ov.contractPrice)) {
+      r.notes.push('An override of ' + ov.contractPrice + ' is stored, but it is not applied until the cross resolves.');
+    }
+    const lvl = XSTATE[r.state].level;
+    if ((lvl === 'error' || lvl === 'warn' || r.adjustments.some(a => a.status === 'unknown')) && g.issueLevel === 'ok') g.issueLevel = 'warn';
+  });
+  derived.xref = xr;
+  rowRefCache = new Map();
+}
+let rowRefCache = new Map();
+function rowRef(eff, id){
+  let r = rowRefCache.get(id);
+  if (!r) { r = resolvePrice({ ourItemNumber:eff.crossedTo, tierToApply:eff.tierToApply }); rowRefCache.set(id, r); }
+  return r;
+}
+/** The resolution for a sheet item: a group uses the full xref, a row its own base resolution. */
+function refRes(item){
+  if (item.type === 'group') return derived.xref ? derived.xref[item.group.key] : null;
+  const eff = item.detail ? item.detail.eff : item.row;
+  return rowRef(eff, item.row.id + (item.detail ? ':g' : ''));
+}
+function pricingLabel(r){
+  if (!r || !r.group) return '';
+  if (r.state === 'ourConflict' || r.state === 'noProgram' || r.state === 'relConflict') return XSTATE[r.state].short;
+  if (r.pricingType === 'standard') return 'Standard';
+  const p = progLabel(r.program);
+  return p + ' \u00b7 ' + (r.tier ? r.tier.name : r.state === 'tierRequired' ? 'Tier Required' : 'Invalid Tier');
+}
+function refText(item, k, raw){
+  const r = refRes(item);
+  if (!r) return '';
+  const isGroup = item.type === 'group';
+  switch (k) {
+    case 'ourDesc':
+      if (r.state === 'notAssigned') return 'Not Assigned';
+      if (r.state === 'unmatched') return 'Unmatched: ' + r.ourItemNumber;
+      return r.ourItemNumber + ' \u2014 ' + (r.description || '(no description)');
+    case 'ourPricing': return pricingLabel(r);
+    case 'ourCasePrice': {
+      if (r.state !== 'ok') return r.state === 'notAssigned' ? '' : XSTATE[r.state].short;
+      const v = isGroup ? r.effectivePrice : r.basePrice;
+      return raw ? String(v) : fmtMoney(v) + (r.priceUnit ? '/' + r.priceUnit : '');
+    }
+    case 'ourEachPrice': {
+      if (r.state !== 'ok') return '';
+      let v;
+      if (isGroup) v = r.contractEach;
+      else v = isCaseUnit(r.priceUnit) ? (r.ourEachesPerCase ? r.basePrice / r.ourEachesPerCase : null) : r.basePrice;
+      return v == null ? '' : raw ? String(v) : fmtPrice(v);
+    }
+  }
+  return '';
+}
+function refCellClass(item, k){
+  const r = refRes(item);
+  if (!r) return '';
+  if (r.state === 'notAssigned') return ' dimref';
+  if (r.state !== 'ok') return ' badref';
+  if (k === 'ourCasePrice' && item.type === 'group' && (r.override != null || r.adjustments.some(a => a.applied))) return ' adjref';
+  return '';
+}
+function xrefPill(r){
+  if (!r) return null;
+  const st = XSTATE[r.state];
+  if (r.state === 'ok') {
+    const b = el('span', 'pill ok', '\u2713 Our');
+    b.title = provenanceText(r);
+    return b;
+  }
+  if (r.state === 'notAssigned') return null;
+  const b = el('span', 'pill ' + (st.level === 'error' ? 'err' : 'warn'), st.short);
+  b.title = r.message || st.label;
+  return b;
+}
+function provenanceText(r){
+  if (!r) return '';
+  if (r.state !== 'ok') return XSTATE[r.state].label + (r.message ? ' \u2014 ' + r.message : '');
+  const L = [];
+  if (r.program) L.push(r.program.name);
+  L.push('Our Item: ' + r.ourItemNumber + (r.description ? ' \u2014 ' + r.description : ''));
+  if (r.tier) L.push(tierLabel(r.tier));
+  else L.push('Standard pricing');
+  if (r.contract) L.push('Contract: ' + r.contract);
+  if (r.effectiveDate) L.push('Effective: ' + r.effectiveDate);
+  L.push('Base price: ' + fmtMoney(r.basePrice) + '/' + r.priceUnit);
+  (r.adjustments || []).forEach(a => L.push((a.applied ? '+ ' : '\u00b7 ') + a.label + ': ' + a.reason));
+  if (r.override != null) L.push('Override: ' + fmtMoney(r.override) + (r.overrideReason ? ' (' + r.overrideReason + ')' : ''));
+  if (r.effectivePrice != null && r.effectivePrice !== r.basePrice) L.push('Effective price: ' + fmtMoney(r.effectivePrice) + '/' + r.priceUnit);
+  (r.notes || []).forEach(n => L.push('Note: ' + n));
+  return L.join('\n');
+}
+function showPricingTrace(item){
+  const r = refRes(item);
+  const b = el('div');
+  const t = el('div', 'trace');
+  t.textContent = provenanceText(r) || 'Nothing to trace.';
+  b.appendChild(t);
+  if (item.type === 'row') b.appendChild(Object.assign(el('p', 'hint'), { textContent:
+    'Source-row view shows the base contract price. Order-level adjustments and the price override are applied on the item row (the group), where the order is known.' }));
+  showModal('Pricing trace', b, [{ label:'Close', cls:'btn primary', fn:hideModal }]);
+}
+
+/* -------------------------------------------------------- input helpers */
+function refreshOurItemList(){
+  const dl = document.getElementById('ourItemList'); if (!dl) return;
+  const frag = document.createDocumentFragment();
+  ourD.groups.forEach(g => {
+    if (!g.item) return;
+    const o = el('option'); o.value = g.item;
+    const p = programById(g.rep.program);
+    o.label = (g.rep.description || '') + (p && (p.tiers || []).length ? '  [' + progLabel(p) + ', tiered]' : '');
+    frag.appendChild(o);
+  });
+  dl.innerHTML = ''; dl.appendChild(frag);
+}
+/** Fills the tier datalist with the tiers of the crossed item's program. */
+function fillTierList(crossedTo){
+  const dl = document.getElementById('tierList'); if (!dl) return;
+  dl.innerHTML = '';
+  const g = ourD.byKey.get(ourKey(crossedTo));
+  const p = g ? programById(g.rep.program) : null;
+  const progs = p ? [p] : state.programs;
+  progs.forEach(pp => (pp.tiers || []).forEach(t => {
+    const o = el('option'); o.value = t.name; o.label = t.description + (t.contract ? ' \u00b7 contract ' + t.contract : '') + (p ? '' : ' (' + progLabel(pp) + ')');
+    dl.appendChild(o);
+  }));
+}
+function listIdFor(key, eff){
+  if (key === 'crossedTo') return 'ourItemList';
+  if (key === 'tierToApply') { fillTierList(eff && eff.crossedTo); return 'tierList'; }
+  if (key === 'purchaseChannel') return 'channelList';
+  return null;
+}
+/** Tidy a typed relationship value: Crossed To keeps just the Item #, tiers become the program's tier name. */
+function normalizeRelInput(key, val, eff){
+  let v = String(val == null ? '' : val).trim();
+  if (key === 'crossedTo') {
+    const cut = v.split(/\s+\u2014\s+/)[0];
+    if (cut && ourD.byKey.has(ourKey(cut))) v = ourD.byKey.get(ourKey(cut)).item;
+  } else if (key === 'tierToApply' && v) {
+    const g = ourD.byKey.get(ourKey(eff && eff.crossedTo));
+    const p = g ? programById(g.rep.program) : null;
+    const t = p ? tierOf(p, v) : null;
+    if (t) v = t.name;
+  } else if (key === 'purchaseChannel') v = normalizeChannel(v);
+  return v;
+}
+
+/* ======================================================= OUR PRICING UI */
+const ourChecked = new Set();
+let ourFocus = null;
+let ourCommitT = null;
+function ourIssueLevel(r){ return worstLevel(ourD.rowIssues[r.id] || []); }
+function crossedByIndex(){
+  const m = new Map();
+  if (!derived.xref) return m;
+  derived.groups.forEach(g => {
+    const r = derived.xref[g.key];
+    if (!r || !r.group) return;
+    const k = r.group.key;
+    let e = m.get(k); if (!e) { e = { n:0, tiers:new Map(), facs:new Set() }; m.set(k, e); }
+    e.n++;
+    if (r.facility) e.facs.add(r.facility);
+    const tn = r.tier ? r.tier.name : r.state === 'tierRequired' ? 'no tier' : r.pricingType === 'standard' ? 'standard' : 'invalid';
+    e.tiers.set(tn, (e.tiers.get(tn) || 0) + 1);
+  });
+  return m;
+}
+function renderOur(){
+  const pane = $('#paneOur'), top = $('#ourTop');
+  const keepTop = pane.scrollTop, keepLeft = pane.scrollLeft;
+  pane.innerHTML = ''; top.innerHTML = '';
+  const rows = state.our.rows;
+  /* ---- program strip ---- */
+  if (!state.programs.length) {
+    const c = el('div', 'progCard');
+    c.appendChild(el('b', null, 'No pricing programs yet'));
+    c.appendChild(el('span', 'meta', 'Items without a program use a Standard Price. Add a program for each vendor that has tiers or order rules.'));
+    const ab = el('button', 'btn sm', 'Add pricing program\u2026'); ab.style.marginTop = '6px';
+    ab.addEventListener('click', () => openPrograms(true));
+    c.appendChild(ab); top.appendChild(c);
+  }
+  state.programs.forEach(p => {
+    const n = rows.filter(r => programById(r.program) === p).length;
+    const c = el('div', 'progCard');
+    c.appendChild(el('b', null, p.name));
+    c.appendChild(el('span', 'meta', (p.priceBasis || ('Price per ' + (p.priceUnit || 'unit'))) + ' \u00b7 effective ' + (p.effectiveDate || '\u2014') + ' \u00b7 ' + n + ' item' + (n === 1 ? '' : 's')));
+    const tl = el('div', 'tiers');
+    (p.tiers || []).forEach(t => { const x = el('span', 'tierChip', t.name); x.title = t.description + (t.contract ? '\nContract ' + t.contract : ''); tl.appendChild(x); });
+    (p.adjustments || []).forEach(a => { const x = el('span', 'tierChip adj', a.label || (a.channel + ' orders under ' + a.minCases + ' cases: +' + fmtMoney(toNum(a.perCase) || 0) + '/case')); x.title = 'Order-level rule: ' + a.channel + ' purchases under ' + a.minCases + ' cases +' + fmtMoney(toNum(a.perCase) || 0) + '/case. Not part of the tier price.'; tl.appendChild(x); });
+    c.appendChild(tl);
+    top.appendChild(c);
+  });
+  const errN = rows.filter(r => ourIssueLevel(r) === 'error').length;
+  const dupN = ourD.groups.filter(g => g.rows.length > 1).length;
+  $('#ourNote').textContent = rows.length ? rows.length + ' record' + (rows.length === 1 ? '' : 's') + ' \u00b7 ' + ourD.groups.length + ' Item #' +
+    (dupN ? ' \u00b7 ' + dupN + ' duplicate' + (dupN === 1 ? '' : 's') : '') + (errN ? ' \u00b7 ' + errN + ' with errors' : '') : '';
+
+  if (!rows.length) {
+    const d = el('div', 'empty on');
+    d.style.cssText = 'position:static;padding:36px;text-align:center';
+    d.innerHTML = '<div class="drop"><h2>Our Pricing is empty</h2><p>This is the master catalog: <b>Item #</b>, description, packaging and our price. ' +
+      'Tiered items carry their full tier schedule here \u2014 the Facility/Vendor side only says which tier to apply.</p>' +
+      '<p>Use <b>Import price file\u2026</b> for a vendor price file or tier schedule (a single sheet with a column per tier, or one sheet per tier), ' +
+      'or <b>Paste from Excel</b> with a header row.</p></div>';
+    const p = el('p'); const b = el('button', 'btn sm', 'Load the test scenarios');
+    b.title = 'Loads the example Our Pricing items and Facility/Vendor rows used by the acceptance test scenarios (clearly labelled test data).';
+    b.addEventListener('click', loadTestScenarios);
+    p.appendChild(b); d.appendChild(p);
+    pane.appendChild(d);
+    return;
+  }
+
+  const tierCols = ourTierCols();
+  const cb = crossedByIndex();
+  const q = String(state.ui.ourSearch || '').trim().toLowerCase();
+  const issuesOnly = !!state.ui.ourIssuesOnly;
+  const t = el('table', 'grid ourTable');
+  const thead = el('thead'), htr = el('tr');
+  const th = (txt, cls, title) => { const x = el('th', cls || null, txt); if (title) x.title = title; htr.appendChild(x); return x; };
+  const allBox = el('input'); allBox.type = 'checkbox'; allBox.title = 'Tick every listed record';
+  const cth = th('', 'ck'); cth.appendChild(allBox);
+  th('', 'st');
+  OUR_TEXT_FIELDS.forEach(f => th(f.name, (f.num ? 'num' : '') + (f.k === 'itemNumber' ? ' key' : ''),
+    f.k === 'itemNumber' ? 'Master key \u2014 Facility/Vendor Crossed To references this.' :
+    f.k === 'stdPrice' ? 'Used only when the item has no tiered pricing program.' :
+    f.k === 'contract' ? 'Contract for standard pricing. Tiered items take the contract from the tier.' : null));
+  th('Eaches / Case', 'num z-computed', 'Read from Packaging Details \u00d7 Factor QTY \u2014 converts a case price to an each price.');
+  tierCols.forEach(c => { const x = th('', 'num tierH'); x.appendChild(el('span', null, c.name)); x.appendChild(el('small', null, c.tier.description));
+    x.title = tierLabel(c.tier) + (c.tier.contract ? '\nContract ' + c.tier.contract : '') + '\n' + c.program.name + ' \u00b7 ' + (c.program.priceBasis || ''); });
+  th('Crossed By', '', 'Facility/Vendor items crossed to this Item #, and the tiers they apply.');
+  th('Source', '', 'Where the record came from, and any records aggregated into it.');
+  thead.appendChild(htr); t.appendChild(thead);
+  const tb = el('tbody');
+  let shown = 0, listedIds = [];
+  const CAP = 500;
+  ourD.groups.forEach(g => {
+    const match = !q || g.rows.some(r => [r.itemNumber, r.productCode, r.description, r.packagingDetails].some(v => String(v || '').toLowerCase().includes(q)));
+    if (!match) return;
+    if (issuesOnly && g.rows.every(r => ourIssueLevel(r) === 'ok')) return;
+    if (shown >= CAP) { shown += g.rows.length; return; }
+    if (g.rows.length > 1) {
+      const gr = el('tr', 'ourGrp' + (g.priceConflict ? ' bad' : ''));
+      const td = el('td'); td.colSpan = 2 + OUR_TEXT_FIELDS.length + 1 + tierCols.length + 2;
+      td.appendChild(el('b', null, 'Item # ' + (g.item || '(blank)') + ' \u2014 ' + g.rows.length + ' records '));
+      td.appendChild(el('span', null, g.priceConflict
+        ? '\u26a0 Pricing differs: ' + g.diffs.map(d => d.label + ' (' + d.values.map(v => v.v + ' \u00d7' + v.n).join(', ') + ')').join('; ') + '. Correct one record before aggregating.'
+        : 'Same pricing \u2014 safe to aggregate into one record (source records are kept for the audit).'));
+      const ab = el('button', 'btn sm', 'Aggregate these ' + g.rows.length);
+      ab.disabled = g.priceConflict;
+      ab.addEventListener('click', () => showOurAggregatePreview(g.rows));
+      td.appendChild(ab);
+      gr.appendChild(td); tb.appendChild(gr);
+    }
+    g.rows.forEach(r => {
+      shown++; listedIds.push(r.id);
+      const lvl = ourIssueLevel(r);
+      const tr = el('tr', 'ourRow' + (lvl === 'error' ? ' err' : lvl === 'warn' ? ' warn' : ''));
+      const ck = el('td', 'ck'); const box = el('input'); box.type = 'checkbox'; box.checked = ourChecked.has(r.id);
+      box.addEventListener('change', () => { if (box.checked) ourChecked.add(r.id); else ourChecked.delete(r.id); });
+      ck.appendChild(box); tr.appendChild(ck);
+      const st = el('td', 'st');
+      const iss = ourD.rowIssues[r.id] || [];
+      st.appendChild(el('span', 'dot ' + (lvl === 'error' ? 'err' : lvl === 'warn' ? 'warn' : 'ok')));
+      st.title = iss.length ? iss.map(i => '\u2022 ' + i.text).join('\n') : 'No issues';
+      tr.appendChild(st);
+      const p = programById(r.program);
+      OUR_TEXT_FIELDS.forEach(f => {
+        const td = el('td', (f.num ? 'num' : '') + (f.k === 'itemNumber' ? ' key' : ''));
+        if (f.k === 'program') {
+          const s = el('select', 'ourIn'); s.dataset.id = r.id; s.dataset.k = 'program';
+          const o0 = el('option', null, 'Standard pricing'); o0.value = ''; s.appendChild(o0);
+          state.programs.forEach(pp => { const o = el('option', null, progLabel(pp)); o.value = pp.id; s.appendChild(o); });
+          if (!isBlank(r.program) && !p) { const o = el('option', null, r.program + ' (undefined)'); o.value = r.program; s.appendChild(o); }
+          s.value = p ? p.id : String(r.program || '');
+          td.appendChild(s);
+        } else {
+          const inp = el('input', 'ourIn'); inp.dataset.id = r.id; inp.dataset.k = f.k;
+          inp.value = r[f.k] == null ? '' : String(r[f.k]);
+          inp.style.width = f.w + 'px';
+          if (f.k === 'stdPrice' || f.k === 'contract') { if (p && (p.tiers || []).length) { inp.disabled = true; inp.placeholder = 'tiered'; } }
+          if (f.k === 'stdPrice' && !inp.disabled) { const n = priceNum(r.stdPrice); if (n === null) inp.classList.add('need'); else if (isNaN(n)) inp.classList.add('bad'); }
+          if (f.k === 'itemNumber' && isBlank(r.itemNumber)) inp.classList.add('bad');
+          if (f.k === 'priceUnit') inp.placeholder = p ? (p.priceUnit || 'CS') : 'CS';
+          td.appendChild(inp);
+        }
+        tr.appendChild(td);
+      });
+      const epc = el('td', 'num z-computed'); const ip = calcInnerPack(r.packagingDetails, r.factorQty);
+      epc.textContent = okNum(ip.v) ? fmtQty(ip.v) : ip.err ? ip.err : '\u2014'; epc.title = traceOf(ip);
+      tr.appendChild(epc);
+      tierCols.forEach(c => {
+        const td = el('td', 'num tierCell');
+        if (p === c.program) {
+          const inp = el('input', 'ourIn price'); inp.dataset.id = r.id; inp.dataset.k = 'price:' + c.tier.id;
+          const raw = (r.prices || {})[c.tier.id];
+          inp.value = raw == null ? '' : String(raw);
+          const n = priceNum(raw);
+          if (n === null) { inp.classList.add('need'); inp.placeholder = 'Not Available'; } else if (isNaN(n)) inp.classList.add('bad');
+          inp.title = tierLabel(c.tier) + (c.tier.contract ? ' \u00b7 contract ' + c.tier.contract : '');
+          td.appendChild(inp);
+        } else { td.textContent = '\u00b7'; td.classList.add('na'); td.title = 'Not part of this item\u2019s pricing program'; }
+        tr.appendChild(td);
+      });
+      const cbi = cb.get(g.key);
+      const cbTd = el('td', null, cbi ? cbi.n + ' \u00b7 ' + [...cbi.tiers.entries()].map(([k, n]) => k + (n > 1 ? ' \u00d7' + n : '')).join(', ') : '\u2014');
+      if (cbi) cbTd.title = 'Facilities: ' + [...cbi.facs].join(', ');
+      tr.appendChild(cbTd);
+      const src = el('td', 'srcCell');
+      src.appendChild(document.createTextNode(r.source || 'Entered'));
+      if (r.aggregatedFrom && r.aggregatedFrom.length) {
+        const b = el('button', 'pill ovr', '\u2295 ' + r.aggregatedFrom.length + ' merged');
+        b.title = 'Records aggregated into this one \u2014 click to view';
+        b.addEventListener('click', () => showOurSources(r));
+        src.appendChild(b);
+      }
+      tr.appendChild(src);
+      tb.appendChild(tr);
+    });
+  });
+  if (!listedIds.length) {
+    const tr = el('tr'), td = el('td', null, 'No record matches.');
+    td.colSpan = 2 + OUR_TEXT_FIELDS.length + 1 + tierCols.length + 2; td.style.cssText = 'padding:14px;color:var(--ink-3)';
+    tr.appendChild(td); tb.appendChild(tr);
+  }
+  if (shown > CAP) {
+    const tr = el('tr'), td = el('td', null, 'Showing the first ' + CAP + ' of ' + shown + ' matching records \u2014 search to narrow.');
+    td.colSpan = 2 + OUR_TEXT_FIELDS.length + 1 + tierCols.length + 2; td.style.cssText = 'padding:10px;color:var(--warn);background:var(--warn-bg)';
+    tr.appendChild(td); tb.appendChild(tr);
+  }
+  allBox.checked = listedIds.length > 0 && listedIds.every(id => ourChecked.has(id));
+  allBox.addEventListener('change', () => { listedIds.forEach(id => allBox.checked ? ourChecked.add(id) : ourChecked.delete(id)); renderOur(); });
+  t.appendChild(tb);
+  pane.appendChild(t);
+  pane.scrollTop = keepTop; pane.scrollLeft = keepLeft;
+  if (ourFocus) {
+    const x = pane.querySelector('.ourIn[data-id="' + ourFocus.id + '"][data-k="' + ourFocus.k + '"]');
+    if (x) { x.focus(); if (x.select && ourFocus.select) x.select(); }
+    ourFocus = null;
+  }
+}
+function setOurField(id, k, val){
+  const r = state.our.rows.find(x => x.id === id); if (!r) return false;
+  let v = String(val == null ? '' : val).trim();
+  if (k === 'priceUnit') v = v.toUpperCase();
+  const isPrice = k.startsWith('price:');
+  const tierId = isPrice ? k.slice(6) : null;
+  const old = isPrice ? String((r.prices || {})[tierId] == null ? '' : r.prices[tierId]) : String(r[k] == null ? '' : r[k]);
+  if (old === v) return false;
+  pushUndo();
+  if (isPrice) { r.prices = Object.assign({}, r.prices); if (v === '') delete r.prices[tierId]; else r.prices[tierId] = v; }
+  else r[k] = v;
+  const p = programById(r.program);
+  const label = isPrice ? ((p && (p.tiers || []).find(t => t.id === tierId)) || { name:tierId }).name + ' price' : OUR_FIELD_NAME[k] || k;
+  logEvent('Our Pricing edited', 'Our Item ' + (r.itemNumber || r.id), label + ': \u201c' + old + '\u201d \u2192 \u201c' + v + '\u201d');
+  return true;
+}
+$('#paneOur').addEventListener('change', e => {
+  const x = e.target.closest('.ourIn'); if (!x) return;
+  const id = x.dataset.id, k = x.dataset.k, v = x.value;
+  /* let focus settle on whatever the user moved to, then commit and redraw */
+  clearTimeout(ourCommitT);
+  ourCommitT = setTimeout(() => {
+    const ae = document.activeElement;
+    if (ae && ae.classList && ae.classList.contains('ourIn')) ourFocus = { id:ae.dataset.id, k:ae.dataset.k, select:true };
+    if (setOurField(id, k, v)) refresh(); else ourFocus = null;
+  }, 0);
+});
+$('#paneOur').addEventListener('keydown', e => {
+  const x = e.target.closest('.ourIn'); if (!x) return;
+  if (e.key === 'Enter' && x.tagName === 'INPUT') { e.preventDefault(); x.blur(); }
+  if (e.key === 'Escape' && x.tagName === 'INPUT') {
+    const r = state.our.rows.find(o => o.id === x.dataset.id);
+    if (r) { const k = x.dataset.k; x.value = k.startsWith('price:') ? ((r.prices || {})[k.slice(6)] || '') : (r[k] || ''); }
+    x.blur();
+  }
+});
+function showOurSources(r){
+  const b = el('div');
+  b.appendChild(el('p', 'hint', 'These source records were combined into Item # ' + (r.itemNumber || '') + '. They are kept unchanged for the audit trail.'));
+  const t = el('table', 'aggPreviewTable');
+  const h = el('tr'); ['Record', 'Captured', 'Item #', 'Description', 'Program', 'Prices', 'Source'].forEach(x => h.appendChild(el('th', null, x))); t.appendChild(h);
+  (r.aggregatedFrom || []).forEach(s => {
+    const tr = el('tr');
+    [s.id, (s.capturedAt || '').replace('T', ' ').slice(0, 19), s.itemNumber, s.description, s.program || 'Standard',
+     ourPriceSummary(s), s.source || 'Entered'].forEach(v => tr.appendChild(el('td', null, v == null ? '' : String(v))));
+    t.appendChild(tr);
+  });
+  b.appendChild(t);
+  showModal('Aggregated source records \u2014 ' + (r.itemNumber || ''), b, [{ label:'Close', cls:'btn primary', fn:hideModal }], { wide:true });
+}
+function ourPriceSummary(r){
+  const p = programById(r.program);
+  if (p && (p.tiers || []).length) return p.tiers.map(t => t.name + '=' + (isBlank((r.prices || {})[t.id]) ? 'n/a' : r.prices[t.id])).join('; ');
+  return 'Standard=' + (isBlank(r.stdPrice) ? 'n/a' : r.stdPrice);
+}
+
+/* ---------------------------------------------- Our Pricing aggregation */
+function ourAggregatePreview(rows){
+  const blocking = [], watch = [];
+  const items = distinctVals(rows.map(r => ({ v:normIdent(r.itemNumber) })), 'v');
+  if (items.length > 1 || rows.some(r => isBlank(r.itemNumber)))
+    blocking.push({ label:'Item #', detail:'the ticked records carry different or blank Item #s (' + [...new Set(rows.map(r => r.itemNumber || '(blank)'))].join(', ') +
+      '). Aggregation only combines records of the same product; change the Item # first if they really are one product.' });
+  ourPricingDiffs(rows).forEach(d => blocking.push({ label:d.label, detail:d.values.map(v => '\u201c' + v.v + '\u201d \u00d7' + v.n).join(', ') }));
+  ['productCode', 'description', 'packagingDetails', 'factorQty', 'status'].forEach(k => {
+    const d = distinctVals(rows, k);
+    if (d.length > 1) watch.push({ label:OUR_FIELD_NAME[k], values:d, resolved:d[0].v });
+  });
+  return { blocking, watch };
+}
+function showOurAggregatePreview(rows){
+  if (rows.length < 2) { toast('Tick at least two Our Pricing records to aggregate.', true); return; }
+  const pv = ourAggregatePreview(rows);
+  const b = el('div');
+  b.appendChild(el('p', 'hint', rows.length + ' records will combine into one Our Pricing record. The originals are kept inside it for the audit trail; Undo stays available.'));
+  const t = el('table', 'aggPreviewTable');
+  const h = el('tr'); ['Item #', 'Product Code', 'Description', 'Program', 'Prices', 'Source'].forEach(x => h.appendChild(el('th', null, x))); t.appendChild(h);
+  rows.forEach(r => { const tr = el('tr'); [r.itemNumber, r.productCode, r.description, progLabel(programById(r.program)) || 'Standard', ourPriceSummary(r), r.source || 'Entered']
+    .forEach(v => tr.appendChild(el('td', null, v || dash))); t.appendChild(tr); });
+  b.appendChild(t);
+  if (pv.blocking.length) {
+    const box = el('div', 'aggPreviewBox err');
+    box.appendChild(el('div', 'aggPreviewBoxTitle', '\u2715 Cannot aggregate \u2014 pricing information conflicts'));
+    pv.blocking.forEach(x => box.appendChild(el('div', 'aggPreviewLine', x.label + ' differs: ' + x.detail)));
+    b.appendChild(box);
+  }
+  if (pv.watch.length) {
+    const box = el('div', 'aggPreviewBox warn');
+    box.appendChild(el('div', 'aggPreviewBoxTitle', '\u26a0 Descriptive fields differ \u2014 the most common value is kept'));
+    pv.watch.forEach(x => box.appendChild(el('div', 'aggPreviewLine', x.label + ': ' + x.values.map(v => '\u201c' + v.v + '\u201d\u00d7' + v.n).join(', ') + ' \u2192 keeps \u201c' + x.resolved + '\u201d')));
+    b.appendChild(box);
+  }
+  const btns = [{ label:'Cancel', cls:'btn', fn:hideModal }];
+  if (!pv.blocking.length) btns.push({ label:'Aggregate', cls:'btn primary', fn:() => { hideModal(); ourAggregate(rows); } });
+  showModal('Aggregate Our Pricing records', b, btns);
+}
+function ourAggregate(rows){
+  if (ourAggregatePreview(rows).blocking.length) { toast('These records conflict \u2014 nothing was aggregated.', true); return; }
+  pushUndo();
+  const now = new Date().toISOString();
+  const snap = r => { const s = clone(r); delete s.aggregatedFrom; s.capturedAt = now; return s; };
+  const merged = clone(rows[0]);
+  ['productCode', 'description', 'packagingDetails', 'factorQty', 'status'].forEach(k => merged[k] = commonVal(rows, k));
+  merged.aggregatedFrom = [];
+  rows.forEach(r => { merged.aggregatedFrom.push(snap(r)); (r.aggregatedFrom || []).forEach(x => merged.aggregatedFrom.push(x)); });
+  merged.source = 'Aggregated ' + now.slice(0, 10);
+  const doomed = new Set(rows.slice(1).map(r => r.id));
+  state.our.rows = state.our.rows.filter(r => !doomed.has(r.id)).map(r => r.id === merged.id ? merged : r);
+  rows.forEach(r => ourChecked.delete(r.id));
+  logEvent('Our Pricing aggregated', 'Our Item ' + merged.itemNumber, rows.length + ' records combined: ' + rows.map(r => r.id).join(', '));
+  refresh();
+  toast(rows.length + ' Our Pricing records combined into Item # ' + merged.itemNumber + '. The originals are kept in the record.');
+}
+function ourFindDuplicates(){
+  const dups = ourD.groups.filter(g => g.rows.length > 1 && g.item);
+  if (!dups.length) { toast('No duplicate Item #s in Our Pricing.'); return; }
+  const safe = dups.filter(g => !g.priceConflict), bad = dups.length - safe.length;
+  ourChecked.clear();
+  const g = (safe.length ? safe : dups)[0];
+  g.rows.forEach(r => ourChecked.add(r.id));
+  state.ui.ourSearch = g.item; $('#ourSearch').value = g.item;
+  renderOur();
+  toast('Ticked Item # ' + g.item + ' (' + g.rows.length + ' records)' + (g.priceConflict ? ' \u2014 its pricing conflicts, fix it first.' : ' \u2014 ready to aggregate.') +
+    ' ' + dups.length + ' duplicate Item #' + (dups.length === 1 ? '' : 's') + ' in total' + (bad ? ', ' + bad + ' with conflicting pricing' : '') + '.');
+}
+$('#btnOurAgg').addEventListener('click', () => showOurAggregatePreview(state.our.rows.filter(r => ourChecked.has(r.id))));
+$('#btnOurDup').addEventListener('click', ourFindDuplicates);
+$('#btnOurAdd').addEventListener('click', () => {
+  pushUndo();
+  const r = blankOurRow(); r.source = 'Entered';
+  state.our.rows.push(r);
+  state.ui.ourSearch = ''; $('#ourSearch').value = '';
+  ourFocus = { id:r.id, k:'itemNumber' };
+  logEvent('Our Pricing record added', 'Our record ' + r.id, '');
+  refresh();
+  const pane = $('#paneOur'); pane.scrollTop = pane.scrollHeight;
+});
+$('#btnOurDel').addEventListener('click', () => {
+  const doomed = state.our.rows.filter(r => ourChecked.has(r.id));
+  if (!doomed.length) { toast('Tick the Our Pricing records to delete first.', true); return; }
+  if (!confirm('Delete ' + doomed.length + ' Our Pricing record' + (doomed.length === 1 ? '' : 's') + '? Facility/Vendor items crossed to them will show as unmatched.')) return;
+  pushUndo();
+  const ids = new Set(doomed.map(r => r.id));
+  state.our.rows = state.our.rows.filter(r => !ids.has(r.id));
+  ourChecked.clear();
+  logEvent('Our Pricing records deleted', doomed.map(r => r.itemNumber || r.id).join(', '), doomed.length + ' record(s)');
+  refresh();
+});
+let ourSearchT = null;
+$('#ourSearch').addEventListener('input', e => { clearTimeout(ourSearchT); const v = e.target.value; ourSearchT = setTimeout(() => { state.ui.ourSearch = v; renderOur(); }, 140); });
+$('#chkOurIssues').addEventListener('change', e => { state.ui.ourIssuesOnly = e.target.checked; renderOur(); });
+
+/* ------------------------------------------------ import / paste mapping */
+const OUR_HEADER_RULES = [
+  ['itemNumber', /^(our\s*)?item\s*(#|no\.?|num(ber)?)?$|material\s*(#|no\.?|num(ber)?)?$|^sku(\s*#)?$|^(\S+\s*)?(item|product)\s*(#|no\.?)$/i],
+  ['productCode', /product\s*(code|#|no\.?|num)|prod\.?\s*code|mfg|catalog|^ndc|^upc|gtin|material\s*code|item\s*code/i],
+  ['description', /desc|product\s*name|item\s*name|^name$|^product$/i],
+  ['packagingDetails', /packag|pack\s*size|^pack$|case\s*(config|pack)|^size$/i],
+  ['factorQty', /factor/i],
+  ['priceUnit', /price\s*unit|^u\/?o\/?m$|^unit(\s*of\s*measure)?$|selling\s*unit/i],
+  ['status', /status/i],
+  ['program', /program/i],
+  ['contract', /^contract/i],
+  ['stdPrice', /^(standard|std|list|our|contract|case|unit)?\s*price(\s*(per\s*case|\/\s*cs|usd))?$|^cost$/i]
+];
+function cellText(v){
+  if (v == null) return '';
+  if (v instanceof Date) return v.toISOString().slice(0, 10);
+  if (typeof v === 'object') {
+    if (v.result !== undefined) return cellText(v.result);
+    if (v.richText) return v.richText.map(x => x.text).join('');
+    if (v.text !== undefined) return cellText(v.text);
+    if (v.error) return '';
+    return '';
+  }
+  return String(v).trim();
+}
+/** Find the header row and map its columns: {row, map:{field:colIdx}, tiers:[{n, col, label}]}. */
+function mapOurHeader(matrix){
+  const limit = Math.min(matrix.length, 40);
+  let best = null;
+  for (let i = 0; i < limit; i++) {
+    const row = matrix[i] || [];
+    const map = {}, tiers = [], used = new Set();
+    row.forEach((h, c) => {
+      const s = String(h || '').replace(/\s+/g, ' ').trim();
+      if (!s) return;
+      const tm = s.match(/tier\s*(\d+)/i);
+      if (tm && !tiers.some(x => x.n === tm[1])) { tiers.push({ n:tm[1], col:c, label:s }); used.add(c); return; }
+      for (const [k, re] of OUR_HEADER_RULES) {
+        if (map[k] === undefined && re.test(s)) { map[k] = c; used.add(c); break; }
+      }
+    });
+    const score = Object.keys(map).length + tiers.length * 2;
+    const hasKey = map.itemNumber !== undefined || map.productCode !== undefined;
+    const hasPrice = tiers.length || map.stdPrice !== undefined;
+    if (hasKey && (hasPrice || Object.keys(map).length >= 2) && (!best || score > best.score)) best = { row:i, map, tiers, score };
+  }
+  return best;
+}
+/** Matrix + header map -> Our Pricing record drafts (prices keyed by tier number until a program is chosen). */
+function draftsFromMatrix(matrix, hm, sourceLabel){
+  const out = [];
+  for (let i = hm.row + 1; i < matrix.length; i++) {
+    const line = matrix[i] || [];
+    const get = k => hm.map[k] === undefined ? '' : cellText(line[hm.map[k]]);
+    const d = { fields:{}, tierPrices:{}, source:sourceLabel + ' \u00b7 row ' + (i + 1) };
+    OUR_TEXT_FIELDS.forEach(f => d.fields[f.k] = get(f.k));
+    if (!d.fields.itemNumber && d.fields.productCode) d.fields.itemNumber = d.fields.productCode;
+    hm.tiers.forEach(t => { const v = cellText(line[t.col]); if (v !== '') d.tierPrices[t.n] = v; });
+    const anyPrice = Object.keys(d.tierPrices).length || d.fields.stdPrice;
+    if (!d.fields.itemNumber && !d.fields.description) continue;
+    if (!d.fields.itemNumber || !anyPrice) {
+      /* skip section titles / notes rows that happen to sit inside the table */
+      if (!d.fields.itemNumber || (!anyPrice && !d.fields.description)) continue;
+    }
+    out.push(d);
+  }
+  return out;
+}
+function matrixFromSheet(ws){
+  const m = [];
+  ws.eachRow({ includeEmpty:true }, (row, n) => {
+    const vals = row.values || [];
+    const line = [];
+    for (let c = 1; c < vals.length; c++) line.push(cellText(vals[c]));
+    m[n - 1] = line;
+  });
+  for (let i = 0; i < m.length; i++) if (!m[i]) m[i] = [];
+  return m;
+}
+/** Reads a workbook: an "All Tiers" style sheet if there is one, otherwise one sheet per tier merged by item. */
+async function parsePriceWorkbook(file){
+  const ExcelJS = await loadExcelJS();
+  const wb = new ExcelJS.Workbook();
+  await wb.xlsx.load(await file.arrayBuffer());
+  const sheets = [];
+  wb.eachSheet(ws => { const m = matrixFromSheet(ws); sheets.push({ name:ws.name, m, hm:mapOurHeader(m) }); });
+  const all = sheets.filter(s => s.hm && s.hm.tiers.length >= 2)
+    .sort((a, b) => (/all\s*tiers?/i.test(b.name) ? 1 : 0) - (/all\s*tiers?/i.test(a.name) ? 1 : 0) || b.hm.tiers.length - a.hm.tiers.length);
+  if (all.length) {
+    const s = all[0];
+    return { drafts:draftsFromMatrix(s.m, s.hm, file.name + ' \u00b7 ' + s.name), how:'Sheet \u201c' + s.name + '\u201d', hm:s.hm, header:s.m[s.hm.row] };
+  }
+  const per = sheets.filter(s => /tier\s*\d+/i.test(s.name) && s.hm);
+  if (per.length) {
+    const byItem = new Map(), order = [];
+    per.forEach(s => {
+      const n = s.name.match(/tier\s*(\d+)/i)[1];
+      const priceCol = s.hm.tiers.length ? s.hm.tiers[0].col : s.hm.map.stdPrice;
+      if (priceCol === undefined) return;
+      const hm = { row:s.hm.row, map:Object.assign({}, s.hm.map), tiers:[{ n, col:priceCol, label:s.name }] };
+      delete hm.map.stdPrice;
+      draftsFromMatrix(s.m, hm, file.name + ' \u00b7 ' + s.name).forEach(d => {
+        const k = ourKey(d.fields.itemNumber);
+        let cur = byItem.get(k);
+        if (!cur) { cur = d; byItem.set(k, d); order.push(k); cur.source = file.name + ' \u00b7 tier sheets'; }
+        else { Object.assign(cur.tierPrices, d.tierPrices); OUR_TEXT_FIELDS.forEach(f => { if (!cur.fields[f.k] && d.fields[f.k]) cur.fields[f.k] = d.fields[f.k]; }); }
+      });
+    });
+    return { drafts:order.map(k => byItem.get(k)), how:per.length + ' tier sheets (' + per.map(s => s.name).join(', ') + ') merged by item', hm:null };
+  }
+  const any = sheets.filter(s => s.hm).sort((a, b) => b.hm.score - a.hm.score)[0];
+  if (any) return { drafts:draftsFromMatrix(any.m, any.hm, file.name + ' \u00b7 ' + any.name), how:'Sheet \u201c' + any.name + '\u201d', hm:any.hm, header:any.m[any.hm.row] };
+  throw new Error('No sheet with an item column and a price or tier column was found.');
+}
+function mappingSummary(res){
+  if (!res.hm || !res.header) return res.how;
+  const parts = Object.keys(res.hm.map).map(k => (OUR_FIELD_NAME[k] || k) + ' \u2190 \u201c' + res.header[res.hm.map[k]] + '\u201d');
+  res.hm.tiers.forEach(t => parts.push('Tier ' + t.n + ' \u2190 \u201c' + t.label + '\u201d'));
+  return res.how + ': ' + parts.join(', ');
+}
+/** Preview + commit for imported/pasted Our Pricing drafts. */
+function showOurImportPreview(res){
+  const drafts = res.drafts;
+  if (!drafts.length) { toast('No product rows were found under the header row.', true); return; }
+  const tiered = drafts.some(d => Object.keys(d.tierPrices).length);
+  const b = el('div');
+  b.appendChild(el('p', 'hint', drafts.length + ' product record' + (drafts.length === 1 ? '' : 's') + ' found. ' + mappingSummary(res) + '.'));
+  const row = el('div', 'xuLine'); row.style.gridTemplateColumns = '140px 1fr';
+  row.appendChild(el('div', 'lbl', 'Pricing program'));
+  const ps = el('select');
+  const o0 = el('option', null, 'Standard pricing (no tiers)'); o0.value = ''; ps.appendChild(o0);
+  state.programs.forEach(p => { const o = el('option', null, p.name); o.value = p.id; ps.appendChild(o); });
+  const fileTiers = new Set(); drafts.forEach(d => Object.keys(d.tierPrices).forEach(n => fileTiers.add(n)));
+  const tierNums = [...fileTiers].sort((a, b) => a - b);
+  if (tiered) { const on = el('option', null, '+ New pricing program from this file (' + tierNums.map(n => 'Tier ' + n).join(', ') + ')'); on.value = '__new__'; ps.appendChild(on); }
+  const newRow = el('div', 'xuLine'); newRow.style.cssText = 'grid-template-columns:140px 1fr;display:none';
+  newRow.appendChild(el('div', 'lbl', 'New program name'));
+  const nn = el('input'); nn.placeholder = 'e.g. Vendor name \u2013 GPO program'; nn.style.width = '360px';
+  newRow.appendChild(nn);
+  const guess = state.programs.find(p => (p.tiers || []).length && drafts.some(d => new RegExp(p.vendorMatch || '^$', 'i').test(d.source + ' ' + d.fields.description)))
+             || state.programs.find(p => (p.tiers || []).length);
+  ps.value = tiered ? (guess ? guess.id : '__new__') : '';
+  row.appendChild(ps); b.appendChild(row); b.appendChild(newRow);
+  const warn = el('div', 'xuMsg'); b.appendChild(warn);
+  const chk = () => {
+    newRow.style.display = ps.value === '__new__' ? 'grid' : 'none';
+    if (ps.value === '__new__') { warn.textContent = 'A program with ' + tierNums.map(n => 'Tier ' + n).join(', ') + ' will be created. Add tier descriptions, contracts, effective date and any surcharge rules afterwards in Pricing programs\u2026'; return; }
+    const p = programById(ps.value);
+    if (tiered && (!p || !(p.tiers || []).length)) { warn.textContent = 'The file has tier columns \u2014 choose the tiered program they belong to, or they will be ignored.'; return; }
+    if (p && (p.tiers || []).length) {
+      const nums = new Set(); drafts.forEach(d => Object.keys(d.tierPrices).forEach(n => nums.add(n)));
+      const unknown = [...nums].filter(n => !p.tiers.some(t => tierNum(t) === n));
+      warn.textContent = unknown.length ? 'Tier ' + unknown.join(', ') + ' in the file is not defined in ' + progLabel(p) + ' and will be skipped.' : '';
+    } else warn.textContent = '';
+  };
+  ps.addEventListener('change', chk); chk();
+  const where = el('div'); where.style.cssText = 'margin-top:10px;font-size:12.5px;color:#4a5b6d';
+  where.innerHTML = '<label class="chk"><input type="radio" name="ow" value="merge" checked> Update matching Item #s, add new ones</label> &nbsp; ' +
+    '<label class="chk"><input type="radio" name="ow" value="append"> Add all as new records</label> &nbsp; ' +
+    '<label class="chk"><input type="radio" name="ow" value="replace"> Replace Our Pricing</label>';
+  b.appendChild(where);
+  const t = el('table', 'aggPreviewTable'); t.style.marginTop = '10px';
+  const h = el('tr'); ['Item #', 'Description', 'Packaging', 'Prices'].forEach(x => h.appendChild(el('th', null, x))); t.appendChild(h);
+  drafts.slice(0, 8).forEach(d => { const tr = el('tr');
+    [d.fields.itemNumber, d.fields.description, d.fields.packagingDetails,
+     Object.keys(d.tierPrices).length ? Object.entries(d.tierPrices).map(([n, v]) => 'T' + n + '=' + v).join('; ') : d.fields.stdPrice]
+      .forEach(v => tr.appendChild(el('td', null, v || dash))); t.appendChild(tr); });
+  b.appendChild(t);
+  if (drafts.length > 8) b.appendChild(el('p', 'hint', '\u2026and ' + (drafts.length - 8) + ' more.'));
+  showModal('Import Our Pricing', b, [
+    { label:'Cancel', cls:'btn', fn:hideModal },
+    { label:'Import', cls:'btn primary', fn:() => {
+      const mode = b.querySelector('input[name=ow]:checked').value;
+      let prog = programById(ps.value);
+      if (ps.value === '__new__') {
+        const name = nn.value.trim();
+        if (!name) { toast('Name the new pricing program first.', true); nn.focus(); return; }
+        let id = slugId(name) || 'program-' + (state.programs.length + 1), k = 2;
+        while (programById(id)) id = (slugId(name) || 'program') + '-' + k++;
+        prog = Object.assign(newProgram(state.programs.length + 1), { id, name,
+          tiers:tierNums.map(n => ({ id:'tier' + n, name:'Tier ' + n, description:'', contract:'' })) });
+        pushUndo();
+        state.programs.push(prog);
+        logEvent('Pricing program created', name, 'From import: ' + prog.tiers.map(t => t.name).join(', '));
+      }
+      commitOurDrafts(drafts, prog, mode, ps.value === '__new__');
+      hideModal();
+    } }
+  ], { wide:true });
+}
+function commitOurDrafts(drafts, program, mode, noUndo){
+  if (!noUndo) pushUndo();
+  if (mode === 'replace') { state.our.rows = []; ourChecked.clear(); }
+  let added = 0, updated = 0, skippedTiers = 0;
+  drafts.forEach(d => {
+    const rec = blankOurRow();
+    OUR_TEXT_FIELDS.forEach(f => rec[f.k] = d.fields[f.k] || '');
+    rec.source = d.source;
+    if (program) {
+      rec.program = program.id;
+      Object.entries(d.tierPrices).forEach(([n, v]) => {
+        const t = (program.tiers || []).find(x => tierNum(x) === n);
+        if (t) rec.prices[t.id] = v; else skippedTiers++;
+      });
+      if ((program.tiers || []).length) rec.stdPrice = '';
+      if (!rec.priceUnit) rec.priceUnit = program.priceUnit || 'CS';
+    } else rec.program = rec.program && programById(rec.program) ? programById(rec.program).id : rec.program;
+    if (mode === 'merge') {
+      const g = ourD.byKey.get(ourKey(rec.itemNumber));
+      const target = g && g.rows.length === 1 ? state.our.rows.find(r => r.id === g.rows[0].id) : null;
+      if (target) {
+        OUR_TEXT_FIELDS.forEach(f => { if (rec[f.k] !== '') target[f.k] = rec[f.k]; });
+        target.prices = Object.assign({}, target.prices, rec.prices);
+        target.source = rec.source;
+        updated++; return;
+      }
+    }
+    state.our.rows.push(rec); added++;
+  });
+  logEvent('Our Pricing imported', program ? program.name : 'Standard pricing',
+    added + ' added, ' + updated + ' updated (' + mode + ')' + (drafts[0] ? ' from ' + drafts[0].source.split(' \u00b7 row')[0] : ''));
+  refresh();
+  toast('Our Pricing: ' + added + ' added' + (updated ? ', ' + updated + ' updated' : '') + (skippedTiers ? ', ' + skippedTiers + ' prices for undefined tiers skipped' : '') + '.', !!skippedTiers);
+}
+$('#btnOurImport').addEventListener('click', () => $('#ourFile').click());
+$('#ourFile').addEventListener('change', async e => {
+  const f = e.target.files && e.target.files[0];
+  e.target.value = '';
+  if (!f) return;
+  try {
+    let res;
+    if (/\.(csv|txt|tsv)$/i.test(f.name)) {
+      const text = await f.text();
+      const m = /\t/.test(text) ? parseClipboard(text, true) : text.split(/\r?\n/).map(l => parseCsvLine(l));
+      const hm = mapOurHeader(m);
+      if (!hm) throw new Error('No header row with an Item # and a price column was found.');
+      res = { drafts:draftsFromMatrix(m, hm, f.name), how:f.name, hm, header:m[hm.row] };
+    } else {
+      toast('Reading ' + f.name + '\u2026');
+      res = await parsePriceWorkbook(f);
+    }
+    showOurImportPreview(res);
+  } catch (err) { console.error(err); toast('Could not import ' + f.name + ': ' + (err && err.message || err), true); }
+});
+function parseCsvLine(line){
+  const out = []; let f = '', q = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (q) { if (ch === '"') { if (line[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += ch; }
+    else if (ch === '"') q = true; else if (ch === ',') { out.push(f); f = ''; } else f += ch;
+  }
+  out.push(f); return out;
+}
+$('#btnOurPaste').addEventListener('click', () => {
+  const b = el('div');
+  b.innerHTML = '<p class="hint">Copy your price list from Excel <b>including its header row</b> and paste it below. Columns are matched by name: ' +
+    'Item # (or Material / Product Code), Description, Packaging, Price Unit, Status, Standard Price, and one column per tier (\u201cTier 1\u201d, \u201cTier 2\u201d\u2026).</p>';
+  const ta = el('textarea'); ta.placeholder = 'Item #\tDescription\tPackaging\tTier 1\tTier 2\tTier 3\tTier 4';
+  b.appendChild(ta);
+  showModal('Paste Our Pricing from Excel', b, [
+    { label:'Cancel', cls:'btn', fn:hideModal },
+    { label:'Continue', cls:'btn primary', fn:() => {
+      const m = parseClipboard(ta.value, true);
+      const hm = mapOurHeader(m);
+      if (!hm) { toast('No header row with an Item # and a price column was found \u2014 include the header row.', true); return; }
+      showOurImportPreview({ drafts:draftsFromMatrix(m, hm, 'Pasted ' + new Date().toISOString().slice(0, 10)), how:'Pasted range', hm, header:m[hm.row] });
+    } }
+  ]);
+  setTimeout(() => ta.focus(), 30);
+});
+
+/* -------------------------------------------------- pricing program editor */
+const slugId = s => String(s || '').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+const newProgram = n => ({ id:'program-' + n, name:'', shortName:'', vendorMatch:'', effectiveDate:'', currency:'USD', priceUnit:'CS', priceBasis:'Price per case, USD', tiers:[], adjustments:[], notes:'' });
+function openPrograms(addNew){
+  const work = clone(state.programs);
+  const origIds = work.map(p => p.id);
+  if (addNew === true || !work.length) work.push(newProgram(work.length + 1));
+  const b = el('div');
+  const draw = () => {
+    b.innerHTML = '';
+    b.appendChild(el('p', 'hint', 'A pricing program holds the tier definitions (name, description, contract) and any order-level rules. ' +
+      'Tier prices live on each Our Pricing item; the Facility/Vendor record only chooses which tier applies. Tiers are contract levels \u2014 there is no automatic eligibility or quantity break.'));
+    work.forEach((p, pi) => {
+      const box = el('div', 'progEd');
+      const f = (label, key, obj, w) => {
+        const l = el('label'); l.appendChild(el('span', null, label));
+        const i = el('input'); i.value = obj[key] == null ? '' : String(obj[key]); if (w) i.style.width = w;
+        i.addEventListener('input', () => { obj[key] = i.value; });
+        l.appendChild(i); return l;
+      };
+      const r1 = el('div', 'progRow');
+      r1.appendChild(f('Name (e.g. vendor + GPO program)', 'name', p, '340px')); r1.appendChild(f('Short name', 'shortName', p, '150px'));
+      r1.appendChild(f('Program id', 'id', p, '160px')); r1.appendChild(f('Effective date', 'effectiveDate', p, '110px'));
+      r1.appendChild(f('Price unit', 'priceUnit', p, '60px')); r1.appendChild(f('Price basis', 'priceBasis', p, '170px'));
+      r1.appendChild(f('Vendor name contains', 'vendorMatch', p, '110px'));
+      box.appendChild(r1);
+      const tt = el('table', 'aggPreviewTable');
+      const h = el('tr'); ['Tier id', 'Tier', 'Description', 'Contract', ''].forEach(x => h.appendChild(el('th', null, x))); tt.appendChild(h);
+      (p.tiers || []).forEach((t, ti) => {
+        const tr = el('tr');
+        [['id', '70px'], ['name', '80px'], ['description', '420px'], ['contract', '100px']].forEach(([k, w]) => {
+          const td = el('td'); const i = el('input'); i.value = t[k] || ''; i.style.width = w;
+          i.addEventListener('input', () => { t[k] = i.value; }); td.appendChild(i); tr.appendChild(td); });
+        const td = el('td'); const x = el('button', 'btn sm', 'Remove');
+        x.addEventListener('click', () => { p.tiers.splice(ti, 1); draw(); }); td.appendChild(x); tr.appendChild(td);
+        tt.appendChild(tr);
+      });
+      box.appendChild(tt);
+      const addT = el('button', 'btn sm', 'Add tier');
+      addT.addEventListener('click', () => { p.tiers = p.tiers || []; const n = p.tiers.length + 1; p.tiers.push({ id:'tier' + n, name:'Tier ' + n, description:'', contract:'' }); draw(); });
+      box.appendChild(addT);
+      box.appendChild(el('div', 'progSub', 'Order-level surcharge rules (applied after the tier price, per order)'));
+      (p.adjustments || []).forEach((a, ai) => {
+        const r = el('div', 'progRow');
+        r.appendChild(f('Label', 'label', a, '260px')); r.appendChild(f('Channel', 'channel', a, '90px'));
+        r.appendChild(f('Orders under (cases)', 'minCases', a, '70px')); r.appendChild(f('Surcharge per case', 'perCase', a, '70px'));
+        const x = el('button', 'btn sm', 'Remove rule'); x.addEventListener('click', () => { p.adjustments.splice(ai, 1); draw(); });
+        r.appendChild(x); box.appendChild(r);
+      });
+      const addA = el('button', 'btn sm', 'Add surcharge rule');
+      addA.addEventListener('click', () => { p.adjustments = p.adjustments || []; p.adjustments.push({ id:'rule-' + Date.now(), type:'orderSurcharge', label:'', channel:'Direct', minCases:0, perCase:0 }); draw(); });
+      box.appendChild(addA);
+      const used = origIds.includes(p.id) ? state.our.rows.filter(r => programById(r.program) && programById(r.program).id === p.id).length : 0;
+      const del = el('button', 'btn sm danger', 'Delete program');
+      del.disabled = used > 0; del.title = used ? used + ' Our Pricing record(s) use this program' : '';
+      del.addEventListener('click', () => { work.splice(pi, 1); draw(); });
+      box.appendChild(del);
+      box.appendChild(f('Notes', 'notes', p, '100%'));
+      b.appendChild(box);
+    });
+    const addP = el('button', 'btn', 'Add pricing program');
+    addP.addEventListener('click', () => { work.push(newProgram(work.length + 1)); draw(); });
+    b.appendChild(addP);
+  };
+  draw();
+  showModal('Pricing programs', b, [
+    { label:'Cancel', cls:'btn', fn:hideModal },
+    { label:'Save programs', cls:'btn primary', fn:() => {
+      if (work.some(p => !String(p.name || '').trim())) { toast('Every program needs a name.', true); return; }
+      work.forEach(p => { if (/^program-\d+$/.test(p.id) && !origIds.includes(p.id) && slugId(p.name)) p.id = slugId(p.name); });
+      const ids = work.map(p => String(p.id || '').trim());
+      if (ids.some(x => !x) || new Set(ids.map(x => x.toLowerCase())).size !== ids.length) { toast('Every program needs a unique id.', true); return; }
+      for (const p of work) {
+        const tids = (p.tiers || []).map(t => String(t.id || '').trim());
+        if (tids.some(x => !x) || new Set(tids).size !== tids.length) { toast(p.name + ': every tier needs a unique tier id.', true); return; }
+        (p.adjustments || []).forEach(a => { a.minCases = toNum(a.minCases) || 0; a.perCase = toNum(a.perCase) || 0; });
+      }
+      pushUndo();
+      state.programs = work;
+      logEvent('Pricing programs saved', work.map(p => p.name).join('; '), work.map(p => p.name + ': ' + (p.tiers || []).map(t => t.name + '/' + (t.contract || '-')).join(', ')).join(' | '));
+      hideModal(); refresh(); toast('Pricing programs saved.');
+    } }
+  ], { wide:true });
+}
+$('#btnPrograms').addEventListener('click', openPrograms);
+
+/* -------------------------------------------------------- test scenarios */
+function loadTestScenarios(){
+  if ((state.rows.length || state.our.rows.length) && !confirm('Replace the current Our Pricing and Facility/Vendor rows with the test scenarios?')) return;
+  pushUndo();
+  /* A clearly labelled sample program, used only by the test data. */
+  const TEST_ID = 'test-sample-program';
+  state.programs = state.programs.filter(p => p.id !== TEST_ID);
+  const nes = { id:TEST_ID, name:'TEST \u2014 Sample tiered program (delete after testing)', shortName:'TEST program', vendorMatch:'',
+    effectiveDate:'2026-06-01', currency:'USD', priceUnit:'CS', priceBasis:'Price per case, USD',
+    tiers:[1, 2, 3, 4].map(n => ({ id:'tier' + n, name:'Tier ' + n, description:'Sample tier ' + n, contract:'TEST-' + n })),
+    adjustments:[{ id:'direct-under-min', type:'orderSurcharge', label:'TEST direct order under 35 cases', channel:'Direct', minCases:35, perCase:20 }],
+    notes:'Sample data for the acceptance test scenarios only.' };
+  state.programs.push(nes);
+  const mk = (o) => Object.assign(blankOurRow(), { source:'Test scenario data' }, o);
+  state.our.rows = [
+    mk({ itemNumber:'1001', productCode:'1303478822', description:'TEST \u2014 Product A (tiered, spec example prices)', packagingDetails:'24/CS',
+         factorQty:'1', priceUnit:'CS', status:'Active', program:nes.id,
+         prices:{ tier1:'268.31', tier2:'226.58', tier3:'196.43', tier4:'188.58' } }),
+    mk({ itemNumber:'1002', productCode:'', description:'TEST \u2014 Product B (standard pricing)', packagingDetails:'12/CS', factorQty:'1',
+         priceUnit:'CS', status:'Active', program:'', stdPrice:'120.00' })
+  ];
+  const V = (fac, ven, qty, um, net, item, desc, xto, tier, ch, ref) => {
+    const r = blankRow();
+    Object.assign(r, { orderedQty:qty, orderedUM:um, netSales:net, itemNumber:item, description:desc, facility:fac, vendorName:ven,
+      crossedTo:xto, tierToApply:tier, purchaseChannel:ch, orderRef:ref, factorQty:'1', packagingDetails:'24/CS', pkgQty:'1', um:um });
+    return r;
+  };
+  state.rows = [
+    V('Facility A', 'Test Vendor', '20', 'CS', '4100.00', 'V-001', 'TEST Product A \u2014 Tier 3, 20 cases direct', '1001', 'Tier 3', 'Direct', 'A-1'),
+    V('Facility B', 'Test Vendor', '35', 'CS', '7175.00', 'V-002', 'TEST Product A \u2014 Tier 3, 35 cases direct', '1001', 'Tier 3', 'Direct', 'B-1'),
+    V('Facility C', 'Distributor Co', '20', 'CS', '4100.00', 'V-003', 'TEST Product A \u2014 Tier 3, 20 cases distributor', '1001', 'Tier 3', 'Distributor', 'C-1'),
+    V('Facility D', 'Test Vendor', '10', 'CS', '2050.00', 'V-004', 'TEST Product A \u2014 tier left blank', '1001', '', 'Direct', 'D-1'),
+    V('Facility E', 'Vendor X', '5', 'CS', '650.00', 'V-005', 'TEST invalid cross', '999999', '', 'Distributor', 'E-1'),
+    V('Facility F', 'Vendor Y', '10', 'CS', '1300.00', 'V-006', 'TEST Product B \u2014 standard pricing', '1002', '', 'Distributor', 'F-1'),
+    V('Facility G', 'Test Vendor', '20', 'CS', '4100.00', 'V-007', 'TEST Product A \u2014 Tier 3 with override', '1001', 'Tier 3', 'Distributor', 'G-1'),
+    V('Facility H', 'Test Vendor', '6', 'CS', '1230.00', 'V-008', 'TEST aggregation conflict', '1001', 'Tier 2', 'Distributor', 'H-1'),
+    V('Facility H', 'Test Vendor', '4', 'CS', '820.00', 'V-008', 'TEST aggregation conflict', '1001', 'Tier 3', 'Distributor', 'H-1'),
+    V('Facility I', 'Test Vendor', '40', 'CS', '8200.00', 'V-009', 'TEST Product A \u2014 Tier 2', '1001', 'Tier 2', 'Direct', 'I-1'),
+    V('Facility J', 'Test Vendor', '50', 'CS', '10250.00', 'V-010', 'TEST Product A \u2014 Tier 4', '1001', 'Tier 4', 'Direct', 'J-1')
+  ];
+  state.overrides = { 'V-007':{ contractPrice:'201.00', contractPriceReason:'Test scenario 9 \u2014 negotiated price' } };
+  state.expanded = {};
+  state.ui.groupField = 'itemNumber';
+  logEvent('Test scenarios loaded', 'Case', '2 Our Pricing items, ' + state.rows.length + ' Facility/Vendor rows');
+  refresh();
+  toast('Test scenarios loaded \u2014 open Cross Analysis to see each one resolve.');
+}
+
+/* ========================================= FACILITY/VENDOR PRICE OVERRIDE */
+function setPriceOverride(key, price, reason){
+  const v = String(price == null ? '' : price).trim(), rs = String(reason == null ? '' : reason).trim();
+  const cur = state.overrides[key] || {};
+  const curV = cur.contractPrice === undefined ? '' : String(cur.contractPrice), curR = cur.contractPriceReason || '';
+  if (curV === v && curR === rs) return false;
+  if (v !== '' && toNum(v) === null) { toast('Override price must be a number.', true); return false; }
+  pushUndo();
+  const next = Object.assign({}, cur);
+  if (v === '') { delete next.contractPrice; delete next.contractPriceReason; }
+  else { next.contractPrice = v; if (rs) next.contractPriceReason = rs; else delete next.contractPriceReason; }
+  if (Object.keys(next).length) state.overrides[key] = next; else delete state.overrides[key];
+  const x = derived.xref && derived.xref[key];
+  logEvent(v === '' ? 'Price override cleared' : 'Price override set', 'Facility/Vendor ' + keyLabel(key),
+    (x && x.basePrice != null ? 'Base ' + fmtMoney(x.basePrice) + ' \u00b7 ' : '') + (v === '' ? 'was ' + (curV || '-') : 'Override ' + fmtMoney(toNum(v)) + (rs ? ' \u2014 ' + rs : '')));
+  refresh();
+  toast(v === '' ? 'Price override cleared for ' + keyLabel(key) + '.' : 'Contract price overridden to ' + fmtMoney(toNum(v)) + ' for ' + keyLabel(key) + '.');
+  return true;
+}
+/** The pricing block inside the Facility/Vendor item editor. */
+function pricingBlock(g){
+  const r = derived.xref && derived.xref[g.key];
+  const sec = el('div', 'block pricingBlock');
+  sec.appendChild(el('h4', null, 'Our Pricing cross'));
+  if (!r) return sec;
+  const st = XSTATE[r.state];
+  const m = el('div', 'msg' + (r.state === 'ok' ? ' ok' : st.level === 'info' ? '' : ''));
+  m.innerHTML = '<b>' + esc(st.label) + '.</b> ' + esc(r.state === 'ok' ? (r.pricingType === 'tiered' ? 'Tier price resolved from Our Pricing.' : 'Standard price resolved from Our Pricing.') : (r.message || ''));
+  sec.appendChild(m);
+  const dl = el('dl', 'kv');
+  const put = (k, v) => { dl.appendChild(el('dt', null, k)); dl.appendChild(el('dd', null, v == null || v === '' ? '\u2014' : v)); };
+  put('Crossed To', r.ourItemNumber || 'Not Assigned');
+  if (r.group) put('Our item', (r.description || '') + (r.productCode ? ' \u00b7 ' + r.productCode : ''));
+  put('Pricing', r.group ? (r.pricingType === 'tiered' ? r.program.name : 'Standard pricing') : '');
+  if (r.state === 'relConflict') put('Tier to Apply', 'Source rows disagree \u2014 see above');
+  else if (r.pricingType === 'tiered') put('Tier to Apply', r.tier ? tierLabel(r.tier) : (r.tierInput ? '\u201c' + r.tierInput + '\u201d (invalid)' : 'Required'));
+  put('Contract', r.contract); put('Effective', r.effectiveDate);
+  if (r.state === 'ok') {
+    put('Base price', fmtMoney(r.basePrice) + '/' + r.priceUnit);
+    r.adjustments.forEach(a => put(a.label, (a.applied ? '+' + fmtMoney(a.perCase) + '/case \u2014 ' : '') + a.reason));
+    put('Channel \u00b7 order', (r.channel || '(not set)') + ' \u00b7 ' + (r.orderCases == null ? (r.program && (r.program.adjustments || []).length ? 'cases unknown' : '\u2014') : fmtQty(Math.round(r.orderCases * 100) / 100) + ' cases across ' + r.orderLines + ' line' + (r.orderLines === 1 ? '' : 's')));
+    put('Effective price', fmtMoney(r.effectivePrice) + '/' + r.priceUnit + (r.override != null ? ' (override)' : ''));
+    put('Contract each', r.contractEach == null ? 'n/a' : fmtPrice(r.contractEach) + (r.epc ? ' (' + fmtQty(r.epc) + ' eaches/case' + (r.epcSource === 'vendor' ? ', vendor pack' : '') + ')' : ''));
+    put('Observed each', r.observedEach == null ? 'n/a' : fmtPrice(r.observedEach));
+    put('Expected vs observed', r.expectedTotal == null ? 'n/a' : fmtMoney(r.expectedTotal) + ' vs ' + fmtMoney(r.observedTotal) + ' \u2192 ' + (r.diff >= 0 ? 'saves ' : 'costs ') + fmtMoney(Math.abs(r.diff)));
+  }
+  (r.notes || []).forEach(n => put('Note', n));
+  sec.appendChild(dl);
+  const ov = el('div', 'ovrPrice');
+  ov.appendChild(el('span', null, 'Override contract price'));
+  const pi = el('input', 'aggIn'); pi.placeholder = r.state === 'ok' ? String(Math.round(r.adjustedPrice * 100) / 100) : 'n/a';
+  pi.value = r.overrideRaw || '';
+  const ri = el('input', 'aggIn'); ri.placeholder = 'Reason (kept in the Audit Log)'; ri.style.width = '260px'; ri.value = r.overrideReason || '';
+  const bt = el('button', 'btn sm', 'Apply');
+  [pi, ri].forEach(i => { i.addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') { e.preventDefault(); bt.click(); } });
+                          i.addEventListener('click', e => e.stopPropagation()); });
+  bt.addEventListener('click', () => { if (!isBlank(pi.value) && isBlank(ri.value)) { toast('Give a reason for the override \u2014 it is recorded in the Audit Log.', true); return; } setPriceOverride(g.key, pi.value, ri.value); });
+  const clr = el('button', 'btn sm', 'Clear'); clr.disabled = !r.overrideRaw;
+  clr.addEventListener('click', () => setPriceOverride(g.key, '', ''));
+  ov.appendChild(pi); ov.appendChild(ri); ov.appendChild(bt); ov.appendChild(clr);
+  ov.appendChild(el('span', 'hint', 'Base price is kept; the Audit Log records base, override and effective price.'));
+  sec.appendChild(ov);
+  return sec;
+}
+
+/* ================================== CROSS ANALYSIS: OUR PRICING vs FACILITY */
+let ocLast = null;
+function ourCompareRows(){
+  const F = state.ui.ocFac || XC_ALL, V = state.ui.ocVen || XC_ALL;
+  return derived.groups.map(g => ({ g, r:derived.xref[g.key] }))
+    .filter(x => x.r && (F === XC_ALL || xlBlankLbl(x.r.facility) === F) && (V === XC_ALL || xlBlankLbl(x.r.vendor) === V));
+}
+function renderOurCompare(pane, cards){
+  const keep = pane.scrollTop;
+  pane.innerHTML = ''; cards.innerHTML = ''; $('#xsSetup').innerHTML = '';
+  ocLast = null;
+  if (!derived.groups.length) { pane.appendChild(emptyNote('Nothing to compare yet. Add Facility/Vendor Pricing rows and cross them to Our Pricing.')); return; }
+  /* facility / vendor filter */
+  const facs = [...new Set(derived.groups.map(g => xlBlankLbl(gVal(g, 'facility'))))].sort((a, b) => a.localeCompare(b, undefined, { numeric:true }));
+  const vens = [...new Set(derived.groups.map(g => xlBlankLbl(gVal(g, 'vendorName'))))].sort((a, b) => a.localeCompare(b, undefined, { numeric:true }));
+  const box = el('div', 'xuSetup');
+  const line = el('div', 'xuLine base'); line.style.gridTemplateColumns = '118px 170px 170px';
+  const lbl = el('div', 'lbl', 'Facility/Vendor'); lbl.appendChild(el('small', null, 'usage + observed price')); line.appendChild(lbl);
+  const mk = (opts, all, v, set) => { const s = el('select'); const oa = el('option', null, all); oa.value = XC_ALL; s.appendChild(oa);
+    opts.forEach(o => { const x = el('option', null, o); x.value = o; s.appendChild(x); }); s.value = v || XC_ALL;
+    s.addEventListener('change', () => { set(s.value); saveViewPrefs(); renderCrosses(); }); return s; };
+  line.appendChild(mk(facs, 'All facilities', state.ui.ocFac, v => state.ui.ocFac = v));
+  line.appendChild(mk(vens, 'All vendors', state.ui.ocVen, v => state.ui.ocVen = v));
+  box.appendChild(line);
+  const l2 = el('div', 'xuLine'); l2.style.gridTemplateColumns = '118px 346px'; const lb2 = el('div', 'lbl', 'Our Pricing'); lb2.appendChild(el('small', null, 'Crossed To + Tier to Apply')); l2.appendChild(lb2);
+  l2.appendChild(el('div', 'xuMsg ok', 'Priced by the resolver: base tier/standard price \u2192 order adjustments \u2192 override.'));
+  box.appendChild(l2);
+  $('#xsSetup').appendChild(box);
+
+  const all = ourCompareRows();
+  const T = { obs:0, obsRes:0, exp:0, res:0, attn:0, notAssigned:0, ourWin:0, facWin:0, same:0, noEach:0 };
+  all.forEach(({ r }) => {
+    T.obs += r.observedTotal || 0;
+    if (r.state === 'notAssigned') { T.notAssigned++; return; }
+    if (r.state !== 'ok') { T.attn++; return; }
+    if (r.expectedTotal == null) { T.noEach++; return; }
+    T.res++; T.obsRes += r.observedTotal || 0; T.exp += r.expectedTotal;
+    if (r.contractEach != null && r.observedEach != null) {
+      if (r.contractEach < r.observedEach - 1e-9) T.ourWin++; else if (r.observedEach < r.contractEach - 1e-9) T.facWin++; else T.same++;
+    }
+  });
+  const card = (n, l, sub, cls) => { const c = xsCard(n, l, cls); if (sub) c.appendChild(el('div', 's', sub)); return c; };
+  cards.appendChild(card(fmtMoney(T.obs), 'Facility/Vendor spend', all.length + ' item' + (all.length === 1 ? '' : 's') + (T.notAssigned ? ', ' + T.notAssigned + ' not crossed' : ''), 'base'));
+  cards.appendChild(card(fmtMoney(T.obsRes), 'Spend on priced crosses', T.res + ' item' + (T.res === 1 ? '' : 's') + ' resolved to Our Pricing'));
+  cards.appendChild(card(fmtMoney(T.exp), 'Same usage at Our Pricing', 'Effective contract price \u00d7 normalized eaches'));
+  const d = T.obsRes - T.exp, won = T.res && d > 0.005, lost = T.res && d < -0.005;
+  cards.appendChild(card(!T.res ? '\u2014' : won ? 'Yes \u2014 won' : lost ? 'No \u2014 lost' : 'Tie', 'Our Pricing: did we win?',
+    !T.res ? 'No priced crosses yet' : (won ? 'Lower by ' : lost ? 'Higher by ' : 'Same, ') + fmtMoney(Math.abs(d)) + ' \u00b7 lower on ' + T.ourWin + ' of ' + T.res, won ? 'win' : lost ? 'lose' : ''));
+  const pct = T.obsRes > 0 ? d / T.obsRes * 100 : null;
+  cards.appendChild(card(pct === null ? '\u2014' : (pct < 0 ? '\u2212' : '') + Math.abs(pct).toFixed(1) + '%', 'Percentage in saving',
+    pct === null ? '' : pct >= 0 ? fmtMoney(d) + ' saved' : fmtMoney(-d) + ' more', pct === null ? '' : pct > 0.05 ? 'save' : pct < -0.05 ? 'cost' : ''));
+  cards.appendChild(card(String(T.attn + T.noEach), 'Needs attention', 'Unmatched, tier required, invalid tier, no price or no pack size', T.attn + T.noEach ? 'warn' : ''));
+
+  const showNC = !!state.ui.xuShowNoCross;
+  $('#chkXuNoCross').checked = showNC;
+  $('#cntXuNoCross').textContent = (T.attn + T.notAssigned + T.noEach) ? String(T.attn + T.notAssigned + T.noEach) : '';
+  const q = String(state.ui.xsSearch || '').trim().toLowerCase();
+  let rows = all.filter(x => showNC || (x.r.state === 'ok' && x.r.expectedTotal != null));
+  if (q) rows = rows.filter(({ g, r }) => [keyLabel(g.key), gVal(g, 'description'), r.facility, r.vendor, r.ourItemNumber, r.description, pricingLabel(r)].join(' ').toLowerCase().indexOf(q) >= 0);
+  rows.sort((a, b) => ((b.r.state === 'ok') - (a.r.state === 'ok')) || (b.r.observedTotal || 0) - (a.r.observedTotal || 0));
+  ocLast = rows;
+
+  const t = el('table', 'grid xuTable ocTable');
+  const thead = el('thead'), h1 = el('tr'), h2 = el('tr', 'xuH2');
+  const grp = (txt, span, cls) => { const x = el('th', 'side ' + (cls || ''), txt); x.colSpan = span; h1.appendChild(x); };
+  grp('Comparison', 4, 'xuCmpH'); grp('Facility/Vendor Pricing \u2014 observed', 9, 'xuAH'); grp('Our Pricing \u2014 resolved from Crossed To + Tier to Apply', 12, 'xuBH');
+  const heads = [['Observed Each', 'num'], ['Contract Each', 'num'], ['Best Priced', ''], ['Difference', 'num'],
+    ['Order Qty', 'num sideStart'], ['UOM', ''], ['Facility', ''], ['Vendor', ''], ['Item #', ''], ['Description', ''], ['Channel', ''], ['Each Price', 'num'], ['Total Net Sales', 'num'],
+    ['Crossed To', 'sideStart'], ['Our Description', ''], ['Program \u00b7 Tier', ''], ['Contract', ''], ['Base Price', 'num'], ['Adjustment', ''], ['Override', 'num'],
+    ['Effective Price', 'num'], ['Eaches/Case', 'num'], ['Contract Each', 'num'], ['Expected Net Sales', 'num'], ['Status', '']];
+  heads.forEach(([h, c]) => h2.appendChild(el('th', c, h)));
+  thead.appendChild(h1); thead.appendChild(h2); t.appendChild(thead);
+  const tb = el('tbody');
+  const td = (tr, txt, cls, title) => { const x = el('td', cls || null, txt == null ? '' : txt); if (title) x.title = title; tr.appendChild(x); return x; };
+  if (!rows.length) {
+    const tr = el('tr'), x = el('td', null, all.length ? 'No priced cross matches. Tick \u201cShow unresolved\u201d to list items that still need a cross, a tier or a price.' : 'No items for this facility and vendor.');
+    x.colSpan = heads.length; x.style.cssText = 'padding:12px;color:var(--ink-3)'; tr.appendChild(x); tb.appendChild(tr);
+  }
+  xuNavRows = [];
+  rows.forEach(({ g, r }) => {
+    const ok = r.state === 'ok' && r.expectedTotal != null;
+    const tr = el('tr', 'xuRow' + (ok ? '' : ' nocross'));
+    tr.tabIndex = 0;
+    tr.title = provenanceText(r);
+    const open = () => openEditorFor(g.key, { ids:() => xuNavRows.map(x => x.id), cur:g.key, noun:'item', go:id => openEditorFor(id, null) });
+    tr.addEventListener('click', e => { if (e.target.closest('.xsGrip') || document.body.classList.contains('xsResizing')) return; open(); });
+    tr.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); open(); } });
+    xuNavRows.push({ id:g.key, open });
+    const best = ok && r.observedEach != null && r.contractEach != null
+      ? (r.contractEach < r.observedEach - 1e-9 ? 'our' : r.observedEach < r.contractEach - 1e-9 ? 'fac' : 'same') : null;
+    td(tr, r.observedEach == null ? dash : fmtPrice(r.observedEach), 'num' + (best === 'fac' ? ' best' : ''));
+    td(tr, ok && r.contractEach != null ? fmtPrice(r.contractEach) : (r.state === 'ok' ? 'No pack' : XSTATE[r.state].short), ok ? 'num' + (best === 'our' ? ' best' : '') : 'nc');
+    const bp = el('td');
+    if (!best) { bp.textContent = ok ? 'No price' : XSTATE[r.state].short || 'No price'; bp.className = ok ? 'dim' : 'nc'; }
+    else bp.appendChild(el('span', 'bestTag' + (best === 'fac' ? ' cur' : best === 'same' ? ' same' : ''), best === 'our' ? 'Our Pricing' : best === 'fac' ? 'Facility' : 'Same'));
+    tr.appendChild(bp);
+    td(tr, r.diff == null ? dash : signedMoney(r.diff), 'num' + (r.diff > 0.005 ? ' better' : r.diff < -0.005 ? ' worse' : ''),
+       r.diff == null ? '' : (r.diff >= 0 ? 'Our Pricing saves ' : 'Our Pricing costs ') + fmtMoney(Math.abs(r.diff)) + (r.savePct != null ? ' (' + r.savePct.toFixed(1) + '%)' : ''));
+    td(tr, fmtQty(r.eaches), 'num sideStart', 'Normalized Ordered Quantity (column M) \u2014 as bought: ' + fmtQty(g.sumRawQty) + ' ' + (g.umConflict ? 'mixed UM' : gVal(g, 'orderedUM')));
+    td(tr, gVal(g, 'factorUM') || 'EA');
+    td(tr, xlBlankLbl(r.facility)); td(tr, xlBlankLbl(r.vendor));
+    td(tr, keyLabel(g.key));
+    const dsc = td(tr, gVal(g, 'description'), 'desc', gVal(g, 'description'));
+    dsc.insertBefore(itemCopyBtn({ item:keyLabel(g.key), mfg:gVal(g, 'mfgCatalog'), desc:gVal(g, 'description'), vendor:r.vendor }), dsc.firstChild);
+    td(tr, r.channel || dash);
+    td(tr, r.observedEach == null ? dash : fmtPrice(r.observedEach), 'num');
+    td(tr, fmtMoney(r.observedTotal), 'num');
+    td(tr, r.ourItemNumber || 'Not Assigned', 'sideStart' + (r.state === 'notAssigned' || r.state === 'unmatched' ? ' nc' : ''));
+    td(tr, r.group ? r.description : dash, 'desc', r.description || '');
+    td(tr, r.group ? pricingLabel(r) : dash, r.state === 'tierRequired' || r.state === 'tierInvalid' ? 'nc' : null, r.tier ? tierLabel(r.tier) : '');
+    td(tr, r.contract || dash);
+    td(tr, r.basePrice == null ? dash : fmtMoney(r.basePrice) + '/' + r.priceUnit, 'num');
+    const adj = (r.adjustments || []).filter(a => a.applied || a.status === 'unknown');
+    td(tr, adj.length ? adj.map(a => a.applied ? '+' + fmtMoney(a.perCase) + '/case' : '? ' + a.label).join('; ') : dash,
+       adj.some(a => a.status === 'unknown') ? 'worse' : null, (r.adjustments || []).map(a => a.label + ': ' + a.reason).join('\n'));
+    td(tr, r.override == null ? dash : fmtMoney(r.override), 'num' + (r.override != null ? ' ovrcell' : ''), r.overrideReason || '');
+    td(tr, r.state === 'ok' ? fmtMoney(r.effectivePrice) + '/' + r.priceUnit : dash, 'num');
+    td(tr, r.epc ? fmtQty(r.epc) : dash, 'num', r.epcSource === 'vendor' ? 'From the Facility/Vendor pack size \u2014 Our Pricing has no packaging' : '');
+    td(tr, r.contractEach == null ? dash : fmtPrice(r.contractEach), 'num');
+    td(tr, r.expectedTotal == null ? dash : fmtMoney(r.expectedTotal), 'num');
+    td(tr, r.state === 'ok' ? (r.expectedTotal == null ? 'No pack size' : 'Resolved') : XSTATE[r.state].label, r.state === 'ok' && r.expectedTotal != null ? 'dim' : 'nc', r.message || '');
+    tb.appendChild(tr);
+  });
+  const shown = rows.filter(x => x.r.state === 'ok' && x.r.expectedTotal != null);
+  const sObs = shown.reduce((s, x) => s + (x.r.observedTotal || 0), 0), sExp = shown.reduce((s, x) => s + x.r.expectedTotal, 0);
+  const tt = el('tr', 'xuTot');
+  td(tt, ''); td(tt, ''); td(tt, T.ourWin + ' Our \u00b7 ' + T.facWin + ' Fac'); td(tt, signedMoney(sObs - sExp), 'num');
+  td(tt, 'Total', 'sideStart'); for (let i = 0; i < 7; i++) td(tt, '');
+  td(tt, fmtMoney(sObs), 'num');
+  td(tt, shown.length + ' priced', 'sideStart'); for (let i = 0; i < 9; i++) td(tt, '');
+  td(tt, fmtMoney(sExp), 'num' + (sExp < sObs - 0.005 ? ' better' : sExp > sObs + 0.005 ? ' worse' : '')); td(tt, '');
+  tb.appendChild(tt);
+  t.appendChild(tb);
+  pane.appendChild(t);
+  makeColsResizable(t, [...h2.children], 'ocColWidths');
+  pane.appendChild(el('div', 'xuFoot',
+    'Each Facility/Vendor item is priced at the Our Pricing item named in Crossed To. Tiered items use the Tier to Apply on the Facility/Vendor record \u2014 the tier price itself lives only on Our Pricing. ' +
+    'Order-level rules from the pricing program (e.g. a direct-order surcharge under a minimum case count) are added after the tier price, per order (same facility, vendor, channel and Order Ref). ' +
+    'Contract Each = effective case price \u00f7 eaches per case; Expected Net Sales = Contract Each \u00d7 normalized Ordered Quantity. Difference = observed Total Net Sales \u2212 expected (positive means Our Pricing is lower). ' +
+    'Nothing is priced silently: a missing cross, missing tier, invalid tier or missing tier price is shown as such and left out of the totals.'));
+  pane.scrollTop = keep;
+}
+function ocCopyTable(){
+  if (!ocLast) { toast('Nothing to copy yet.', true); return; }
+  const head = ['Observed Each', 'Contract Each', 'Difference', 'Order Qty (eaches)', 'Facility', 'Vendor', 'Item #', 'Description', 'Channel', 'Total Net Sales',
+    'Crossed To', 'Our Description', 'Program', 'Tier to Apply', 'Contract', 'Base Price', 'Adjustments', 'Override', 'Effective Price', 'Price Unit', 'Eaches/Case', 'Expected Net Sales', 'Status'];
+  const n = v => v == null ? '' : String(Math.round(v * 10000) / 10000);
+  const out = [head.join('\t')];
+  ocLast.forEach(({ g, r }) => {
+    out.push([n(r.observedEach), n(r.contractEach), n(r.diff), n(r.eaches), r.facility, r.vendor, keyLabel(g.key), gVal(g, 'description'), r.channel,
+      n(r.observedTotal), r.ourItemNumber, r.description || '', r.program ? r.program.name : r.group ? 'Standard' : '', r.tier ? r.tier.name : r.tierInput,
+      r.contract || '', n(r.basePrice), (r.adjustments || []).filter(a => a.applied).map(a => a.label + ' +' + a.perCase + '/case').join('; '),
+      n(r.override), n(r.state === 'ok' ? r.effectivePrice : null), r.priceUnit || '', n(r.epc), n(r.expectedTotal), XSTATE[r.state].label]
+      .map(v => String(v == null ? '' : v).replace(/[\t\r\n]+/g, ' ')).join('\t'));
+  });
+  copyText(out.join('\n'), 'Copied ' + ocLast.length + ' items');
+}
+
+/* ============================================================ AUDIT LOG */
+const AUDIT_COLS = [
+  ['auditId', 'Audit Record'], ['generatedAt', 'Generated'], ['caseName', 'Case'],
+  ['recordKey', 'Facility/Vendor Record Key'], ['sourceIds', 'Source Record IDs'], ['sourceRows', 'Source Rows'], ['aggregation', 'Facility/Vendor Aggregation'],
+  ['facility', 'Facility'], ['vendor', 'Vendor'], ['vendorItem', 'Vendor Item #'], ['mfg', 'MFG. Catalog #'], ['vendorDesc', 'Vendor Description'],
+  ['channel', 'Channel'], ['orderRef', 'Order Ref'],
+  ['crossedTo', 'Crossed To'], ['crossStatus', 'Cross Status'], ['tierToApply', 'Tier to Apply'],
+  ['ourItem', 'Our Item #'], ['ourDesc', 'Our Description'], ['ourCode', 'Our Product Code'], ['ourRecords', 'Our Record IDs'], ['ourAgg', 'Our Pricing Aggregation'],
+  ['pricingType', 'Pricing Type'], ['program', 'Pricing Program'], ['tier', 'Pricing Tier'], ['tierDesc', 'Tier Description'], ['contract', 'Contract'], ['effDate', 'Effective Date'],
+  ['ourStd', 'Our Base Price (standard)'], ['ourTiers', 'Our Tier Prices'], ['priceUnit', 'Price Unit'], ['basePrice', 'Resolved Base Price'],
+  ['orderCases', 'Order Cases'], ['adjustment', 'Adjustment'], ['adjDetail', 'Adjustment Detail'], ['adjustedPrice', 'Price After Adjustments'],
+  ['override', 'Override Price'], ['overrideReason', 'Override Reason'], ['effectivePrice', 'Effective Price'],
+  ['orderedQty', 'Ordered QTY'], ['orderedUM', 'Ordered UM'], ['packaging', 'Packaging Details'], ['factorQty', 'Factor QTY'], ['innerPack', 'Inner Pack Size'],
+  ['eaches', 'Normalized Ordered Quantity'], ['observedEach', 'Observed Each Price'], ['observedTotal', 'Observed Total Net Sales'],
+  ['epc', 'Our Eaches per Case'], ['contractEach', 'Contract Each Price'], ['expected', 'Expected Net Sales'],
+  ['eachDiff', 'Each Price Difference'], ['savings', 'Savings (Observed \u2212 Expected)'], ['savePct', 'Savings %'], ['best', 'Best Priced'],
+  ['fieldOverrides', 'Field Overrides'], ['issues', 'Issues'], ['provenance', 'Pricing Provenance']
+];
+const AUDIT_NUM = new Set(['sourceRows', 'ourStd', 'basePrice', 'orderCases', 'adjustedPrice', 'override', 'effectivePrice', 'orderedQty', 'factorQty', 'innerPack', 'eaches',
+  'observedEach', 'observedTotal', 'epc', 'contractEach', 'expected', 'eachDiff', 'savings', 'savePct']);
+const AUDIT_SRC_EXTRA = [['sourceId', 'Source Record ID'], ['rowOrderedQty', 'Row Ordered QTY'], ['rowOrderedUM', 'Row Ordered UM'], ['rowNetSales', 'Row Net Sales'],
+  ['rowEaches', 'Row Normalized Qty'], ['rowObservedEach', 'Row Observed Each'], ['rowCrossedTo', 'Row Crossed To'], ['rowTier', 'Row Tier to Apply'],
+  ['rowOriginal', 'Row Original Data']];
+function auditRecord(g, i, raw, stampIso){
+  const r = derived.xref[g.key] || {};
+  const n = (v, kind) => v == null || v === '' || (typeof v === 'number' && !isFinite(v)) ? '' : raw ? String(Math.round(v * 1e6) / 1e6)
+    : kind === 'money' ? fmtMoney(v) : kind === 'price' ? fmtPrice(v) : kind === 'pct' ? v.toFixed(2) + '%' : fmtQty(v);
+  const ourRows = r.group ? r.group.rows : [];
+  const rep = r.ourItem || {};
+  const ov = state.overrides[g.key] || {};
+  const iss = [];
+  if (r.state && r.state !== 'ok') iss.push(XSTATE[r.state].label + (r.message ? ': ' + r.message : ''));
+  if (g.hasConflict) iss.push('Source rows disagree on ' + OVR_KEYS.filter(k => g.conflicts[k]).map(fieldLabel).join(', ') + (g.hasOverride ? ' (resolved by override)' : ''));
+  (r.adjustments || []).filter(a => a.status === 'unknown').forEach(a => iss.push(a.label + ': ' + a.reason));
+  (r.notes || []).forEach(x => iss.push(x));
+  const best = r.contractEach != null && r.observedEach != null
+    ? (r.contractEach < r.observedEach - 1e-9 ? 'Our Pricing' : r.observedEach < r.contractEach - 1e-9 ? 'Facility/Vendor' : 'Same') : '';
+  return {
+    auditId:'AL-' + String(i + 1).padStart(5, '0'), generatedAt:stampIso, caseName:currentSessionName(),
+    recordKey:keyLabel(g.key), sourceIds:g.rows.map(x => x.id).join(', '), sourceRows:raw ? String(g.rows.length) : String(g.rows.length),
+    aggregation:[g.rows.length > 1 ? g.rows.length + ' source rows grouped' : '', groupOriginal(g) ? 'Aggregated: ' + groupOriginal(g) : ''].filter(Boolean).join(' \u00b7 '),
+    facility:r.facility || '', vendor:r.vendor || '', vendorItem:gVal(g, 'itemNumber'), mfg:gVal(g, 'mfgCatalog'), vendorDesc:gVal(g, 'description'),
+    channel:r.channel || '', orderRef:r.orderRef || '',
+    crossedTo:r.ourItemNumber || 'Not Assigned', crossStatus:r.state ? XSTATE[r.state].label : '', tierToApply:r.tierInput || (r.pricingType === 'tiered' ? 'Required' : ''),
+    ourItem:r.group ? r.group.item : '', ourDesc:r.description || '', ourCode:r.productCode || '', ourRecords:ourRows.map(x => x.id).join(', '),
+    ourAgg:ourRows.map(x => (x.aggregatedFrom || []).length ? x.id + ' \u2190 ' + x.aggregatedFrom.map(s => s.id + (s.source ? ' (' + s.source + ')' : '')).join(', ') : '').filter(Boolean).join('; '),
+    pricingType:r.pricingType || '', program:r.program ? r.program.name : r.group ? 'Standard pricing' : '', tier:r.tier ? r.tier.name : '',
+    tierDesc:r.tier ? r.tier.description : '', contract:r.contract || '', effDate:r.effectiveDate || '',
+    ourStd:rep.stdPrice && !r.program ? (raw ? String(toNum(rep.stdPrice)) : fmtMoney(toNum(rep.stdPrice))) : '',
+    ourTiers:r.program && (r.program.tiers || []).length ? ourPriceSummary(rep) : '',
+    priceUnit:r.priceUnit || '', basePrice:n(r.basePrice, 'money'),
+    orderCases:n(r.orderCases == null ? null : Math.round(r.orderCases * 1e4) / 1e4, 'qty'),
+    adjustment:(r.adjustments || []).filter(a => a.applied).map(a => '+' + fmtMoney(a.perCase) + '/case').join('; '),
+    adjDetail:(r.adjustments || []).map(a => a.label + ': ' + a.reason).join(' | '),
+    adjustedPrice:r.state === 'ok' ? n(r.adjustedPrice, 'money') : '',
+    override:n(r.override, 'money'), overrideReason:r.override != null ? (r.overrideReason || '') : (ov.contractPrice ? 'Stored but not applied: ' + ov.contractPrice : ''),
+    effectivePrice:r.state === 'ok' ? n(r.effectivePrice, 'money') : '',
+    orderedQty:n(g.sumRawQty, 'qty'), orderedUM:g.umConflict ? 'MIXED' : gVal(g, 'orderedUM'), packaging:gVal(g, 'packagingDetails'),
+    factorQty:gVal(g, 'factorQty'), innerPack:raw ? resRaw(g.innerPack) : resText(g.innerPack, 'qty'),
+    eaches:n(g.sumNorm, 'qty'), observedEach:n(r.observedEach, 'price'), observedTotal:n(g.sumNet, 'money'),
+    epc:n(r.epc, 'qty') + (r.epcSource === 'vendor' && !raw ? ' (vendor pack)' : ''), contractEach:n(r.contractEach, 'price'), expected:n(r.expectedTotal, 'money'),
+    eachDiff:n(r.eachDiff, 'price'), savings:n(r.diff, 'money'), savePct:n(r.savePct, 'pct'), best,
+    fieldOverrides:g.overrideKeys.map(k => fieldLabel(k) + '=' + ov[k]).join('; '),
+    issues:iss.join(' | '), provenance:provenanceText(r).replace(/\n/g, ' | ')
+  };
+}
+function auditMatrix(mode, raw){
+  const stampIso = new Date().toISOString();
+  if (mode === 'events') return state.auditEvents.slice().reverse().map(e => [e.at.replace('T', ' ').slice(0, 19), e.type, e.target, e.detail]);
+  const out = [];
+  derived.groups.forEach((g, i) => {
+    const rec = auditRecord(g, i, raw, stampIso);
+    if (mode === 'audit') { out.push(AUDIT_COLS.map(([k]) => rec[k] == null ? '' : String(rec[k]))); return; }
+    g.detail.forEach(d => {
+      const rr = rowRef(d.eff, d.row.id + ':g');
+      const extra = { sourceId:d.row.id, rowOrderedQty:String(d.row.orderedQty == null ? '' : d.row.orderedQty), rowOrderedUM:String(d.row.orderedUM || ''),
+        rowNetSales:String(d.row.netSales == null ? '' : d.row.netSales), rowEaches:raw ? resRaw(d.calc.orderedQtyNorm) : resText(d.calc.orderedQtyNorm, 'qty'),
+        rowObservedEach:raw ? resRaw(d.calc.eachPrice) : resText(d.calc.eachPrice, 'price'),
+        rowCrossedTo:String(d.row.crossedTo || '') + (rr.state !== 'ok' && rr.state !== 'notAssigned' ? ' [' + XSTATE[rr.state].short + ']' : ''),
+        rowTier:String(d.row.tierToApply || ''), rowOriginal:String(d.row.originalData || '') };
+      out.push(AUDIT_SRC_EXTRA.map(([k]) => extra[k]).concat(AUDIT_COLS.map(([k]) => rec[k] == null ? '' : String(rec[k]))));
+    });
+  });
+  return out;
+}
+function auditHeaders(mode){
+  if (mode === 'events') return ['Timestamp (UTC)', 'Event', 'Target', 'Detail'];
+  const h = AUDIT_COLS.map(c => c[1]);
+  return mode === 'auditSrc' ? AUDIT_SRC_EXTRA.map(c => c[1]).concat(h) : h;
+}
+function auditMeta(mode){
+  if (mode === 'events') return [{}, {}, {}, {}];
+  const zoneOf = k => /^(our|program|tier|contract|effDate|pricingType|basePrice|priceUnit)/.test(k) ? 'ours'
+    : /^(orderCases|adjust|override|effectivePrice)/.test(k) ? 'orig'
+    : /^(eaches|observed|epc|contractEach|expected|eachDiff|savings|savePct|best|innerPack)/.test(k) ? 'computed' : '';
+  const m = AUDIT_COLS.map(([k]) => ({ zone:zoneOf(k), num:AUDIT_NUM.has(k) }));
+  return mode === 'auditSrc' ? AUDIT_SRC_EXTRA.map(() => ({ zone:'analysed' })).concat(m) : m;
+}
+function renderAuditLog(pane){
+  const mode = state.ui.outMode;
+  const m = auditMatrix(mode, false);
+  if (!m.length) { pane.appendChild(emptyNote(mode === 'events' ? 'No changes recorded yet in this case.' : 'Nothing to audit yet \u2014 add Facility/Vendor Pricing rows.')); return; }
+  const note = el('div', 'auditNote');
+  note.textContent = mode === 'events'
+    ? 'Every relationship, pricing, override, aggregation and import change made in this case, newest first. Undo does not erase entries; it is logged too.'
+    : 'One record per ' + (mode === 'audit' ? 'Facility/Vendor item' : 'source row') + ': source \u2192 Crossed To \u2192 Tier to Apply \u2192 resolved Our Pricing price \u2192 adjustments \u2192 override \u2192 calculation \u2192 Cross Analysis result. Hover a row to read its pricing provenance.';
+  pane.appendChild(note);
+  const t = buildTable(auditHeaders(mode), m, auditMeta(mode));
+  if (mode !== 'events') {
+    const pi = auditHeaders(mode).indexOf('Pricing Provenance');
+    [...t.querySelectorAll('tbody tr')].forEach(tr => { const c = tr.children[pi]; if (c) tr.title = c.textContent.replace(/ \| /g, '\n'); });
+  }
+  pane.appendChild(t);
+}
+
+/* ======================================================== AUDIT EXCEL SHEET */
+function addAuditSheets(wb){
+  const put = (name, headers, matrix, tab) => {
+    const ws = wb.addWorksheet(name, { properties:{ tabColor:{ argb:tab } }, views:[{ state:'frozen', ySplit:1 }] });
+    ws.addRow(headers);
+    ws.getRow(1).font = xlFont({ bold:true, color:{ argb:'FFFFFFFF' } });
+    ws.getRow(1).fill = xlFill(XL.navy);
+    matrix.forEach(line => ws.addRow(line.map(v => { const x = xlClean(v); return /^-?\d+(\.\d+)?$/.test(x) && x.length < 16 && !/^0\d/.test(x) ? Number(x) : x; })));
+    ws.columns.forEach((c, i) => { c.width = Math.min(48, Math.max(10, String(headers[i] || '').length + 2)); });
+    ws.autoFilter = { from:{ row:1, column:1 }, to:{ row:1, column:headers.length } };
+  };
+  put('Audit Log', auditHeaders('audit'), auditMatrix('audit', true), 'FF0D5C4D');
+  put('Audit Source Records', auditHeaders('auditSrc'), auditMatrix('auditSrc', true), 'FF4B7F74');
+  put('Change History', auditHeaders('events'), auditMatrix('events', true), 'FF7B8B9C');
+  const op = wb.addWorksheet('Our Pricing', { properties:{ tabColor:{ argb:'FF1B3D78' } }, views:[{ state:'frozen', ySplit:1 }] });
+  const tc = ourTierCols();
+  const hdr = OUR_TEXT_FIELDS.map(f => f.name).concat(tc.map(c => c.name + ' \u2014 ' + c.tier.description + (c.tier.contract ? ' (' + c.tier.contract + ')' : '')), ['Record ID', 'Source', 'Aggregated From']);
+  op.addRow(hdr); op.getRow(1).font = xlFont({ bold:true, color:{ argb:'FFFFFFFF' } }); op.getRow(1).fill = xlFill(XL.navy);
+  state.our.rows.forEach(r => {
+    const p = programById(r.program);
+    op.addRow(OUR_TEXT_FIELDS.map(f => f.k === 'program' ? (p ? p.name : r.program || 'Standard') : xlClean(r[f.k] || ''))
+      .concat(tc.map(c => p === c.program ? (toNum((r.prices || {})[c.tier.id]) ?? '') : ''), [r.id, r.source || '', (r.aggregatedFrom || []).map(s => s.id).join(', ')]));
+  });
+  op.columns.forEach((c, i) => { c.width = Math.min(44, Math.max(10, String(hdr[i] || '').length + 2)); });
+}
 
 /* ================================================================== INIT */
 /** Put the toolbar controls in line with this browser's view of the case. */
@@ -7691,12 +9506,15 @@ function syncViewControls(){
   $('#xsSearch').value = state.ui.xsSearch || '';
   $('#chkAggAttn').checked = !!state.ui.aggAttn;
   $('#chkAggSelected').checked = !!state.ui.aggSelectedOnly;
+  $('#ourSearch').value = state.ui.ourSearch || '';
+  $('#chkOurIssues').checked = !!state.ui.ourIssuesOnly;
+  [...$('#segXsMode').children].forEach(x => x.classList.toggle('on', x.dataset.xs === (state.ui.xsMode || 'ours')));
   [...$('#segMode').children].forEach(x => x.classList.toggle('on', x.dataset.mode === state.ui.mode));
   syncToolbarVisibility();
 }
 function init(){
   loadSession(true);
-  if (!['normalization','aggregated','output','crosses'].includes(state.ui.tab)) state.ui.tab = 'normalization';
+  if (!['our','normalization','aggregated','output','crosses'].includes(state.ui.tab)) state.ui.tab = 'normalization';
   updateCaseHeader();
   syncViewControls();
   initBulkFieldSelect();
