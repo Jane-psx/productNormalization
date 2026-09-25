@@ -1050,6 +1050,7 @@ table.ourGrid td.oc input.edit{position:absolute;left:0;top:0;width:100%;height:
 table.ourGrid tr.ourGrp td{padding:5px 8px;height:auto;line-height:1.4}
 table.ourGrid tr.ourGrp .grpIn{position:sticky;left:8px;display:inline-flex;align-items:center;flex-wrap:wrap;gap:4px;max-width:calc(100vw - 160px);white-space:normal}
 #paneOur:focus{outline:none}
+#ourGroupField{height:27px;border:1px solid var(--line);border-radius:3px;padding:0 6px;font-size:12.5px;background:#fff;color:var(--ink)}
 table.ourTable td.srcCell{font-size:11.5px;color:var(--ink-3)}
 table.ourTable td.srcCell .pill{margin-left:6px;cursor:pointer}
 .progEd{border:1px solid var(--line);border-radius:3px;padding:10px 12px;margin:0 0 12px;display:flex;flex-direction:column;gap:8px}
@@ -1109,6 +1110,7 @@ table.ourTable td.srcCell .pill{margin-left:6px;cursor:pointer}
   </div>
   <label class="chk" style="gap:6px" for="groupByField">Group by</label>
   <select id="groupByField" title="Which field defines a normalized group — drives this sheet's Grouped view, the Summary tab, per-group overrides, Aggregate ticked, and Find duplicates."></select>
+  <label class="chk" title="Group (and aggregate) only rows with the same Facility and Vendor as well — the same item at two facilities or from two vendors stays separate."><input type="checkbox" id="chkGroupFV" checked> + Facility + Vendor</label>
   <button class="btn" id="btnExpand">Expand all</button>
   <button class="btn" id="btnCollapse">Collapse all</button>
   <span class="sep"></span>
@@ -1162,6 +1164,16 @@ table.ourTable td.srcCell .pill{margin-left:6px;cursor:pointer}
       <button class="btn" id="btnOurAgg" title="Combine the ticked records of the same Item #. Conflicting pricing blocks the merge; the originals are kept for the audit.">Aggregate ticked</button>
       <button class="btn" id="btnOurDup">Find duplicates</button>
       <button class="btn danger" id="btnOurDel">Delete ticked</button>
+      <span class="sep"></span>
+      <div class="seg" id="segOurMode">
+        <button data-mode="flat" class="on">Flat</button>
+        <button data-mode="grouped">Grouped</button>
+      </div>
+      <label class="chk" style="gap:6px" for="ourGroupField">Group by</label>
+      <select id="ourGroupField" title="Records group (and aggregate) by this field together with Contract.">
+        <option value="itemNumber">Item #</option><option value="productCode">Product Code</option><option value="description">Description</option>
+      </select>
+      <span class="note" style="margin-left:0">+ Contract</span>
       <span class="sep"></span>
       <button class="btn" id="btnPrograms" title="Tier definitions, contracts, effective dates and order-level rules">Pricing programs&hellip;</button>
       <span class="sep"></span>
@@ -1953,7 +1965,7 @@ const state = {
         lineItemCols:['packagingDetails','factorQty','facility','vendorName','description'],
         lineItemColWidths:{},
         lineItemView:'each', lineItemCombineStat:'sum', hideNoCross:false, xuShowNoCross:false,
-        xsMode:'ours', ourSearch:'', ourIssuesOnly:false, ourColWidths:{}, ourColFilters:{}, ocFac:'', ocVen:'',
+        xsMode:'ours', ourSearch:'', ourIssuesOnly:false, ourMode:'flat', ourGroupField:'itemNumber', groupSplitFV:true, ourColWidths:{}, ourColFilters:{}, ocFac:'', ocVen:'',
         freeze:true, issuesOnly:false, outMode:'audit', aggSearch:'', aggAttn:false, aggSelectedOnly:false,
         modeB:'grouped', searchB:'', sortKeyB:null, sortDirB:1, freezeB:true, issuesOnlyB:false,
         aggSearchB:'', aggAttnB:false, aggSelectedOnlyB:false, lastSubA:'normalization', lastSubB:'normalizationB' },
@@ -1990,8 +2002,17 @@ function blankAltRow(){
 const NOGROUP = '\u0000NOGROUP';
 function groupableCols(){ return COLS.filter(c => !c.calc && !c.meta); }
 function groupFieldCol(){ return COL_BY_KEY[state.ui.groupField] || COL_BY_KEY['itemNumber']; }
-const itemKeyOf = row => { const col = groupFieldCol(); const v = String(row[col.k] == null ? '' : row[col.k]).trim(); return v === '' ? NOGROUP : v; };
-const keyLabel  = key => key === NOGROUP ? '(no ' + groupFieldCol().name + ')' : key;
+/* With "+ Facility + Vendor" on (the default) a group is the group field AND the facility AND the vendor,
+   so the same item bought by two facilities or from two vendors is never combined. */
+const FV_SEP = '\u241f';
+const splitFV = () => state.ui.groupSplitFV !== false;
+const fvNorm = v => String(v == null ? '' : v).trim();
+const itemKeyOf = row => { const col = groupFieldCol(); const v = String(row[col.k] == null ? '' : row[col.k]).trim();
+  const base = v === '' ? NOGROUP : v;
+  return splitFV() ? base + FV_SEP + fvNorm(row.facility) + FV_SEP + fvNorm(row.vendorName) : base; };
+const baseKey   = key => String(key).split(FV_SEP)[0];
+const isNoGroup = key => baseKey(key) === NOGROUP;
+const keyLabel  = key => isNoGroup(key) ? '(no ' + groupFieldCol().name + ')' : baseKey(key);
 
 function snapshot(){
   return JSON.stringify({ rows:state.rows, overrides:state.overrides, expanded:state.expanded,
@@ -2171,7 +2192,7 @@ function buildDerived(rows, overrides, expanded, cache){
     g.status = g.hasConflict && g.hasOverride ? 'resolved'
              : g.hasConflict ? 'conflict'
              : g.hasOverride ? 'override' : 'normal';
-    if (key === NOGROUP) g.issueLevel = 'error';
+    if (isNoGroup(key)) g.issueLevel = 'error';
 
     if (expanded[key] === undefined) expanded[key] = g.rows.length > 1;
     g.expanded = !!expanded[key];
@@ -2338,7 +2359,7 @@ function buildDerivedB(rows, overrides, expanded, cache){
       : g.hasConflict ? 'warn'
       : g.rows.some(r => worstLevel(rowIssuesMap[r.id]) === 'warn') ? 'warn' : 'ok';
     g.status = g.hasConflict && g.hasOverride ? 'resolved' : g.hasConflict ? 'conflict' : g.hasOverride ? 'override' : 'normal';
-    if (key === NOGROUP) g.issueLevel = 'error';
+    if (isNoGroup(key)) g.issueLevel = 'error';
 
     if (expanded[key] === undefined) expanded[key] = g.rows.length > 1;
     g.expanded = !!expanded[key];
@@ -2349,8 +2370,22 @@ function buildDerivedB(rows, overrides, expanded, cache){
 }
 
 /* Vendor A is rebuilt exactly as before; the Alternative is rebuilt beside it. */
+/* Overrides saved before Facility + Vendor splitting keep working: a plain key moves onto its split groups. */
+function migrateOverrideKeys(){
+  if (!splitFV()) return;
+  const plain = Object.keys(state.overrides).filter(k => k.indexOf(FV_SEP) < 0);
+  if (!plain.length) return;
+  const keys = new Set(state.rows.map(itemKeyOf));
+  plain.forEach(k => {
+    const targets = [...keys].filter(x => baseKey(x) === k && !state.overrides[x]);
+    if (!targets.length) return;
+    targets.forEach(x => { state.overrides[x] = clone(state.overrides[k]); });
+    delete state.overrides[k];
+  });
+}
 function rebuild(){
   pruneChecked();
+  migrateOverrideKeys();
   buildOurDerived();
   derived = buildDerived(state.rows, state.overrides, state.expanded, rowCache);
   derived.crossInfo = buildCrossLinks(derived.groups);
@@ -2715,7 +2750,7 @@ function xtoResolve(value, ownItems){
 function xtoValueOf(item){
   if (item.type === 'group') {
     const g = item.group;
-    if (state.ui.groupField === 'crossedTo') return g.key === NOGROUP ? '' : g.key;
+    if (state.ui.groupField === 'crossedTo') return isNoGroup(g.key) ? '' : baseKey(g.key);
     return g.resolved.crossedTo ? g.resolved.crossedTo.value : '';
   }
   return item.row.crossedTo;
@@ -2831,6 +2866,10 @@ function buildAggregatePreviewA(rows){
   else if (ums.length === 1 && blankUM) blocking.push({ label:'Ordered UM', detail: blankUM + ' row' + (blankUM === 1 ? '' : 's') + ' blank, the rest \u201c' + ums[0].v + '\u201d' });
 
   relConflicts(rows).forEach(x => blocking.push(x));
+  if (splitFV()) ['facility', 'vendorName'].forEach(k => {
+    const d = distinctVals(rows.map(r => ({ v:fvNorm(r[k]) })), 'v');
+    if (d.length > 1) blocking.push({ label:fieldLabel(k), detail:d.map(x => '\u201c' + (x.v || '(blank)') + '\u201d \u00d7' + x.n).join(', ') + ' \u2014 grouping is by ' + groupFieldCol().name + ' + Facility + Vendor' });
+  });
   const watch = [];
   [...new Set([state.ui.groupField, 'itemNumber', ...PACK_KEYS, ...ID_KEYS])].filter(k => !REL_KEYS.includes(k) || k === 'orderRef').forEach(k => {
     const d = distinctVals(rows, k);
@@ -3341,7 +3380,7 @@ function buildRowEl(item, vIdx, lefts, fz){
 }
 
 function statusPill(g){
-  if (g.key === NOGROUP) return el('span', 'pill err', 'No ' + groupFieldCol().name);
+  if (isNoGroup(g.key)) return el('span', 'pill err', 'No ' + groupFieldCol().name);
   if (g.issueLevel === 'error')  return el('span', 'pill err', '\u2715 Error');
   if (g.status === 'resolved')   return el('span', 'pill ovr', '\u2713 Conflict resolved');
   if (g.status === 'conflict')   return el('span', 'pill warn', '\u26a0 Conflict');
@@ -5662,7 +5701,7 @@ function xlNumFmt(col, n){
   return Number.isInteger(n) ? '#,##0' : '#,##0.00##';
 }
 function xlStatus(g){
-  if (g.key === NOGROUP) return { t:'No ' + groupFieldCol().name, kind:'err' };
+  if (isNoGroup(g.key)) return { t:'No ' + groupFieldCol().name, kind:'err' };
   if (g.issueLevel === 'error') return { t:'Error', kind:'err' };
   if (g.status === 'resolved')  return { t:'Conflict resolved', kind:'ovr' };
   if (g.status === 'conflict')  return { t:'Conflict', kind:'warn' };
@@ -6604,7 +6643,7 @@ const VIEW_UI_KEYS = ['tab','mode','search','colFilters','freeze','issuesOnly','
   'modeB','searchB','sortKeyB','sortDirB','freezeB','issuesOnlyB','aggSearchB','aggAttnB','aggSelectedOnlyB','lastSubA','lastSubB',
   'lineItemCols','lineItemColWidths','lineItemView','lineItemCombineStat',
   'hideNoCross','xuShowNoCross','xsView','xsSearch','xuBase','xuSides','xuColWidths','xsRelColWidths',
-  'xsMode','ourSearch','ourIssuesOnly','ourColWidths','ourColFilters','ocFac','ocVen','ocColWidths'];
+  'xsMode','ourSearch','ourIssuesOnly','ourMode','ourColWidths','ourColFilters','ocFac','ocVen','ocColWidths'];
 const VIEW_KEY_SET = new Set(VIEW_UI_KEYS);
 const clone = o => JSON.parse(JSON.stringify(o === undefined ? null : o));
 const pickView = ui => { const o = {}; VIEW_UI_KEYS.forEach(k => { if (ui[k] !== undefined) o[k] = ui[k]; }); return o; };
@@ -7088,6 +7127,7 @@ function initGroupFieldSelect(){
 function renderGroupFieldUI(){
   const sel = $('#groupByField');
   if (sel.value !== state.ui.groupField) sel.value = state.ui.groupField;
+  $('#chkGroupFV').checked = splitFV();
   const lbl = $('#btnOutAggLabel');
   if (lbl) lbl.textContent = 'Facility/Vendor list \u00b7 one row per ' + groupFieldCol().name;
   const dupBtn = $('#btnFindDupA');
@@ -7100,6 +7140,12 @@ $('#groupByField').addEventListener('change', e => {
   cur = null; sel = null;
   refresh();
   toast('Now grouping by ' + groupFieldCol().name + '. Existing overrides only apply where their key still matches.');
+});
+$('#chkGroupFV').addEventListener('change', e => {
+  state.ui.groupSplitFV = e.target.checked;
+  cur = null; sel = null;
+  refresh();
+  toast(e.target.checked ? 'Grouping by ' + groupFieldCol().name + ' + Facility + Vendor.' : 'Grouping by ' + groupFieldCol().name + ' only \u2014 rows from different facilities and vendors can combine.');
 });
 function refreshBulkValList(){
   const col = COL_BY_KEY[$('#bulkField').value];
@@ -8601,6 +8647,8 @@ function renderOur(){
   }
   pane.innerHTML = ''; top.innerHTML = '';
   oPainted = [];
+  [...$('#segOurMode').children].forEach(x => x.classList.toggle('on', x.dataset.mode === (state.ui.ourMode === 'grouped' ? 'grouped' : 'flat')));
+  $('#ourGroupField').value = ourGroupField();
   const rows = state.our.rows;
   /* ---- program strip ---- */
   if (!state.programs.length) {
@@ -8623,11 +8671,11 @@ function renderOur(){
     top.appendChild(c);
   });
   const errN = rows.filter(r => ourIssueLevel(r) === 'error').length;
-  const dupN = ourD.groups.filter(g => g.rows.length > 1).length;
+  const dupN = ourDisplayGroups(rows).filter(g => g.rows.length > 1).length;
   const nf = ourActiveFilters().length;
   const note = $('#ourNote'); note.innerHTML = '';
   if (rows.length) note.appendChild(document.createTextNode(rows.length + ' record' + (rows.length === 1 ? '' : 's') + ' \u00b7 ' + ourD.groups.length + ' Item #' +
-    (dupN ? ' \u00b7 ' + dupN + ' duplicate' + (dupN === 1 ? '' : 's') : '') + (errN ? ' \u00b7 ' + errN + ' with errors' : '')));
+    (dupN ? ' \u00b7 ' + dupN + ' repeated ' + OUR_GROUP_FIELDS[ourGroupField()] + ' + Contract' : '') + (errN ? ' \u00b7 ' + errN + ' with errors' : '')));
   if (nf) { const a = el('a', 'lnk', ' \u00b7 ' + nf + ' column filter' + (nf === 1 ? '' : 's') + ' \u2014 clear'); a.href = '#';
     a.addEventListener('click', e => { e.preventDefault(); state.ui.ourColFilters = {}; renderOur(); }); note.appendChild(a); }
 
@@ -8718,7 +8766,25 @@ function renderOur(){
     return true;
   });
   oView.total = gRows.length;
-  {
+  const grouped = state.ui.ourMode === 'grouped';
+  const dGroups = grouped ? ourDisplayGroups(gRows) : [{ rows:gRows }];
+  const banner = g => {
+    const gr = el('tr', 'ourGrp' + (g.priceConflict ? ' bad' : ''));
+    const td = el('td'); td.colSpan = span;
+    const inner = el('div', 'grpIn');
+    inner.appendChild(el('b', null, OUR_GROUP_FIELDS[ourGroupField()] + ' ' + (g.value || '(blank)') + ' \u00b7 Contract ' + (g.contract || '(blank)') + ' \u2014 ' + g.rows.length + ' records '));
+    inner.appendChild(el('span', null, g.priceConflict
+      ? '\u26a0 Pricing differs: ' + g.diffs.map(d => d.label + ' (' + d.values.map(v => v.v + ' \u00d7' + v.n).join(', ') + ')').join('; ') + '. Correct the records first.'
+      : 'Same pricing \u2014 ready to aggregate (the originals are kept for the audit).'));
+    const ab = el('button', 'btn sm', 'Aggregate these ' + g.rows.length);
+    ab.disabled = g.priceConflict;
+    ab.addEventListener('click', () => showOurAggregatePreview(g.rows));
+    inner.appendChild(ab);
+    td.appendChild(inner); gr.appendChild(td); tb.appendChild(gr);
+  };
+  dGroups.forEach(dg => {
+    if (grouped && dg.rows.length > 1 && listed < OUR_ROW_CAP) banner(dg);
+    const gRows = dg.rows;
     gRows.forEach(r => {
       if (listed >= OUR_ROW_CAP) return;
       const ri = oView.rows.length;
@@ -8751,7 +8817,7 @@ function renderOur(){
       oView.trs.push(tr); oView.tds.push(tds);
       tb.appendChild(tr);
     });
-  }
+  });
   if (!oView.rows.length) {
     const tr = el('tr'), td = el('td', null, 'No record matches' + (nf ? ' \u2014 check the column filters.' : '.'));
     td.colSpan = span; td.style.cssText = 'padding:14px;color:var(--ink-3)';
@@ -8788,6 +8854,19 @@ function renderOur(){
   ourPaint();
   renderOurStatus();
   if (oPendingEdit && oCur) { oPendingEdit = false; ourEnsureVisible(oCur.r, oCur.c); ourBeginEdit(); }
+}
+
+/* ------------------------------------------------ Our Pricing grouping */
+const OUR_GROUP_FIELDS = { itemNumber:'Item #', productCode:'Product Code', description:'Description' };
+const ourGroupField = () => OUR_GROUP_FIELDS[state.ui.ourGroupField] ? state.ui.ourGroupField : 'itemNumber';
+/** Records group (and aggregate) by the chosen field together with Contract. */
+function ourGroupKeyOf(r){ return normIdent(r[ourGroupField()]) + '\u241f' + String(r.contract || '').trim().toLowerCase(); }
+function ourDisplayGroups(rows){
+  const m = new Map(), out = [];
+  rows.forEach(r => { const k = ourGroupKeyOf(r); let g = m.get(k); if (!g) { g = { key:k, rows:[] }; m.set(k, g); out.push(g); } g.rows.push(r); });
+  out.forEach(g => { g.value = String(g.rows[0][ourGroupField()] || '').trim(); g.contract = String(g.rows[0].contract || '').trim();
+    g.diffs = g.rows.length > 1 ? ourPricingDiffs(g.rows) : []; g.priceConflict = g.diffs.length > 0; });
+  return out;
 }
 
 /* -------------------------------------------------------- selection */
@@ -9299,17 +9378,28 @@ function ourAggregate(rows){
   toast(rows.length + ' Our Pricing records combined into Item # ' + merged.itemNumber + '. The originals are kept in the record.');
 }
 function ourFindDuplicates(){
-  const dups = ourD.groups.filter(g => g.rows.length > 1 && g.item);
-  if (!dups.length) { toast('No duplicate Item #s in Our Pricing.'); return; }
+  const dups = ourDisplayGroups(state.our.rows).filter(g => g.rows.length > 1 && g.value);
+  const what = OUR_GROUP_FIELDS[ourGroupField()] + ' + Contract';
+  if (!dups.length) { toast('No records share the same ' + what + '.'); return; }
   const safe = dups.filter(g => !g.priceConflict), bad = dups.length - safe.length;
   ourChecked.clear();
   const g = (safe.length ? safe : dups)[0];
   g.rows.forEach(r => ourChecked.add(r.id));
-  state.ui.ourSearch = g.item; $('#ourSearch').value = g.item;
+  state.ui.ourMode = 'grouped';
+  oAnchor = { id:g.rows[0].id, k:'itemNumber', sel:null };
   renderOur();
-  toast('Ticked Item # ' + g.item + ' (' + g.rows.length + ' records)' + (g.priceConflict ? ' \u2014 its pricing conflicts, fix it first.' : ' \u2014 ready to aggregate.') +
-    ' ' + dups.length + ' duplicate Item #' + (dups.length === 1 ? '' : 's') + ' in total' + (bad ? ', ' + bad + ' with conflicting pricing' : '') + '.');
+  if (oCur) ourEnsureVisible(oCur.r, oCur.c);
+  toast('Ticked ' + g.value + (g.contract ? ' \u00b7 ' + g.contract : '') + ' (' + g.rows.length + ' records)' + (g.priceConflict ? ' \u2014 its pricing differs, fix it first.' : ' \u2014 ready to aggregate.') +
+    ' ' + dups.length + ' group' + (dups.length === 1 ? '' : 's') + ' share the same ' + what + (bad ? ', ' + bad + ' with differing pricing' : '') + '.');
 }
+$('#segOurMode').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  state.ui.ourMode = b.dataset.mode; oCur = oSel = null; renderOur(); saveSoon();
+});
+$('#ourGroupField').addEventListener('change', e => {
+  state.ui.ourGroupField = e.target.value; state.ui.ourMode = 'grouped'; oCur = oSel = null; renderOur(); saveSoon();
+  toast('Our Pricing grouped by ' + OUR_GROUP_FIELDS[ourGroupField()] + ' + Contract.');
+});
 $('#btnOurAgg').addEventListener('click', () => showOurAggregatePreview(state.our.rows.filter(r => ourChecked.has(r.id))));
 $('#btnOurDup').addEventListener('click', ourFindDuplicates);
 $('#btnOurAdd').addEventListener('click', () => {
