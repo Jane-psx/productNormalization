@@ -1028,6 +1028,8 @@ table.ourGrid tr.oRow.warn td.st{background:var(--warn-bg)}
 table.ourGrid td.oc{position:relative;cursor:cell;user-select:none;background:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 table.ourGrid td.oc.key{font-weight:600;color:var(--navy-2)}
 table.ourGrid td.oc.fz{position:sticky;z-index:3}
+table.ourGrid td.oc.key.dupItem{box-shadow:inset 3px 0 0 #e0a52a}
+table.ourGrid td.oc.key.dupItem.cur{box-shadow:inset 0 0 0 2px var(--sel)}
 table.ourGrid td.oc.fz.cur,table.ourGrid td.oc.fz.sel{z-index:4}
 table.ourGrid td.oc.tier{background:#f2faf8}
 table.ourGrid td.oc.calc{background:var(--zone-computed);color:var(--navy-2);font-family:var(--mono);font-size:11.5px}
@@ -1333,6 +1335,7 @@ const COLS = [
   { k:'skuNumber',        L:'H3',name:'SKU Number',       zone:'vendor',              w:140 },
   { k:'crossedTo',        L:'H4',name:'Crossed To',       zone:'vendor',              w:150 },
   { k:'tierToApply',      L:'T', name:'Tier to Apply',    zone:'vendor',              w:104 },
+  { k:'contractToApply',  L:'CT',name:'Contract',         zone:'vendor',              w:120 },
   { k:'purchaseChannel',  L:'CH',name:'Channel',          zone:'vendor',              w:96  },
   { k:'orderRef',         L:'OR',name:'Order Ref',        zone:'vendor',              w:92  },
   { k:'category',         L:'H5',name:'Category',         zone:'vendor',              w:140 },
@@ -1358,7 +1361,7 @@ const COLS = [
 /* A:K are the editable input columns; P (Original Data) is written by Aggregate. */
 /* Pasted Excel ranges keep the workbook's column order: the three relationship
    columns added with the pricing layer come after the original A:K inputs. */
-const APPENDED_INPUT_KEYS = ['tierToApply','purchaseChannel','orderRef'];
+const APPENDED_INPUT_KEYS = ['tierToApply','purchaseChannel','orderRef','contractToApply'];
 const INPUT_KEYS = COLS.filter(c => !c.calc && !c.meta && !APPENDED_INPUT_KEYS.includes(c.k)).map(c => c.k).concat(APPENDED_INPUT_KEYS);
 const ROW_KEYS   = COLS.filter(c => !c.calc).map(c => c.k);
 
@@ -1403,7 +1406,7 @@ const CHK_W = 30;
 
 /* fields that can be overridden at the Item # level */
 const PACK_KEYS = ['packagingDetails','pkgQty','um','factorQty','factorUM']; // drive L:O
-const ID_KEYS   = ['mfgCatalog','description','facility','vendorName','skuNumber','crossedTo','tierToApply','purchaseChannel','orderRef','category']; // labelling + cross relationship
+const ID_KEYS   = ['mfgCatalog','description','facility','vendorName','skuNumber','crossedTo','tierToApply','contractToApply','purchaseChannel','orderRef','category']; // labelling + cross relationship
 const OVR_KEYS  = PACK_KEYS.concat(ID_KEYS);
 const CONFLICT_KEYS = OVR_KEYS.concat(['orderedUM']);
 
@@ -2526,7 +2529,7 @@ function renderZonebar(){
   zonebar.innerHTML = '';
   const w = state.widths;
   const vend = CHK_W + GUTTER_W + w.orderedQty + w.orderedUM + w.netSales + w.itemNumber + w.mfgCatalog + w.description + w.pkgQty + w.um +
-    w.facility + w.vendorName + w.skuNumber + w.crossedTo + w.tierToApply + w.purchaseChannel + w.orderRef + w.category;
+    w.facility + w.vendorName + w.skuNumber + w.crossedTo + w.tierToApply + w.contractToApply + w.purchaseChannel + w.orderRef + w.category;
   const xto  = w.xtoFacility + w.xtoVendor + w.xtoCategory;
   const ours = w.ourDesc + w.ourPricing + w.ourCasePrice + w.ourEachPrice;
   const ana  = w.factorQty + w.factorUM + w.packagingDetails;
@@ -2853,8 +2856,9 @@ function relConflicts(rows){
     if (m.size > 1) out.push({ label, detail:[...m.entries()].map(([v, n]) => '\u201c' + (v || '(blank)') + '\u201d \u00d7' + n).join(', ') + ' \u2014 review before aggregation' });
   };
   chk('Crossed To', r => normIdent(r.crossedTo));
-  chk('Tier to Apply', r => { const x = resolvePrice({ ourItemNumber:r.crossedTo, tierToApply:r.tierToApply }); return x.tier ? x.tier.name : String(r.tierToApply || '').trim(); });
-  chk('Pricing program', r => { const x = resolvePrice({ ourItemNumber:r.crossedTo, tierToApply:r.tierToApply }); return x.program ? progLabel(x.program) : x.group ? 'Standard' : ''; });
+  chk('Tier to Apply', r => { const x = resolvePrice({ ourItemNumber:r.crossedTo, tierToApply:r.tierToApply, contract:r.contractToApply }); return x.tier ? x.tier.name : String(r.tierToApply || '').trim(); });
+  chk('Contract', r => String(r.contractToApply || '').trim().toLowerCase());
+  chk('Pricing program', r => { const x = resolvePrice({ ourItemNumber:r.crossedTo, tierToApply:r.tierToApply, contract:r.contractToApply }); return x.program ? progLabel(x.program) : x.group ? 'Standard' : ''; });
   chk('Channel', r => normalizeChannel(r.purchaseChannel));
   return out;
 }
@@ -3295,6 +3299,10 @@ function buildRowEl(item, vIdx, lefts, fz){
         if (res.source === 'override') { c.classList.add('ovr'); c.appendChild(el('span', 'pill ovr', 'OVR')); }
         else if (g.conflicts[col.k]) c.appendChild(el('span', 'pill warn', '\u26a0'));
         if (col.k === 'crossedTo') c.appendChild(crossBadge(g));
+        if (col.k === 'contractToApply') {
+          const xr = derived.xref && derived.xref[g.key];
+          if (xr && (xr.state === 'contractRequired' || xr.state === 'contractNotFound')) { const p = xrefPill(xr); if (p) c.appendChild(p); }
+        }
         if (col.k === 'tierToApply') {
           const xr = derived.xref && derived.xref[g.key];
           if (xr && (xr.state === 'tierRequired' || xr.state === 'tierInvalid')) { const p = xrefPill(xr); if (p) c.appendChild(p); }
@@ -3320,9 +3328,10 @@ function buildRowEl(item, vIdx, lefts, fz){
           c.classList.add('flag');
       }
       if (item.detail && item.detail.eff[col.k] !== item.row[col.k]) c.classList.add('ovr');
-      if (col.k === 'tierToApply' || col.k === 'crossedTo') {
+      if (col.k === 'tierToApply' || col.k === 'crossedTo' || col.k === 'contractToApply') {
         const rr = refRes(item);
         if (rr && ((col.k === 'tierToApply' && (rr.state === 'tierRequired' || rr.state === 'tierInvalid')) ||
+                   (col.k === 'contractToApply' && (rr.state === 'contractRequired' || rr.state === 'contractNotFound')) ||
                    (col.k === 'crossedTo' && rr.state === 'unmatched'))) { c.classList.add('flagtier'); c.title = rr.message; if (!text) c.textContent = 'Required'; }
       }
     }
@@ -5355,6 +5364,7 @@ const OUT_COLS = [
   { k:'skuNumber',       h:'SKU Number'        },
   { k:'crossedTo',       h:'Crossed To'        },
   { k:'tierToApply',     h:'Tier to Apply'     },
+  { k:'contractToApply', h:'Contract'          },
   { k:'purchaseChannel', h:'Channel'           },
   { k:'orderRef',        h:'Order Ref'         },
   { k:'category',        h:'Category'          },
@@ -7949,7 +7959,7 @@ $('#btnXsSetup').addEventListener('click', () => openCrossSetup(exportExcel));
    "Pricing programs…" or created from an imported tier file. */
 const DEFAULT_PROGRAMS = [];
 const CHANNELS = ['Direct', 'Distributor'];
-const REL_KEYS = ['crossedTo', 'tierToApply', 'purchaseChannel', 'orderRef'];
+const REL_KEYS = ['crossedTo', 'tierToApply', 'contractToApply', 'purchaseChannel', 'orderRef'];
 
 state.our = { rows:[] };
 state.programs = clone(DEFAULT_PROGRAMS);
@@ -8062,6 +8072,15 @@ function ourPricingDiffs(rows){
   }
   return diffs;
 }
+/** Every contract a Facility/Vendor row can pick for an Our Pricing Item #: record contracts, plus tier contracts of tiered records. */
+function ourContractsOf(g){
+  const out = [], seen = new Set();
+  const push = v => { const k = String(v || '').trim(); if (!seen.has(k.toLowerCase())) { seen.add(k.toLowerCase()); out.push(k); } };
+  (g ? g.rows : []).forEach(x => { const p = programById(x.program);
+    if (p && (p.tiers || []).length) p.tiers.forEach(t => { if (t.contract) push(t.contract); });
+    else push(x.contract); });
+  return out;
+}
 function buildOurDerived(){
   const groups = [], byKey = new Map(), rowIssues = {};
   state.our.rows.forEach(r => {
@@ -8099,8 +8118,8 @@ function buildOurDerived(){
     }
     if (!isBlank(r.factorQty) && toNum(r.factorQty) === null) add('error', 'Factor QTY \u201c' + r.factorQty + '\u201d is not a number.');
     if (g && g.rows.length > 1) {
-      if (g.priceConflict) add('error', 'Item # appears ' + g.rows.length + ' times with different pricing (' + g.diffs.map(d => d.label).join(', ') + '). Fix one record, then aggregate.');
-      else add('warn', 'Item # appears ' + g.rows.length + ' times with the same pricing \u2014 aggregate them into one record.');
+      if (g.priceConflict) add('info', 'Item # is listed ' + g.rows.length + ' times with different ' + g.diffs.map(d => d.label).join(', ') + '.');
+      else add('info', 'Item # is listed ' + g.rows.length + ' times with the same pricing \u2014 you can aggregate them if they are one record.');
     }
     rowIssues[r.id] = out;
   });
@@ -8117,7 +8136,9 @@ const XSTATE = {
   tierRequired: { label:'Tier to Apply: Required',    short:'Tier Required', level:'warn'  },
   tierInvalid:  { label:'Invalid Tier to Apply',      short:'Invalid Tier',  level:'error' },
   noPrice:      { label:'Price: Not Available',       short:'Not Available', level:'warn'  },
-  relConflict:  { label:'Source rows disagree on the cross', short:'Rows disagree', level:'warn' }
+  relConflict:  { label:'Source rows disagree on the cross', short:'Rows disagree', level:'warn' },
+  contractRequired: { label:'Contract: Required',        short:'Contract Required', level:'warn' },
+  contractNotFound: { label:'Contract not in Our Pricing', short:'Contract not found', level:'error' }
 };
 /**
  * Central pricing resolver. Pure: reads Our Pricing and the programs, never the UI.
@@ -8127,11 +8148,38 @@ const XSTATE = {
 function resolvePrice(q){
   const out = { state:'ok', ourItemNumber:String(q.ourItemNumber == null ? '' : q.ourItemNumber).trim(),
                 tierInput:String(q.tierToApply == null ? '' : q.tierToApply).trim(),
+                contractInput:String(q.contract == null ? '' : q.contract).trim(),
                 notes:[], adjustments:[], pricingType:null, program:null, tier:null, basePrice:null };
   const fail = (st, msg) => { out.state = st; out.message = msg; return out; };
   if (!out.ourItemNumber) return fail('notAssigned', 'Crossed To is blank \u2014 no Our Pricing Item # has been assigned.');
-  const g = ourD.byKey.get(ourKey(out.ourItemNumber));
+  let g = ourD.byKey.get(ourKey(out.ourItemNumber));
   if (!g) return fail('unmatched', 'Crossed To \u201c' + out.ourItemNumber + '\u201d does not match any Item # in Our Pricing.');
+  /* The same Item # may be listed for several contracts. The Facility/Vendor Contract picks the
+     record(s); blank picks the records with no contract. Nothing is chosen on a guess. */
+  const all = g, cN = v => String(v == null ? '' : v).trim().toLowerCase();
+  let tierFromContract = null;
+  if (all.rows.length > 1 || out.contractInput) {
+    let cands = all.rows;
+    if (out.contractInput) {
+      cands = all.rows.filter(x => cN(x.contract) === cN(out.contractInput));
+      if (!cands.length) {
+        cands = all.rows.filter(x => { const p = programById(x.program); return p && (p.tiers || []).some(t => cN(t.contract) === cN(out.contractInput)); });
+        if (cands.length) { const p = programById(cands[0].program); tierFromContract = p.tiers.find(t => cN(t.contract) === cN(out.contractInput)); }
+      }
+      if (!cands.length) { out.group = all; out.ourRecordIds = all.rows.map(x => x.id);
+        return fail('contractNotFound', 'Contract \u201c' + out.contractInput + '\u201d is not on any Our Pricing record for Item # ' + all.item +
+          ' (available: ' + ourContractsOf(all).map(c => c || '(blank)').join(', ') + ').'); }
+    } else if (all.priceConflict) {
+      cands = all.rows.filter(x => isBlank(x.contract));
+      if (!cands.length) { out.group = all; out.ourRecordIds = all.rows.map(x => x.id);
+        return fail('contractRequired', 'Item # ' + all.item + ' is listed ' + all.rows.length + ' times in Our Pricing (contracts: ' +
+          ourContractsOf(all).map(c => c || '(blank)').join(', ') + '). Choose the Contract to apply on this row.'); }
+    }
+    if (cands.length !== all.rows.length) {
+      const diffs = ourPricingDiffs(cands), ip = calcInnerPack(cands[0].packagingDetails, cands[0].factorQty);
+      g = { key:all.key, item:all.item, rows:cands, rep:cands[0], diffs, priceConflict:diffs.length > 0, epc:okNum(ip.v) && ip.v > 0 ? ip.v : null, contractPick:true };
+    }
+  }
   const r = g.rep;
   out.group = g; out.ourItem = r;
   out.ourRecordIds = g.rows.map(x => x.id);
@@ -8139,8 +8187,8 @@ function resolvePrice(q){
   out.productCode = String(r.productCode || '').trim();
   out.ourEachesPerCase = g.epc;
   out.ourPackaging = String(r.packagingDetails || '').trim();
-  if (g.priceConflict) return fail('ourConflict', 'Our Pricing has ' + g.rows.length + ' records for Item # ' + g.item +
-    ' with different ' + g.diffs.map(d => d.label).join(', ') + '. Resolve them before this cross can be priced.');
+  if (g.priceConflict) return fail('ourConflict', 'Our Pricing lists Item # ' + g.item + ' ' + g.rows.length + ' times' + (g.contractPick ? (out.contractInput ? ' for contract ' + out.contractInput : ' with no contract') : '') +
+    ' with different ' + g.diffs.map(d => d.label).join(', ') + ', so this cross is not priced automatically. Correct one record, or aggregate them.');
   if (!isBlank(r.program)) {
     const p = programById(r.program);
     if (!p) return fail('noProgram', 'Item # ' + g.item + ' names pricing program \u201c' + r.program + '\u201d, which is not defined.');
@@ -8154,6 +8202,7 @@ function resolvePrice(q){
   }
   if (out.pricingType === 'tiered') {
     const p = out.program;
+    if (!out.tierInput && tierFromContract) { out.tierInput = tierFromContract.name; out.notes.push('Tier taken from Contract ' + out.contractInput + '.'); }
     if (!out.tierInput) return fail('tierRequired', 'Item # ' + g.item + ' is tiered (' + progLabel(p) + '). Choose a Tier to Apply \u2014 no tier is assumed.');
     const t = tierOf(p, out.tierInput);
     if (!t) return fail('tierInvalid', '\u201c' + out.tierInput + '\u201d is not a tier of ' + progLabel(p) + ' (valid: ' + p.tiers.map(x => x.name).join(', ') + ').');
@@ -8204,9 +8253,9 @@ function gVal(g, k){ return g.resolved[k] ? String(g.resolved[k].value == null ?
 function computeXref(){
   const xr = {};
   derived.groups.forEach(g => {
-    const res = resolvePrice({ ourItemNumber:gVal(g, 'crossedTo'), tierToApply:gVal(g, 'tierToApply') });
+    const res = resolvePrice({ ourItemNumber:gVal(g, 'crossedTo'), tierToApply:gVal(g, 'tierToApply'), contract:gVal(g, 'contractToApply') });
     /* rows combined under one item must agree on the relationship \u2014 never priced on a majority vote */
-    const RK = { 'Crossed To':'crossedTo', 'Tier to Apply':'tierToApply', 'Pricing program':'crossedTo', 'Channel':'purchaseChannel' };
+    const RK = { 'Crossed To':'crossedTo', 'Tier to Apply':'tierToApply', 'Contract':'contractToApply', 'Pricing program':'crossedTo', 'Channel':'purchaseChannel' };
     const rc = g.rows.length > 1 ? relConflicts(g.rows).filter(x => !(g.resolved[RK[x.label]] && g.resolved[RK[x.label]].source === 'override')) : [];
     if (rc.length && res.state !== 'notAssigned') {
       res.state = 'relConflict';
@@ -8276,7 +8325,7 @@ function computeXref(){
 let rowRefCache = new Map();
 function rowRef(eff, id){
   let r = rowRefCache.get(id);
-  if (!r) { r = resolvePrice({ ourItemNumber:eff.crossedTo, tierToApply:eff.tierToApply }); rowRefCache.set(id, r); }
+  if (!r) { r = resolvePrice({ ourItemNumber:eff.crossedTo, tierToApply:eff.tierToApply, contract:eff.contractToApply }); rowRefCache.set(id, r); }
   return r;
 }
 /** The resolution for a sheet item: a group uses the full xref, a row its own base resolution. */
@@ -8287,7 +8336,7 @@ function refRes(item){
 }
 function pricingLabel(r){
   if (!r || !r.group) return '';
-  if (r.state === 'ourConflict' || r.state === 'noProgram' || r.state === 'relConflict') return XSTATE[r.state].short;
+  if (['ourConflict', 'noProgram', 'relConflict', 'contractRequired', 'contractNotFound'].includes(r.state)) return XSTATE[r.state].short;
   if (r.pricingType === 'standard') return 'Standard';
   const p = progLabel(r.program);
   return p + ' \u00b7 ' + (r.tier ? r.tier.name : r.state === 'tierRequired' ? 'Tier Required' : 'Invalid Tier');
@@ -8391,9 +8440,23 @@ function fillTierList(crossedTo){
     dl.appendChild(o);
   }));
 }
+function fillContractList(crossedTo){
+  let dl = document.getElementById('contractList');
+  if (!dl) { dl = el('datalist'); dl.id = 'contractList'; document.body.appendChild(dl); }
+  dl.innerHTML = '';
+  const g = ourD.byKey.get(ourKey(crossedTo));
+  const groups = g ? [g] : ourD.groups;
+  const seen = new Set();
+  groups.forEach(gg => ourContractsOf(gg).forEach(c => { if (!c || seen.has(c.toLowerCase())) return; seen.add(c.toLowerCase());
+    const o = el('option'); o.value = c;
+    if (g) { const recs = g.rows.filter(x => String(x.contract || '').trim().toLowerCase() === c.toLowerCase());
+      o.label = recs.length ? recs.length + ' record' + (recs.length === 1 ? '' : 's') + (recs[0].stdPrice ? ' \u00b7 ' + recs[0].stdPrice : '') : 'tier contract'; }
+    dl.appendChild(o); }));
+}
 function listIdFor(key, eff){
   if (key === 'crossedTo') return 'ourItemList';
   if (key === 'tierToApply') { fillTierList(eff && eff.crossedTo); return 'tierList'; }
+  if (key === 'contractToApply') { fillContractList(eff && eff.crossedTo); return 'contractList'; }
   if (key === 'purchaseChannel') return 'channelList';
   return null;
 }
@@ -8408,6 +8471,10 @@ function normalizeRelInput(key, val, eff){
     const p = g ? programById(g.rep.program) : null;
     const t = p ? tierOf(p, v) : null;
     if (t) v = t.name;
+  } else if (key === 'contractToApply' && v) {
+    const g = ourD.byKey.get(ourKey(eff && eff.crossedTo));
+    const hit = ourContractsOf(g).find(c => c.toLowerCase() === v.toLowerCase());
+    if (hit) v = hit;
   } else if (key === 'purchaseChannel') v = normalizeChannel(v);
   return v;
 }
@@ -8642,28 +8709,16 @@ function renderOur(){
   const tb = el('tbody');
   const span = 3 + cols.length;
   let listed = 0;
-  ourD.groups.forEach(g => {
-    const match = !q || g.rows.some(r => [r.itemNumber, r.productCode, r.description, r.packagingDetails].some(v => String(v || '').toLowerCase().includes(q)));
-    if (!match) return;
-    if (issuesOnly && g.rows.every(r => ourIssueLevel(r) === 'ok')) return;
-    const gRows = filt.length ? g.rows.filter(r => filt.every(f => f.set.has(ourFilterText(r, f.col, cb)))) : g.rows;
-    if (!gRows.length) return;
-    oView.total += gRows.length;
-    if (listed >= OUR_ROW_CAP) return;
-    if (g.rows.length > 1) {
-      const gr = el('tr', 'ourGrp' + (g.priceConflict ? ' bad' : ''));
-      const td = el('td'); td.colSpan = span;
-      const inner = el('div', 'grpIn');
-      inner.appendChild(el('b', null, 'Item # ' + (g.item || '(blank)') + ' \u2014 ' + g.rows.length + ' records '));
-      inner.appendChild(el('span', null, g.priceConflict
-        ? '\u26a0 Pricing differs: ' + g.diffs.map(d => d.label + ' (' + d.values.map(v => v.v + ' \u00d7' + v.n).join(', ') + ')').join('; ') + '. Correct one record before aggregating.'
-        : 'Same pricing \u2014 safe to aggregate into one record (source records are kept for the audit).'));
-      const ab = el('button', 'btn sm', 'Aggregate these ' + g.rows.length);
-      ab.disabled = g.priceConflict;
-      ab.addEventListener('click', () => showOurAggregatePreview(g.rows));
-      inner.appendChild(ab);
-      td.appendChild(inner); gr.appendChild(td); tb.appendChild(gr);
-    }
+  /* Records are listed in the order they were entered or pasted — no automatic grouping by Item #.
+     The same Item # may appear more than once (e.g. different contracts). */
+  const gRows = state.our.rows.filter(r => {
+    if (q && ![r.itemNumber, r.productCode, r.description, r.packagingDetails, r.contract].some(v => String(v || '').toLowerCase().includes(q))) return false;
+    if (issuesOnly && ourIssueLevel(r) === 'ok') return false;
+    if (filt.length && !filt.every(f => f.set.has(ourFilterText(r, f.col, cb)))) return false;
+    return true;
+  });
+  oView.total = gRows.length;
+  {
     gRows.forEach(r => {
       if (listed >= OUR_ROW_CAP) return;
       const ri = oView.rows.length;
@@ -8689,12 +8744,14 @@ function renderOur(){
         if (c.k === 'itemNumber') td.style.left = lefts[3] + 'px';
         td.dataset.c = ci;
         if (x.title) td.title = x.title;
+        if (c.k === 'itemNumber') { const g = ourD.byKey.get(ourKey(r.itemNumber)); if (g && g.rows.length > 1) { td.classList.add('dupItem');
+          td.title = 'Item # also on row' + (g.rows.length > 2 ? 's ' : ' ') + g.rows.filter(o => o !== r).map(o => recNo.get(o.id)).join(', ') + (g.priceConflict ? ' with different ' + g.diffs.map(d => d.label).join(', ') : ' with the same pricing'); } }
         tr.appendChild(td); tds.push(td);
       });
       oView.trs.push(tr); oView.tds.push(tds);
       tb.appendChild(tr);
     });
-  });
+  }
   if (!oView.rows.length) {
     const tr = el('tr'), td = el('td', null, 'No record matches' + (nf ? ' \u2014 check the column filters.' : '.'));
     td.colSpan = span; td.style.cssText = 'padding:14px;color:var(--ink-3)';
@@ -9029,9 +9086,10 @@ function renderOurStatus(){
     if (col.k === 'source' && (row.aggregatedFrom || []).length) { const b = el('button', 'btn sm', 'Show merged records'); b.addEventListener('click', () => showOurSources(row)); s.appendChild(b); }
     if (col.kind === 'tier' && row.program && programById(row.program) === col.program) add(esc(tierLabel(col.tier) + (col.tier.contract ? ' \u00b7 contract ' + col.tier.contract : '')));
   }
-  const iss = (ourD.rowIssues[row.id] || []).filter(i => i.level !== 'info');
+  const all = ourD.rowIssues[row.id] || [], iss = all.filter(i => i.level !== 'info'), info = all.filter(i => i.level === 'info');
   s.appendChild(el('span', 'spacer'));
   if (iss.length) add('<span class="dot ' + (iss.some(i => i.level === 'error') ? 'err' : 'warn') + '"></span>' + esc(iss[0].text) + (iss.length > 1 ? ' (+' + (iss.length - 1) + ' more)' : ''));
+  else if (info.length) add('<span class="dot ok"></span>' + esc(info[0].text));
   else add('<span class="dot ok"></span>No issues');
 }
 
@@ -9720,6 +9778,7 @@ function pricingBlock(g){
   put('Pricing', r.group ? (r.pricingType === 'tiered' ? r.program.name : 'Standard pricing') : '');
   if (r.state === 'relConflict') put('Tier to Apply', 'Source rows disagree \u2014 see above');
   else if (r.pricingType === 'tiered') put('Tier to Apply', r.tier ? tierLabel(r.tier) : (r.tierInput ? '\u201c' + r.tierInput + '\u201d (invalid)' : 'Required'));
+  if (r.contractInput || r.state === 'contractRequired' || r.state === 'contractNotFound') put('Contract to Apply', r.contractInput || 'Required');
   put('Contract', r.contract); put('Effective', r.effectiveDate);
   if (r.state === 'ok') {
     put('Base price', fmtMoney(r.basePrice) + '/' + r.priceUnit);
@@ -9913,7 +9972,7 @@ const AUDIT_COLS = [
   ['recordKey', 'Facility/Vendor Record Key'], ['sourceIds', 'Source Record IDs'], ['sourceRows', 'Source Rows'], ['aggregation', 'Facility/Vendor Aggregation'],
   ['facility', 'Facility'], ['vendor', 'Vendor'], ['vendorItem', 'Vendor Item #'], ['mfg', 'MFG. Catalog #'], ['vendorDesc', 'Vendor Description'],
   ['channel', 'Channel'], ['orderRef', 'Order Ref'],
-  ['crossedTo', 'Crossed To'], ['crossStatus', 'Cross Status'], ['tierToApply', 'Tier to Apply'],
+  ['crossedTo', 'Crossed To'], ['crossStatus', 'Cross Status'], ['tierToApply', 'Tier to Apply'], ['contractToApply', 'Contract to Apply'],
   ['ourItem', 'Our Item #'], ['ourDesc', 'Our Description'], ['ourCode', 'Our Product Code'], ['ourRecords', 'Our Record IDs'], ['ourAgg', 'Our Pricing Aggregation'],
   ['pricingType', 'Pricing Type'], ['program', 'Pricing Program'], ['tier', 'Pricing Tier'], ['tierDesc', 'Tier Description'], ['contract', 'Contract'], ['effDate', 'Effective Date'],
   ['ourStd', 'Our Base Price (standard)'], ['ourTiers', 'Our Tier Prices'], ['priceUnit', 'Price Unit'], ['basePrice', 'Resolved Base Price'],
@@ -9950,7 +10009,7 @@ function auditRecord(g, i, raw, stampIso){
     aggregation:[g.rows.length > 1 ? g.rows.length + ' source rows grouped' : '', groupOriginal(g) ? 'Aggregated: ' + groupOriginal(g) : ''].filter(Boolean).join(' \u00b7 '),
     facility:r.facility || '', vendor:r.vendor || '', vendorItem:gVal(g, 'itemNumber'), mfg:gVal(g, 'mfgCatalog'), vendorDesc:gVal(g, 'description'),
     channel:r.channel || '', orderRef:r.orderRef || '',
-    crossedTo:r.ourItemNumber || 'Not Assigned', crossStatus:r.state ? XSTATE[r.state].label : '', tierToApply:r.tierInput || (r.pricingType === 'tiered' ? 'Required' : ''),
+    crossedTo:r.ourItemNumber || 'Not Assigned', crossStatus:r.state ? XSTATE[r.state].label : '', tierToApply:r.tierInput || (r.pricingType === 'tiered' ? 'Required' : ''), contractToApply:r.contractInput || (r.state === 'contractRequired' ? 'Required' : ''),
     ourItem:r.group ? r.group.item : '', ourDesc:r.description || '', ourCode:r.productCode || '', ourRecords:ourRows.map(x => x.id).join(', '),
     ourAgg:ourRows.map(x => (x.aggregatedFrom || []).length ? x.id + ' \u2190 ' + x.aggregatedFrom.map(s => s.id + (s.source ? ' (' + s.source + ')' : '')).join(', ') : '').filter(Boolean).join('; '),
     pricingType:r.pricingType || '', program:r.program ? r.program.name : r.group ? 'Standard pricing' : '', tier:r.tier ? r.tier.name : '',
