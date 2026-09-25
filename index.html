@@ -1003,21 +1003,51 @@ table.ourTable th.tierH{background:#d7efe9;color:#0d5c4d;text-align:right}
 table.ourTable th.tierH small{display:block;font-weight:400;font-size:10px;max-width:170px;white-space:normal;line-height:1.25;color:#3b7466}
 table.ourTable td.tierCell{background:#f2faf8}
 table.ourTable td.na{color:var(--line);text-align:center}
-.ourIn{border:1px solid transparent;background:transparent;padding:3px 5px;border-radius:2px;font-size:12.5px;min-width:0}
-.ourIn:hover{border-color:var(--line)}
-.ourIn:focus{border-color:var(--accent);background:#fff;outline:none}
-.ourIn.price{width:92px;text-align:right;font-variant-numeric:tabular-nums}
-.ourIn.need{background:#fffaf0}
-.ourIn.need::placeholder{color:var(--warn);font-style:italic}
-.ourIn.bad{background:var(--err-bg);color:var(--err)}
-.ourIn:disabled{color:var(--ink-3)}
-select.ourIn{max-width:170px}
-table.ourTable tr.ourRow.err td.st{background:var(--err-bg)}
-table.ourTable tr.ourRow.warn td.st{background:var(--warn-bg)}
-table.ourTable tr.ourGrp td{background:#fff8ea;color:#6b4a00;font-size:12px;padding:6px 8px;white-space:normal}
-table.ourTable tr.ourGrp.bad td{background:#fdecea;color:var(--err)}
-table.ourTable tr.ourGrp td b{margin-right:6px}
-table.ourTable tr.ourGrp td .btn{margin-left:10px}
+.ourIn{border:1px solid var(--line);padding:3px 5px;border-radius:2px;font-size:12.5px}
+table.ourGrid{table-layout:fixed}
+table.ourGrid th{padding:4px 6px;vertical-align:bottom;overflow:visible}
+table.ourGrid th .oh{display:flex;align-items:center;gap:3px;min-width:0}
+table.ourGrid th .ohName{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
+table.ourGrid th .lref{color:var(--ink-3);font-weight:400;font-family:var(--mono);font-size:10px;padding:1px 3px;border-radius:2px;cursor:pointer;flex:none}
+table.ourGrid th .lref:hover{background:var(--sel-bg);color:var(--ink)}
+table.ourGrid th .filtbtn{width:17px;height:17px;padding:0;flex:none;border:1px solid transparent;border-radius:3px;background:transparent;color:var(--ink-3);font-size:10.5px;line-height:1;cursor:pointer}
+table.ourGrid th .filtbtn:hover{background:rgba(0,0,0,.08);color:var(--ink)}
+table.ourGrid th .filtbtn.on{color:var(--accent);background:#fff;border-color:var(--accent)}
+table.ourGrid th .grip{position:absolute;right:-3px;top:0;width:7px;height:100%;cursor:col-resize;z-index:2}
+table.ourGrid th.fz{z-index:8;background:#eef1f5}
+table.ourGrid th.key.fz{background:#dbe8f7}
+table.ourGrid td{padding:0 6px;height:24px;line-height:24px;max-width:none;font-size:12.5px}
+table.ourGrid td.fz{position:sticky;z-index:3}
+table.ourGrid .fzEdge{border-right:2px solid var(--line)!important}
+table.ourGrid td.ck,table.ourGrid td.st{background:#eef1f5;text-align:center;padding:0}
+table.ourGrid td.st{cursor:help}
+table.ourGrid td.gut{background:#f6f8fa;color:var(--ink-3);font-size:10.5px;text-align:center;padding:0;cursor:pointer;font-variant-numeric:tabular-nums;border-right:1px solid var(--line)}
+table.ourGrid td.gut:hover{background:var(--sel-bg)}
+table.ourGrid tr.oRow.err td.st{background:var(--err-bg)}
+table.ourGrid tr.oRow.warn td.st{background:var(--warn-bg)}
+table.ourGrid td.oc{position:relative;cursor:cell;user-select:none;background:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+table.ourGrid td.oc.key{font-weight:600;color:var(--navy-2)}
+table.ourGrid td.oc.fz{position:sticky;z-index:3}
+table.ourGrid td.oc.fz.cur,table.ourGrid td.oc.fz.sel{z-index:4}
+table.ourGrid td.oc.tier{background:#f2faf8}
+table.ourGrid td.oc.calc{background:var(--zone-computed);color:var(--navy-2);font-family:var(--mono);font-size:11.5px}
+table.ourGrid td.oc.dim{color:var(--ink-3);font-style:italic}
+table.ourGrid td.oc.need{color:var(--warn);font-style:italic;background:#fffaf0}
+table.ourGrid td.oc.bad{background:var(--err-bg);color:var(--err)}
+table.ourGrid td.oc.na{color:#c5ced8;text-align:center}
+table.ourGrid td.oc.src{font-size:11.5px;color:var(--ink-3)}
+table.ourGrid td.oc.src.merged{color:var(--ovr)}
+table.ourGrid tr:hover td.oc{background-color:#f4f8fd}
+table.ourGrid td.oc.sel{background:var(--sel-bg)!important}
+table.ourGrid td.oc.cur{box-shadow:inset 0 0 0 2px var(--sel);background:#fff!important}
+table.ourGrid td.oc::after,table.ourGrid td.oc::before{content:'';position:absolute;inset:0;pointer-events:none;border:0 solid var(--sel)}
+table.ourGrid td.oc.eT::after{border-top-width:2px}table.ourGrid td.oc.eB::after{border-bottom-width:2px}table.ourGrid td.oc.eL::after{border-left-width:2px}table.ourGrid td.oc.eR::after{border-right-width:2px}
+table.ourGrid td.oc::before{border-style:dashed;border-color:#3b4a5c;z-index:6}
+table.ourGrid td.oc.kT::before{border-top-width:2px}table.ourGrid td.oc.kB::before{border-bottom-width:2px}table.ourGrid td.oc.kL::before{border-left-width:2px}table.ourGrid td.oc.kR::before{border-right-width:2px}
+table.ourGrid td.oc input.edit{position:absolute;left:0;top:0;width:100%;height:100%;z-index:60;border:2px solid var(--sel);outline:0;padding:0 4px;font-size:12.5px;background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.15);user-select:text;font-style:normal;color:var(--ink);text-align:left}
+table.ourGrid tr.ourGrp td{padding:5px 8px;height:auto;line-height:1.4}
+table.ourGrid tr.ourGrp .grpIn{position:sticky;left:8px;display:inline-flex;align-items:center;flex-wrap:wrap;gap:4px;max-width:calc(100vw - 160px);white-space:normal}
+#paneOur:focus{outline:none}
 table.ourTable td.srcCell{font-size:11.5px;color:var(--ink-3)}
 table.ourTable td.srcCell .pill{margin-left:6px;cursor:pointer}
 .progEd{border:1px solid var(--line);border-radius:3px;padding:10px 12px;margin:0 0 12px;display:flex;flex-direction:column;gap:8px}
@@ -1141,7 +1171,8 @@ table.ourTable td.srcCell .pill{margin-left:6px;cursor:pointer}
       <span class="note" id="ourNote"></span>
     </div>
     <div class="ourTop" id="ourTop"></div>
-    <div class="pane" id="paneOur"></div>
+    <div class="pane" id="paneOur" tabindex="0"></div>
+    <div class="statusbar" id="ourStatus"></div>
   </section>
 
   <!-- ============ NORMALIZATION (Facility/Vendor Pricing) ============ -->
@@ -1919,7 +1950,7 @@ const state = {
         lineItemCols:['packagingDetails','factorQty','facility','vendorName','description'],
         lineItemColWidths:{},
         lineItemView:'each', lineItemCombineStat:'sum', hideNoCross:false, xuShowNoCross:false,
-        xsMode:'ours', ourSearch:'', ourIssuesOnly:false, ocFac:'', ocVen:'',
+        xsMode:'ours', ourSearch:'', ourIssuesOnly:false, ourColWidths:{}, ourColFilters:{}, ocFac:'', ocVen:'',
         freeze:true, issuesOnly:false, outMode:'audit', aggSearch:'', aggAttn:false, aggSelectedOnly:false,
         modeB:'grouped', searchB:'', sortKeyB:null, sortDirB:1, freezeB:true, issuesOnlyB:false,
         aggSearchB:'', aggAttnB:false, aggSelectedOnlyB:false, lastSubA:'normalization', lastSubB:'normalizationB' },
@@ -6563,7 +6594,7 @@ const VIEW_UI_KEYS = ['tab','mode','search','colFilters','freeze','issuesOnly','
   'modeB','searchB','sortKeyB','sortDirB','freezeB','issuesOnlyB','aggSearchB','aggAttnB','aggSelectedOnlyB','lastSubA','lastSubB',
   'lineItemCols','lineItemColWidths','lineItemView','lineItemCombineStat',
   'hideNoCross','xuShowNoCross','xsView','xsSearch','xuBase','xuSides','xuColWidths','xsRelColWidths',
-  'xsMode','ourSearch','ourIssuesOnly','ocFac','ocVen','ocColWidths'];
+  'xsMode','ourSearch','ourIssuesOnly','ourColWidths','ourColFilters','ocFac','ocVen','ocColWidths'];
 const VIEW_KEY_SET = new Set(VIEW_UI_KEYS);
 const clone = o => JSON.parse(JSON.stringify(o === undefined ? null : o));
 const pickView = ui => { const o = {}; VIEW_UI_KEYS.forEach(k => { if (ui[k] !== undefined) o[k] = ui[k]; }); return o; };
@@ -8383,8 +8414,6 @@ function normalizeRelInput(key, val, eff){
 
 /* ======================================================= OUR PRICING UI */
 const ourChecked = new Set();
-let ourFocus = null;
-let ourCommitT = null;
 function ourIssueLevel(r){ return worstLevel(ourD.rowIssues[r.id] || []); }
 function crossedByIndex(){
   const m = new Map();
@@ -8401,10 +8430,110 @@ function crossedByIndex(){
   });
   return m;
 }
+function setOurField(id, k, val){
+  const r = state.our.rows.find(x => x.id === id); if (!r) return false;
+  let v = String(val == null ? '' : val).trim();
+  if (k === 'priceUnit') v = v.toUpperCase();
+  const isPrice = k.startsWith('price:');
+  const tierId = isPrice ? k.slice(6) : null;
+  const old = isPrice ? String((r.prices || {})[tierId] == null ? '' : r.prices[tierId]) : String(r[k] == null ? '' : r[k]);
+  if (old === v) return false;
+  pushUndo();
+  if (isPrice) { r.prices = Object.assign({}, r.prices); if (v === '') delete r.prices[tierId]; else r.prices[tierId] = v; }
+  else r[k] = v;
+  const p = programById(r.program);
+  const label = isPrice ? ((p && (p.tiers || []).find(t => t.id === tierId)) || { name:tierId }).name + ' price' : OUR_FIELD_NAME[k] || k;
+  logEvent('Our Pricing edited', 'Our Item ' + (r.itemNumber || r.id), label + ': \u201c' + old + '\u201d \u2192 \u201c' + v + '\u201d');
+  return true;
+}
+
+/* ===================================================== OUR PRICING GRID
+   Our Pricing behaves like the Facility/Vendor sheet: a cell cursor and
+   range selection (click, Shift+click, drag, Shift+arrows), type to edit,
+   F2 / double-click / Enter to edit, Enter and Tab move on, Esc cancels,
+   Delete clears, Ctrl+C / Ctrl+X / Ctrl+V with Excel ranges (a single value
+   fills the selection, an exact multiple tiles it), Ctrl+D / Ctrl+R fill,
+   Ctrl+A, Ctrl+arrows, Home/End, PageUp/PageDown, Ctrl+Z / Ctrl+Y, column
+   letters and row numbers select whole columns/rows, column filters,
+   resizable columns and a frozen Item # column. Pasting a range that starts
+   with a header row goes through the import preview (column matching). */
+const OUR_GUT_W = 44, OUR_CK_W = 26, OUR_ST_W = 18, OUR_ROW_CAP = 3000;
+let oCur = null, oSel = null, oCopy = null, oEditor = null, oAnchor = null, oPendingEdit = false;
+let oView = { cols:[], rows:[], items:[], trs:[], tds:[], idx:new Map(), total:0 };
+let oPainted = [];
+const oColLetter = i => { let s = ''; i++; while (i > 0) { const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); } return s; };
+function ourColumns(){
+  const cols = [];
+  OUR_TEXT_FIELDS.forEach(f => cols.push({ k:f.k, field:f.k, name:f.name, w:Math.max(f.w, Math.round(52 + f.name.length * 7)), num:!!f.num, kind:'field' }));
+  cols.push({ k:'epc', name:'Eaches / Case', w:90, num:true, kind:'calc' });
+  ourTierCols().forEach(c => cols.push({ k:c.key, field:'price:' + c.tier.id, name:c.name, sub:c.tier.description, w:100, num:true, kind:'tier', program:c.program, tier:c.tier }));
+  cols.push({ k:'crossedBy', name:'Crossed By', w:170, kind:'ro' });
+  cols.push({ k:'source', name:'Source', w:200, kind:'ro' });
+  const W = state.ui.ourColWidths || {};
+  cols.forEach((c, i) => { c.L = oColLetter(i); c.w = W[c.k] || c.w; });
+  return cols;
+}
+/** Everything the grid needs to show, copy or edit one cell. */
+function ourCell(row, col, cb){
+  const p = programById(row.program), tiered = !!(p && (p.tiers || []).length);
+  const o = { text:'', raw:'', cls:'', editable:false, title:'' };
+  if (col.kind === 'field') {
+    const v = row[col.k] == null ? '' : String(row[col.k]);
+    o.raw = o.text = v; o.editable = true;
+    if (col.k === 'program') {
+      o.raw = p ? p.name : v;
+      if (p) o.text = progLabel(p);
+      else if (isBlank(v)) { o.text = 'Standard'; o.cls = ' dim'; }
+      else { o.text = v + ' (not defined)'; o.cls = ' bad'; o.title = 'No pricing program with this name \u2014 add it in Pricing programs\u2026 or pick another.'; }
+    } else if ((col.k === 'stdPrice' || col.k === 'contract') && tiered) {
+      o.text = 'tiered'; o.raw = ''; o.cls = ' dim'; o.editable = false;
+      o.title = col.k === 'stdPrice' ? 'Tiered item \u2014 prices are in the tier columns.' : 'Tiered item \u2014 the contract comes from the tier.';
+    } else if (col.k === 'stdPrice') {
+      const n = priceNum(v);
+      if (n === null) { o.text = 'Not set'; o.cls = ' need'; }
+      else if (isNaN(n)) o.cls = ' bad';
+    } else if (col.k === 'itemNumber' && isBlank(v)) { o.cls = ' bad'; o.text = 'required'; }
+    else if (col.k === 'priceUnit' && isBlank(v)) { o.text = p ? (p.priceUnit || 'CS') : 'CS'; o.cls = ' dim'; o.title = 'Blank \u2014 the program default is used.'; }
+  } else if (col.kind === 'calc') {
+    const ip = calcInnerPack(row.packagingDetails, row.factorQty);
+    o.raw = o.text = okNum(ip.v) ? fmtQty(ip.v) : ip.err ? ip.err : '';
+    if (!okNum(ip.v)) { o.cls = ' dim'; if (!o.text) o.text = dash; }
+    o.title = traceOf(ip); o.cls += ' calc';
+  } else if (col.kind === 'tier') {
+    if (p === col.program) {
+      const v = (row.prices || {})[col.tier.id];
+      o.raw = o.text = v == null ? '' : String(v); o.editable = true;
+      const n = priceNum(v);
+      if (n === null) { o.text = 'Not Available'; o.cls = ' need'; } else if (isNaN(n)) o.cls = ' bad';
+      o.title = tierLabel(col.tier) + (col.tier.contract ? ' \u00b7 contract ' + col.tier.contract : '');
+    } else { o.text = '\u00b7'; o.cls = ' na'; o.title = 'Not part of this item\u2019s pricing program'; }
+    o.cls += ' tier';
+  } else if (col.k === 'crossedBy') {
+    const e = cb && cb.get(ourKey(row.itemNumber));
+    o.raw = o.text = e ? e.n + ' \u00b7 ' + [...e.tiers.entries()].map(([k, n]) => k + (n > 1 ? ' \u00d7' + n : '')).join(', ') : '';
+    if (!e) { o.text = dash; o.cls = ' dim'; } else o.title = 'Facilities: ' + [...e.facs].join(', ');
+  } else if (col.k === 'source') {
+    const n = (row.aggregatedFrom || []).length;
+    o.raw = (row.source || 'Entered') + (n ? ' \u00b7 ' + n + ' merged' : '');
+    o.text = o.raw; o.cls = ' src' + (n ? ' merged' : '');
+    if (n) o.title = 'Records aggregated into this one \u2014 double-click to view';
+  }
+  return o;
+}
+function ourFilterText(row, col, cb){ const x = ourCell(row, col, cb); return x.raw === '' ? '(blank)' : x.raw; }
+function ourActiveFilters(){ const f = state.ui.ourColFilters || {}; return Object.keys(f).filter(k => f[k] && f[k].length); }
+
 function renderOur(){
   const pane = $('#paneOur'), top = $('#ourTop');
   const keepTop = pane.scrollTop, keepLeft = pane.scrollLeft;
+  if (oEditor) { const e = oEditor; oEditor = null; if (e.inp.parentNode) e.inp.parentNode.removeChild(e.inp); }
+  /* remember which record/column the cursor is on, so it follows the record after a re-sort */
+  if (!oAnchor && oCur && oView.rows[oCur.r] && oView.cols[oCur.c]) {
+    oAnchor = { id:oView.rows[oCur.r].id, k:oView.cols[oCur.c].k,
+      sel:oSel ? { a:oView.rows[Math.min(oSel.r1, oSel.r2)], b:oView.rows[Math.max(oSel.r1, oSel.r2)], c1:oSel.c1, c2:oSel.c2 } : null };
+  }
   pane.innerHTML = ''; top.innerHTML = '';
+  oPainted = [];
   const rows = state.our.rows;
   /* ---- program strip ---- */
   if (!state.programs.length) {
@@ -8428,188 +8557,612 @@ function renderOur(){
   });
   const errN = rows.filter(r => ourIssueLevel(r) === 'error').length;
   const dupN = ourD.groups.filter(g => g.rows.length > 1).length;
-  $('#ourNote').textContent = rows.length ? rows.length + ' record' + (rows.length === 1 ? '' : 's') + ' \u00b7 ' + ourD.groups.length + ' Item #' +
-    (dupN ? ' \u00b7 ' + dupN + ' duplicate' + (dupN === 1 ? '' : 's') : '') + (errN ? ' \u00b7 ' + errN + ' with errors' : '') : '';
+  const nf = ourActiveFilters().length;
+  const note = $('#ourNote'); note.innerHTML = '';
+  if (rows.length) note.appendChild(document.createTextNode(rows.length + ' record' + (rows.length === 1 ? '' : 's') + ' \u00b7 ' + ourD.groups.length + ' Item #' +
+    (dupN ? ' \u00b7 ' + dupN + ' duplicate' + (dupN === 1 ? '' : 's') : '') + (errN ? ' \u00b7 ' + errN + ' with errors' : '')));
+  if (nf) { const a = el('a', 'lnk', ' \u00b7 ' + nf + ' column filter' + (nf === 1 ? '' : 's') + ' \u2014 clear'); a.href = '#';
+    a.addEventListener('click', e => { e.preventDefault(); state.ui.ourColFilters = {}; renderOur(); }); note.appendChild(a); }
 
+  const cols = ourColumns();
+  oView = { cols, rows:[], items:[], trs:[], tds:[], idx:new Map(), total:0 };
   if (!rows.length) {
     const d = el('div', 'empty on');
     d.style.cssText = 'position:static;padding:36px;text-align:center';
     d.innerHTML = '<div class="drop"><h2>Our Pricing is empty</h2><p>This is the master catalog: <b>Item #</b>, description, packaging and our price. ' +
       'Tiered items carry their full tier schedule here \u2014 the Facility/Vendor side only says which tier to apply.</p>' +
-      '<p>Use <b>Import price file\u2026</b> for a vendor price file or tier schedule (a single sheet with a column per tier, or one sheet per tier), ' +
-      'or <b>Paste from Excel</b> with a header row.</p></div>';
+      '<p>Copy a range in Excel and press <kbd>Ctrl</kbd>+<kbd>V</kbd> here (with its header row, columns are matched by name; without it, columns paste in sheet order from Item #), ' +
+      'or use <b>Import price file\u2026</b> for a workbook (a column per tier, or one sheet per tier).</p></div>';
     const p = el('p'); const b = el('button', 'btn sm', 'Load the test scenarios');
     b.title = 'Loads the example Our Pricing items and Facility/Vendor rows used by the acceptance test scenarios (clearly labelled test data).';
     b.addEventListener('click', loadTestScenarios);
     p.appendChild(b); d.appendChild(p);
     pane.appendChild(d);
+    oCur = oSel = null; oAnchor = null; renderOurStatus();
     return;
   }
 
-  const tierCols = ourTierCols();
   const cb = crossedByIndex();
   const q = String(state.ui.ourSearch || '').trim().toLowerCase();
   const issuesOnly = !!state.ui.ourIssuesOnly;
-  const t = el('table', 'grid ourTable');
+  const filt = ourActiveFilters().map(k => ({ col:cols.find(c => c.k === k), set:new Set(state.ui.ourColFilters[k]) })).filter(f => f.col);
+  const recNo = new Map(); rows.forEach((r, i) => recNo.set(r.id, i + 1));
+
+  const frozen = [OUR_CK_W, OUR_ST_W, OUR_GUT_W];
+  const itemW = cols[0].w;
+  const lefts = [0, OUR_CK_W, OUR_CK_W + OUR_ST_W, OUR_CK_W + OUR_ST_W + OUR_GUT_W];
+  const t = el('table', 'grid ourTable ourGrid');
+  const cg = el('colgroup');
+  frozen.forEach(w => { const c = el('col'); c.style.width = w + 'px'; cg.appendChild(c); });
+  cols.forEach(c => { const x = el('col'); x.style.width = c.w + 'px'; x.dataset.k = c.k; cg.appendChild(x); });
+  t.appendChild(cg);
+  const tableW = () => frozen.reduce((a, b) => a + b, 0) + cols.reduce((a, c) => a + c.w, 0);
+  t.style.width = tableW() + 'px';
   const thead = el('thead'), htr = el('tr');
-  const th = (txt, cls, title) => { const x = el('th', cls || null, txt); if (title) x.title = title; htr.appendChild(x); return x; };
   const allBox = el('input'); allBox.type = 'checkbox'; allBox.title = 'Tick every listed record';
-  const cth = th('', 'ck'); cth.appendChild(allBox);
-  th('', 'st');
-  OUR_TEXT_FIELDS.forEach(f => th(f.name, (f.num ? 'num' : '') + (f.k === 'itemNumber' ? ' key' : ''),
-    f.k === 'itemNumber' ? 'Master key \u2014 Facility/Vendor Crossed To references this.' :
-    f.k === 'stdPrice' ? 'Used only when the item has no tiered pricing program.' :
-    f.k === 'contract' ? 'Contract for standard pricing. Tiered items take the contract from the tier.' : null));
-  th('Eaches / Case', 'num z-computed', 'Read from Packaging Details \u00d7 Factor QTY \u2014 converts a case price to an each price.');
-  tierCols.forEach(c => { const x = th('', 'num tierH'); x.appendChild(el('span', null, c.name)); x.appendChild(el('small', null, c.tier.description));
-    x.title = tierLabel(c.tier) + (c.tier.contract ? '\nContract ' + c.tier.contract : '') + '\n' + c.program.name + ' \u00b7 ' + (c.program.priceBasis || ''); });
-  th('Crossed By', '', 'Facility/Vendor items crossed to this Item #, and the tiers they apply.');
-  th('Source', '', 'Where the record came from, and any records aggregated into it.');
+  const cth = el('th', 'ck fz'); cth.style.left = '0px'; cth.appendChild(allBox); htr.appendChild(cth);
+  const sth = el('th', 'st fz'); sth.style.left = lefts[1] + 'px'; htr.appendChild(sth);
+  const gth = el('th', 'gut fz', '#'); gth.style.left = lefts[2] + 'px'; htr.appendChild(gth);
+  cols.forEach((c, i) => {
+    const h = el('th', (c.num ? 'num' : '') + (c.k === 'itemNumber' ? ' key fz fzEdge' : '') + (c.kind === 'tier' ? ' tierH' : '') + (c.kind === 'calc' ? ' z-computed' : ''));
+    if (c.k === 'itemNumber') h.style.left = lefts[3] + 'px';
+    const hd = el('div', 'oh');
+    const L = el('span', 'lref', c.L); L.title = 'Select column ' + c.L;
+    L.addEventListener('mousedown', e => { e.preventDefault(); e.stopPropagation(); ourSelectColumn(i, e.shiftKey); });
+    hd.appendChild(L);
+    hd.appendChild(el('span', 'ohName', c.name));
+    const on = state.ui.ourColFilters && state.ui.ourColFilters[c.k] && state.ui.ourColFilters[c.k].length;
+    const fb = el('button', 'filtbtn' + (on ? ' on' : ''), '\u25bc'); fb.type = 'button';
+    fb.title = on ? 'Filtered \u2014 click to change which ' + c.name + ' values are shown' : 'Filter by ' + c.name;
+    fb.addEventListener('mousedown', e => e.stopPropagation());
+    fb.addEventListener('click', e => { e.stopPropagation(); openOurColumnFilter(c); });
+    hd.appendChild(fb);
+    h.appendChild(hd);
+    if (c.sub) h.appendChild(el('small', null, c.sub));
+    h.title = c.kind === 'tier' ? tierLabel(c.tier) + (c.tier.contract ? '\nContract ' + c.tier.contract : '') + '\n' + c.program.name + ' \u00b7 ' + (c.program.priceBasis || '')
+      : c.kind === 'calc' ? 'Read from Packaging Details \u00d7 Factor QTY \u2014 converts a case price to an each price. Calculated.'
+      : c.kind === 'ro' ? c.name + ' \u2014 read-only.'
+      : c.k === 'itemNumber' ? 'Master key \u2014 Facility/Vendor Crossed To references this.'
+      : c.k === 'program' ? 'Type or pick a pricing program (blank = standard pricing).'
+      : c.k === 'stdPrice' ? 'Used only when the item has no tiered pricing program.'
+      : c.k === 'contract' ? 'Contract for standard pricing. Tiered items take the contract from the tier.' : c.name;
+    const grip = el('div', 'grip');
+    grip.addEventListener('mousedown', e => {
+      e.preventDefault(); e.stopPropagation();
+      const x0 = e.clientX, w0 = c.w, colEl = cg.querySelector('col[data-k="' + CSS.escape(c.k) + '"]');
+      const move = ev => { c.w = Math.max(40, w0 + ev.clientX - x0); colEl.style.width = c.w + 'px'; t.style.width = tableW() + 'px'; };
+      const up = () => { document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up);
+        state.ui.ourColWidths = Object.assign({}, state.ui.ourColWidths, { [c.k]:c.w }); saveSoon(); if (c.k === 'itemNumber') renderOur(); };
+      document.addEventListener('mousemove', move); document.addEventListener('mouseup', up);
+    });
+    h.appendChild(grip);
+    htr.appendChild(h);
+  });
   thead.appendChild(htr); t.appendChild(thead);
   const tb = el('tbody');
-  let shown = 0, listedIds = [];
-  const CAP = 500;
+  const span = 3 + cols.length;
+  let listed = 0;
   ourD.groups.forEach(g => {
     const match = !q || g.rows.some(r => [r.itemNumber, r.productCode, r.description, r.packagingDetails].some(v => String(v || '').toLowerCase().includes(q)));
     if (!match) return;
     if (issuesOnly && g.rows.every(r => ourIssueLevel(r) === 'ok')) return;
-    if (shown >= CAP) { shown += g.rows.length; return; }
+    const gRows = filt.length ? g.rows.filter(r => filt.every(f => f.set.has(ourFilterText(r, f.col, cb)))) : g.rows;
+    if (!gRows.length) return;
+    oView.total += gRows.length;
+    if (listed >= OUR_ROW_CAP) return;
     if (g.rows.length > 1) {
       const gr = el('tr', 'ourGrp' + (g.priceConflict ? ' bad' : ''));
-      const td = el('td'); td.colSpan = 2 + OUR_TEXT_FIELDS.length + 1 + tierCols.length + 2;
-      td.appendChild(el('b', null, 'Item # ' + (g.item || '(blank)') + ' \u2014 ' + g.rows.length + ' records '));
-      td.appendChild(el('span', null, g.priceConflict
+      const td = el('td'); td.colSpan = span;
+      const inner = el('div', 'grpIn');
+      inner.appendChild(el('b', null, 'Item # ' + (g.item || '(blank)') + ' \u2014 ' + g.rows.length + ' records '));
+      inner.appendChild(el('span', null, g.priceConflict
         ? '\u26a0 Pricing differs: ' + g.diffs.map(d => d.label + ' (' + d.values.map(v => v.v + ' \u00d7' + v.n).join(', ') + ')').join('; ') + '. Correct one record before aggregating.'
         : 'Same pricing \u2014 safe to aggregate into one record (source records are kept for the audit).'));
       const ab = el('button', 'btn sm', 'Aggregate these ' + g.rows.length);
       ab.disabled = g.priceConflict;
       ab.addEventListener('click', () => showOurAggregatePreview(g.rows));
-      td.appendChild(ab);
-      gr.appendChild(td); tb.appendChild(gr);
+      inner.appendChild(ab);
+      td.appendChild(inner); gr.appendChild(td); tb.appendChild(gr);
     }
-    g.rows.forEach(r => {
-      shown++; listedIds.push(r.id);
+    gRows.forEach(r => {
+      if (listed >= OUR_ROW_CAP) return;
+      const ri = oView.rows.length;
+      oView.rows.push(r); oView.idx.set(r.id, ri); listed++;
       const lvl = ourIssueLevel(r);
-      const tr = el('tr', 'ourRow' + (lvl === 'error' ? ' err' : lvl === 'warn' ? ' warn' : ''));
-      const ck = el('td', 'ck'); const box = el('input'); box.type = 'checkbox'; box.checked = ourChecked.has(r.id);
+      const tr = el('tr', 'oRow' + (lvl === 'error' ? ' err' : lvl === 'warn' ? ' warn' : ''));
+      tr.dataset.r = ri;
+      const ck = el('td', 'ck fz'); ck.style.left = '0px';
+      const box = el('input'); box.type = 'checkbox'; box.checked = ourChecked.has(r.id);
       box.addEventListener('change', () => { if (box.checked) ourChecked.add(r.id); else ourChecked.delete(r.id); });
       ck.appendChild(box); tr.appendChild(ck);
-      const st = el('td', 'st');
+      const st = el('td', 'st fz'); st.style.left = lefts[1] + 'px';
       const iss = ourD.rowIssues[r.id] || [];
       st.appendChild(el('span', 'dot ' + (lvl === 'error' ? 'err' : lvl === 'warn' ? 'warn' : 'ok')));
       st.title = iss.length ? iss.map(i => '\u2022 ' + i.text).join('\n') : 'No issues';
       tr.appendChild(st);
-      const p = programById(r.program);
-      OUR_TEXT_FIELDS.forEach(f => {
-        const td = el('td', (f.num ? 'num' : '') + (f.k === 'itemNumber' ? ' key' : ''));
-        if (f.k === 'program') {
-          const s = el('select', 'ourIn'); s.dataset.id = r.id; s.dataset.k = 'program';
-          const o0 = el('option', null, 'Standard pricing'); o0.value = ''; s.appendChild(o0);
-          state.programs.forEach(pp => { const o = el('option', null, progLabel(pp)); o.value = pp.id; s.appendChild(o); });
-          if (!isBlank(r.program) && !p) { const o = el('option', null, r.program + ' (undefined)'); o.value = r.program; s.appendChild(o); }
-          s.value = p ? p.id : String(r.program || '');
-          td.appendChild(s);
-        } else {
-          const inp = el('input', 'ourIn'); inp.dataset.id = r.id; inp.dataset.k = f.k;
-          inp.value = r[f.k] == null ? '' : String(r[f.k]);
-          inp.style.width = f.w + 'px';
-          if (f.k === 'stdPrice' || f.k === 'contract') { if (p && (p.tiers || []).length) { inp.disabled = true; inp.placeholder = 'tiered'; } }
-          if (f.k === 'stdPrice' && !inp.disabled) { const n = priceNum(r.stdPrice); if (n === null) inp.classList.add('need'); else if (isNaN(n)) inp.classList.add('bad'); }
-          if (f.k === 'itemNumber' && isBlank(r.itemNumber)) inp.classList.add('bad');
-          if (f.k === 'priceUnit') inp.placeholder = p ? (p.priceUnit || 'CS') : 'CS';
-          td.appendChild(inp);
-        }
-        tr.appendChild(td);
+      const gut = el('td', 'gut fz', String(recNo.get(r.id))); gut.style.left = lefts[2] + 'px';
+      gut.title = 'Select this row'; tr.appendChild(gut);
+      const tds = [];
+      cols.forEach((c, ci) => {
+        const x = ourCell(r, c, cb);
+        const td = el('td', 'oc' + (c.num ? ' num' : '') + x.cls + (x.editable ? '' : ' ro') + (c.k === 'itemNumber' ? ' fz fzEdge key' : ''), x.text);
+        if (c.k === 'itemNumber') td.style.left = lefts[3] + 'px';
+        td.dataset.c = ci;
+        if (x.title) td.title = x.title;
+        tr.appendChild(td); tds.push(td);
       });
-      const epc = el('td', 'num z-computed'); const ip = calcInnerPack(r.packagingDetails, r.factorQty);
-      epc.textContent = okNum(ip.v) ? fmtQty(ip.v) : ip.err ? ip.err : '\u2014'; epc.title = traceOf(ip);
-      tr.appendChild(epc);
-      tierCols.forEach(c => {
-        const td = el('td', 'num tierCell');
-        if (p === c.program) {
-          const inp = el('input', 'ourIn price'); inp.dataset.id = r.id; inp.dataset.k = 'price:' + c.tier.id;
-          const raw = (r.prices || {})[c.tier.id];
-          inp.value = raw == null ? '' : String(raw);
-          const n = priceNum(raw);
-          if (n === null) { inp.classList.add('need'); inp.placeholder = 'Not Available'; } else if (isNaN(n)) inp.classList.add('bad');
-          inp.title = tierLabel(c.tier) + (c.tier.contract ? ' \u00b7 contract ' + c.tier.contract : '');
-          td.appendChild(inp);
-        } else { td.textContent = '\u00b7'; td.classList.add('na'); td.title = 'Not part of this item\u2019s pricing program'; }
-        tr.appendChild(td);
-      });
-      const cbi = cb.get(g.key);
-      const cbTd = el('td', null, cbi ? cbi.n + ' \u00b7 ' + [...cbi.tiers.entries()].map(([k, n]) => k + (n > 1 ? ' \u00d7' + n : '')).join(', ') : '\u2014');
-      if (cbi) cbTd.title = 'Facilities: ' + [...cbi.facs].join(', ');
-      tr.appendChild(cbTd);
-      const src = el('td', 'srcCell');
-      src.appendChild(document.createTextNode(r.source || 'Entered'));
-      if (r.aggregatedFrom && r.aggregatedFrom.length) {
-        const b = el('button', 'pill ovr', '\u2295 ' + r.aggregatedFrom.length + ' merged');
-        b.title = 'Records aggregated into this one \u2014 click to view';
-        b.addEventListener('click', () => showOurSources(r));
-        src.appendChild(b);
-      }
-      tr.appendChild(src);
+      oView.trs.push(tr); oView.tds.push(tds);
       tb.appendChild(tr);
     });
   });
-  if (!listedIds.length) {
-    const tr = el('tr'), td = el('td', null, 'No record matches.');
-    td.colSpan = 2 + OUR_TEXT_FIELDS.length + 1 + tierCols.length + 2; td.style.cssText = 'padding:14px;color:var(--ink-3)';
+  if (!oView.rows.length) {
+    const tr = el('tr'), td = el('td', null, 'No record matches' + (nf ? ' \u2014 check the column filters.' : '.'));
+    td.colSpan = span; td.style.cssText = 'padding:14px;color:var(--ink-3)';
     tr.appendChild(td); tb.appendChild(tr);
   }
-  if (shown > CAP) {
-    const tr = el('tr'), td = el('td', null, 'Showing the first ' + CAP + ' of ' + shown + ' matching records \u2014 search to narrow.');
-    td.colSpan = 2 + OUR_TEXT_FIELDS.length + 1 + tierCols.length + 2; td.style.cssText = 'padding:10px;color:var(--warn);background:var(--warn-bg)';
+  if (oView.total > OUR_ROW_CAP) {
+    const tr = el('tr'), td = el('td', null, 'Showing the first ' + OUR_ROW_CAP + ' of ' + oView.total + ' matching records \u2014 search or filter to narrow.');
+    td.colSpan = span; td.style.cssText = 'padding:10px;color:var(--warn);background:var(--warn-bg)';
     tr.appendChild(td); tb.appendChild(tr);
   }
+  const listedIds = oView.rows.map(r => r.id);
   allBox.checked = listedIds.length > 0 && listedIds.every(id => ourChecked.has(id));
   allBox.addEventListener('change', () => { listedIds.forEach(id => allBox.checked ? ourChecked.add(id) : ourChecked.delete(id)); renderOur(); });
   t.appendChild(tb);
   pane.appendChild(t);
   pane.scrollTop = keepTop; pane.scrollLeft = keepLeft;
-  if (ourFocus) {
-    const x = pane.querySelector('.ourIn[data-id="' + ourFocus.id + '"][data-k="' + ourFocus.k + '"]');
-    if (x) { x.focus(); if (x.select && ourFocus.select) x.select(); }
-    ourFocus = null;
+
+  /* restore the cursor on the same record/column */
+  const n = oView.rows.length;
+  if (!n) { oCur = oSel = null; }
+  else if (oAnchor) {
+    const r = oView.idx.has(oAnchor.id) ? oView.idx.get(oAnchor.id) : Math.min(oCur ? oCur.r : 0, n - 1);
+    let c = cols.findIndex(x => x.k === oAnchor.k); if (c < 0) c = Math.min(oCur ? oCur.c : 0, cols.length - 1);
+    oCur = { r, c };
+    const s = oAnchor.sel;
+    if (s && s.a && s.b && oView.idx.has(s.a.id) && oView.idx.has(s.b.id) && (s.a !== s.b || s.c1 !== s.c2))
+      oSel = { r1:oView.idx.get(s.a.id), r2:oView.idx.get(s.b.id), c1:Math.min(s.c1, cols.length - 1), c2:Math.min(s.c2, cols.length - 1) };
+    else oSel = { r1:r, c1:c, r2:r, c2:c };
+  } else if (oCur) {
+    oCur = { r:Math.min(oCur.r, n - 1), c:Math.min(oCur.c, cols.length - 1) };
+    oSel = oSel ? { r1:Math.min(oSel.r1, n - 1), r2:Math.min(oSel.r2, n - 1), c1:Math.min(oSel.c1, cols.length - 1), c2:Math.min(oSel.c2, cols.length - 1) } : { r1:oCur.r, c1:oCur.c, r2:oCur.r, c2:oCur.c };
   }
+  oAnchor = null;
+  ourPaint();
+  renderOurStatus();
+  if (oPendingEdit && oCur) { oPendingEdit = false; ourEnsureVisible(oCur.r, oCur.c); ourBeginEdit(); }
 }
-function setOurField(id, k, val){
-  const r = state.our.rows.find(x => x.id === id); if (!r) return false;
-  let v = String(val == null ? '' : val).trim();
-  if (k === 'priceUnit') v = v.toUpperCase();
-  const isPrice = k.startsWith('price:');
-  const tierId = isPrice ? k.slice(6) : null;
-  const old = isPrice ? String((r.prices || {})[tierId] == null ? '' : r.prices[tierId]) : String(r[k] == null ? '' : r[k]);
-  if (old === v) return false;
-  pushUndo();
-  if (isPrice) { r.prices = Object.assign({}, r.prices); if (v === '') delete r.prices[tierId]; else r.prices[tierId] = v; }
-  else r[k] = v;
-  const p = programById(r.program);
-  const label = isPrice ? ((p && (p.tiers || []).find(t => t.id === tierId)) || { name:tierId }).name + ' price' : OUR_FIELD_NAME[k] || k;
-  logEvent('Our Pricing edited', 'Our Item ' + (r.itemNumber || r.id), label + ': \u201c' + old + '\u201d \u2192 \u201c' + v + '\u201d');
+
+/* -------------------------------------------------------- selection */
+function ourPaint(){
+  oPainted.forEach(td => td.classList.remove('sel', 'cur', 'eT', 'eB', 'eL', 'eR', 'kT', 'kB', 'kL', 'kR'));
+  oPainted = [];
+  const mark = (rg, p, skipSingle) => {
+    if (!rg) return;
+    const single = rg.r1 === rg.r2 && rg.c1 === rg.c2;
+    for (let r = rg.r1; r <= rg.r2; r++) {
+      const row = oView.tds[r]; if (!row) continue;
+      for (let c = rg.c1; c <= rg.c2; c++) {
+        const td = row[c]; if (!td) continue;
+        if (p === 'e') td.classList.add('sel');
+        if (!(skipSingle && single)) {
+          if (r === rg.r1) td.classList.add(p + 'T'); if (r === rg.r2) td.classList.add(p + 'B');
+          if (c === rg.c1) td.classList.add(p + 'L'); if (c === rg.c2) td.classList.add(p + 'R');
+        }
+        oPainted.push(td);
+      }
+    }
+  };
+  mark(rangeNorm(oSel), 'e', true);
+  if (oCopy) {
+    const k = rangeNorm(oCopy);
+    for (let r = k.r1; r <= k.r2; r++) for (let c = k.c1; c <= k.c2; c++) {
+      const td = oView.tds[r] && oView.tds[r][c]; if (!td) continue;
+      if (r === k.r1) td.classList.add('kT'); if (r === k.r2) td.classList.add('kB');
+      if (c === k.c1) td.classList.add('kL'); if (c === k.c2) td.classList.add('kR');
+      oPainted.push(td);
+    }
+  }
+  if (oCur && oView.tds[oCur.r] && oView.tds[oCur.r][oCur.c]) { const td = oView.tds[oCur.r][oCur.c]; td.classList.add('cur'); oPainted.push(td); }
+}
+function ourSetCur(r, c, extend){
+  const n = oView.rows.length; if (!n) return;
+  r = Math.max(0, Math.min(n - 1, r)); c = Math.max(0, Math.min(oView.cols.length - 1, c));
+  if (extend && oCur) oSel = { r1:oSel ? oSel.r1 : oCur.r, c1:oSel ? oSel.c1 : oCur.c, r2:r, c2:c };
+  else oSel = { r1:r, c1:c, r2:r, c2:c };
+  oCur = { r, c };
+  ourEnsureVisible(r, c);
+  ourPaint(); renderOurStatus();
+}
+function ourSelectColumn(c, extend){
+  const n = oView.rows.length; if (!n) return;
+  ourCommitEdit();
+  if (extend && oSel) oSel = { r1:0, r2:n - 1, c1:Math.min(oSel.c1, oSel.c2, c), c2:Math.max(oSel.c1, oSel.c2, c) };
+  else oSel = { r1:0, r2:n - 1, c1:c, c2:c };
+  oCur = { r:0, c };
+  ourPaint(); renderOurStatus(); $('#paneOur').focus({ preventScroll:true });
+}
+function ourSelectRow(r, extend){
+  ourCommitEdit();
+  const last = oView.cols.length - 1;
+  if (extend && oSel) oSel = { r1:Math.min(oSel.r1, oSel.r2, r), r2:Math.max(oSel.r1, oSel.r2, r), c1:0, c2:last };
+  else oSel = { r1:r, r2:r, c1:0, c2:last };
+  oCur = { r, c:0 };
+  ourPaint(); renderOurStatus(); $('#paneOur').focus({ preventScroll:true });
+}
+function ourEnsureVisible(r, c){
+  const pane = $('#paneOur'), td = oView.tds[r] && oView.tds[r][c]; if (!td) return;
+  const head = pane.querySelector('thead'), hh = head ? head.offsetHeight : 30;
+  const trEl = oView.trs[r];
+  const top = trEl.offsetTop, bot = top + trEl.offsetHeight;
+  if (top < pane.scrollTop + hh) pane.scrollTop = Math.max(0, top - hh);
+  else if (bot > pane.scrollTop + pane.clientHeight) pane.scrollTop = bot - pane.clientHeight + 2;
+  if (oView.cols[c].k === 'itemNumber') return;
+  const frz = OUR_CK_W + OUR_ST_W + OUR_GUT_W + oView.cols[0].w;
+  const l = td.offsetLeft, w = td.offsetWidth;
+  if (l < pane.scrollLeft + frz) pane.scrollLeft = Math.max(0, l - frz);
+  else if (l + w > pane.scrollLeft + pane.clientWidth) pane.scrollLeft = l + w - pane.clientWidth;
+}
+
+/* ---------------------------------------------------------- editing */
+const PROGRAM_LIST_ID = 'ourProgramList';
+function refreshProgramList(){
+  let dl = document.getElementById(PROGRAM_LIST_ID);
+  if (!dl) { dl = el('datalist'); dl.id = PROGRAM_LIST_ID; document.body.appendChild(dl); }
+  dl.innerHTML = '';
+  const o0 = el('option'); o0.value = ''; o0.label = 'Standard pricing'; dl.appendChild(o0);
+  state.programs.forEach(p => { const o = el('option'); o.value = p.name; if (p.shortName) o.label = p.shortName; dl.appendChild(o); });
+}
+function ourStatusList(){
+  let dl = document.getElementById('ourStatusList');
+  if (!dl) { dl = el('datalist'); dl.id = 'ourStatusList'; ['Active', 'Inactive', 'Discontinued'].forEach(v => { const o = el('option'); o.value = v; dl.appendChild(o); }); document.body.appendChild(dl); }
+  return dl.id;
+}
+/** Program typed by name, short name or id -> stored as the program id; blank = standard. */
+function normalizeOurInput(k, v){
+  v = String(v == null ? '' : v).trim();
+  if (k === 'priceUnit') return v.toUpperCase();
+  if (k === 'program') { const p = programById(v); return p ? p.id : v; }
+  return v;
+}
+function ourBeginEdit(seed){
+  if (!oCur) return;
+  const row = oView.rows[oCur.r], col = oView.cols[oCur.c];
+  if (!row || !col) return;
+  const x = ourCell(row, col);
+  if (!x.editable) {
+    if (col.kind === 'calc') toast('Eaches / Case is calculated from Packaging Details and Factor QTY.');
+    else if (col.kind === 'tier') toast('This tier belongs to ' + progLabel(col.program) + ' \u2014 set the item\u2019s Pricing Program to it first.');
+    else if (col.kind === 'ro') toast(col.name + ' is read-only' + (col.k === 'source' && (row.aggregatedFrom || []).length ? ' \u2014 double-click to see the merged records.' : '.'));
+    else if (col.k === 'stdPrice' || col.k === 'contract') toast('This item is tiered \u2014 its prices and contracts come from the tiers.');
+    return;
+  }
+  const td = oView.tds[oCur.r][oCur.c];
+  const inp = el('input', 'edit');
+  inp.value = seed !== undefined ? seed : x.raw;
+  if (col.k === 'program') { refreshProgramList(); inp.setAttribute('list', PROGRAM_LIST_ID); inp.style.minWidth = '220px'; }
+  if (col.k === 'status') inp.setAttribute('list', ourStatusList());
+  td.appendChild(inp);
+  inp.focus();
+  if (seed === undefined) inp.select(); else inp.setSelectionRange(inp.value.length, inp.value.length);
+  oEditor = { inp, rowId:row.id, field:col.field, k:col.k, r:oCur.r, c:oCur.c };
+  inp.addEventListener('blur', () => ourCommitEdit());
+  inp.addEventListener('keydown', ev => {
+    if (ev.key === 'Enter')       { ev.preventDefault(); ourCommitEdit(); ourSetCur(oCur.r + (ev.shiftKey ? -1 : 1), oCur.c); $('#paneOur').focus({ preventScroll:true }); }
+    else if (ev.key === 'Tab')    { ev.preventDefault(); ourCommitEdit(); ourSetCur(oCur.r, oCur.c + (ev.shiftKey ? -1 : 1)); $('#paneOur').focus({ preventScroll:true }); }
+    else if (ev.key === 'Escape') { ev.preventDefault(); ourCancelEdit(); $('#paneOur').focus({ preventScroll:true }); }
+    ev.stopPropagation();
+  });
+}
+function ourCancelEdit(){
+  if (!oEditor) return;
+  const e = oEditor; oEditor = null;
+  if (e.inp.parentNode) e.inp.parentNode.removeChild(e.inp);
+}
+/** Commits the open cell editor; returns true when the data changed (the grid is then redrawn). */
+function ourCommitEdit(){
+  if (!oEditor) return false;
+  const e = oEditor; oEditor = null;
+  const v = e.inp.value;
+  if (e.inp.parentNode) e.inp.parentNode.removeChild(e.inp);
+  if (!setOurField(e.rowId, e.field, normalizeOurInput(e.k, v))) return false;
+  oAnchor = { id:e.rowId, k:e.k, sel:null };
+  refresh();
   return true;
 }
-$('#paneOur').addEventListener('change', e => {
-  const x = e.target.closest('.ourIn'); if (!x) return;
-  const id = x.dataset.id, k = x.dataset.k, v = x.value;
-  /* let focus settle on whatever the user moved to, then commit and redraw */
-  clearTimeout(ourCommitT);
-  ourCommitT = setTimeout(() => {
-    const ae = document.activeElement;
-    if (ae && ae.classList && ae.classList.contains('ourIn')) ourFocus = { id:ae.dataset.id, k:ae.dataset.k, select:true };
-    if (setOurField(id, k, v)) refresh(); else ourFocus = null;
-  }, 0);
-});
-$('#paneOur').addEventListener('keydown', e => {
-  const x = e.target.closest('.ourIn'); if (!x) return;
-  if (e.key === 'Enter' && x.tagName === 'INPUT') { e.preventDefault(); x.blur(); }
-  if (e.key === 'Escape' && x.tagName === 'INPUT') {
-    const r = state.our.rows.find(o => o.id === x.dataset.id);
-    if (r) { const k = x.dataset.k; x.value = k.startsWith('price:') ? ((r.prices || {})[k.slice(6)] || '') : (r[k] || ''); }
-    x.blur();
+/** Raw setter used by paste / clear / fill (one undo step for the whole operation). */
+function ourPut(row, field, v, changes){
+  const isPrice = field.startsWith('price:'), tierId = isPrice ? field.slice(6) : null;
+  const old = isPrice ? String((row.prices || {})[tierId] == null ? '' : row.prices[tierId]) : String(row[field] == null ? '' : row[field]);
+  if (old === v) return;
+  if (isPrice) { row.prices = Object.assign({}, row.prices); if (v === '') delete row.prices[tierId]; else row.prices[tierId] = v; }
+  else row[field] = v;
+  changes.push({ row, field, old, v });
+}
+function ourLogChanges(kind, changes){
+  if (!changes.length) return;
+  const byRow = new Map(); changes.forEach(c => { const k = c.row.itemNumber || c.row.id; byRow.set(k, (byRow.get(k) || 0) + 1); });
+  const sample = changes.slice(0, 12).map(c => {
+    const p = programById(c.row.program);
+    const lbl = c.field.startsWith('price:') ? (((p && (p.tiers || []).find(t => t.id === c.field.slice(6))) || { name:c.field.slice(6) }).name + ' price') : (OUR_FIELD_NAME[c.field] || c.field);
+    return (c.row.itemNumber || c.row.id) + ' ' + lbl + ': \u201c' + c.old + '\u201d \u2192 \u201c' + c.v + '\u201d';
+  }).join('; ') + (changes.length > 12 ? '; \u2026 +' + (changes.length - 12) + ' more' : '');
+  logEvent('Our Pricing ' + kind, byRow.size + ' item' + (byRow.size === 1 ? '' : 's'), changes.length + ' cell' + (changes.length === 1 ? '' : 's') + ': ' + sample);
+}
+function ourEditableAt(row, ci){ const col = oView.cols[ci]; return col && ourCell(row, col).editable ? col : null; }
+function ourClearSelection(){
+  if (!oSel) return;
+  const rg = rangeNorm(oSel), changes = [];
+  const snap = snapshot();
+  for (let r = rg.r1; r <= rg.r2; r++) { const row = oView.rows[r]; if (!row) continue;
+    for (let c = rg.c1; c <= rg.c2; c++) { const col = ourEditableAt(row, c); if (col) ourPut(row, col.field, '', changes); } }
+  oCopy = null;
+  if (!changes.length) { ourPaint(); return; }
+  undoStack.push(snap); redoStack.length = 0; markDirty();
+  ourLogChanges('cleared', changes);
+  refresh();
+}
+function ourSelectionTSV(){
+  if (!oSel) return '';
+  const rg = rangeNorm(oSel), out = [], cb = crossedByIndex();
+  for (let r = rg.r1; r <= rg.r2; r++) { const row = oView.rows[r]; if (!row) continue;
+    const line = []; for (let c = rg.c1; c <= rg.c2; c++) line.push(String(ourCell(row, oView.cols[c], cb).raw).replace(/[\t\r\n]+/g, ' '));
+    out.push(line.join('\t')); }
+  return out.join('\n');
+}
+/** Excel-style paste: one value fills the selection, an exact multiple tiles it, otherwise the block lands at the top-left.
+ *  Past the last row it adds new records (only when nothing is filtered, so the new rows are where you expect them). */
+function ourPasteMatrix(matrix){
+  if (!matrix.length) { toast('Nothing to paste.', true); return; }
+  if (!oCur) oCur = { r:0, c:0 };
+  const rg = rangeNorm(oSel) || { r1:oCur.r, r2:oCur.r, c1:oCur.c, c2:oCur.c };
+  const R = matrix.length, C = Math.max.apply(null, matrix.map(r => r.length));
+  const selR = Math.min(rg.r2, oView.rows.length - 1) - rg.r1 + 1, selC = rg.c2 - rg.c1 + 1;
+  const rRep = selR >= R && selR % R === 0 ? selR / R : 1, cRep = selC >= C && selC % C === 0 ? selC / C : 1;
+  const needR = R * rRep, needC = C * cRep;
+  const targets = oView.rows.slice(rg.r1, rg.r1 + needR);
+  const filtered = !!(String(state.ui.ourSearch || '').trim() || state.ui.ourIssuesOnly || ourActiveFilters().length);
+  let created = 0, skippedRows = 0;
+  if (targets.length < needR) { if (filtered) skippedRows = needR - targets.length; else created = needR - targets.length; }
+  pushUndo();
+  for (let i = 0; i < created; i++) { const b = blankOurRow(); b.source = 'Pasted ' + new Date().toISOString().slice(0, 10); state.our.rows.push(b); targets.push(b); }
+  const changes = []; let skippedCells = 0;
+  targets.forEach((row, i) => {
+    for (let j = 0; j < needC; j++) {
+      const col = oView.cols[rg.c1 + j]; if (!col) { skippedCells++; continue; }
+      const v = matrix[i % R][j % C]; if (v === undefined) continue;
+      if (!ourCell(row, col).editable) { if (String(v).trim() !== '' && col.kind !== 'calc' && col.kind !== 'ro') skippedCells++; continue; }
+      ourPut(row, col.field, normalizeOurInput(col.k, v), changes);
+    }
+  });
+  oCopy = null;
+  if (created) logEvent('Our Pricing records added', created + ' record' + (created === 1 ? '' : 's'), 'Pasted past the last row');
+  ourLogChanges('pasted', changes);
+  const a = targets[0], z = targets[targets.length - 1];
+  oAnchor = { id:a.id, k:oView.cols[rg.c1].k, sel:{ a, b:z, c1:rg.c1, c2:Math.min(oView.cols.length - 1, rg.c1 + needC - 1) } };
+  refresh();
+  const notes = [];
+  if (created) notes.push(created + ' record' + (created === 1 ? '' : 's') + ' added');
+  if (skippedRows) notes.push(skippedRows + ' row' + (skippedRows === 1 ? '' : 's') + ' past the last listed row skipped (clear the search/filters to add rows)');
+  if (skippedCells) notes.push(skippedCells + ' cell' + (skippedCells === 1 ? '' : 's') + ' skipped (read-only, or a tier outside the item\u2019s program)');
+  toast('Pasted ' + R + ' \u00d7 ' + C + (rRep * cRep > 1 ? ' block, repeated to fill the selection' : '') + (notes.length ? ' \u2014 ' + notes.join(', ') : '') + '.', !!(skippedRows || skippedCells));
+}
+function ourFill(dir){
+  if (!oSel) return;
+  const rg = rangeNorm(oSel), changes = [];
+  const rows = oView.rows.slice(rg.r1, rg.r2 + 1);
+  const raw = (row, c) => ourCell(row, oView.cols[c]).raw;
+  if (dir === 'down') {
+    let src = rows.length > 1 ? rows[0] : oView.rows[rg.r1 - 1];
+    if (!src) { toast('Nothing above to fill down from.'); return; }
+    const targets = rows.length > 1 ? rows.slice(1) : rows;
+    pushUndo();
+    targets.forEach(row => { for (let c = rg.c1; c <= rg.c2; c++) { const col = ourEditableAt(row, c); if (col && ourCell(src, col).editable) ourPut(row, col.field, normalizeOurInput(col.k, raw(src, c)), changes); } });
+  } else {
+    const srcC = rg.c2 > rg.c1 ? rg.c1 : rg.c1 - 1;
+    if (srcC < 0) { toast('Nothing to the left to fill right from.'); return; }
+    pushUndo();
+    rows.forEach(row => { const v = raw(row, srcC); for (let c = srcC + 1; c <= rg.c2; c++) { const col = ourEditableAt(row, c); if (col) ourPut(row, col.field, normalizeOurInput(col.k, v), changes); } });
   }
+  if (!changes.length) { undoStack.pop(); toast('Nothing changed \u2014 the cells already match.'); return; }
+  ourLogChanges('filled ' + dir, changes);
+  refresh();
+  toast('Filled ' + changes.length + ' cell' + (changes.length === 1 ? '' : 's') + '.');
+}
+
+/* ------------------------------------------------------ column filter */
+function openOurColumnFilter(col){
+  const cb = crossedByIndex();
+  const counts = new Map();
+  state.our.rows.forEach(r => { const v = ourFilterText(r, col, cb); counts.set(v, (counts.get(v) || 0) + 1); });
+  const dist = [...counts.entries()].sort((a, b) => a[0].localeCompare(b[0], undefined, { numeric:true }));
+  const cur = (state.ui.ourColFilters || {})[col.k];
+  const chosen = new Set(cur && cur.length ? cur : dist.map(d => d[0]));
+  const wrap = el('div', 'filterPanel');
+  const sr = el('div', 'fpSearch'); sr.appendChild(el('span', 'ico', '\u2315'));
+  const si = el('input'); si.type = 'search'; si.placeholder = 'Search values\u2026'; sr.appendChild(si); wrap.appendChild(sr);
+  const acts = el('div', 'fpActions');
+  const aAll = el('a', null, 'Select all shown'), aNone = el('a', null, 'Clear shown');
+  acts.appendChild(aAll); acts.appendChild(document.createTextNode(' \u00b7 ')); acts.appendChild(aNone); wrap.appendChild(acts);
+  const list = el('div', 'fpList'); wrap.appendChild(list);
+  const shown = () => { const s = si.value.trim().toLowerCase(); return dist.filter(d => !s || d[0].toLowerCase().includes(s)); };
+  const draw = () => {
+    list.innerHTML = '';
+    shown().forEach(([v, n]) => {
+      const l = el('label', 'fpRow'); const b = el('input'); b.type = 'checkbox'; b.checked = chosen.has(v);
+      b.addEventListener('change', () => { if (b.checked) chosen.add(v); else chosen.delete(v); });
+      l.appendChild(b); l.appendChild(el('span', null, v)); l.appendChild(el('span', 'fpCount', String(n))); list.appendChild(l);
+    });
+  };
+  si.addEventListener('input', draw);
+  aAll.addEventListener('click', () => { shown().forEach(d => chosen.add(d[0])); draw(); });
+  aNone.addEventListener('click', () => { shown().forEach(d => chosen.delete(d[0])); draw(); });
+  draw();
+  showModal('Filter \u2014 ' + col.L + ' ' + col.name, wrap, [
+    { label:'Clear filter', cls:'btn', fn:() => { const f = Object.assign({}, state.ui.ourColFilters); delete f[col.k]; state.ui.ourColFilters = f; hideModal(); oCur = oSel = null; renderOur(); saveSoon(); } },
+    { label:'Cancel', cls:'btn', fn:hideModal },
+    { label:'Apply', cls:'btn primary', fn:() => {
+      const f = Object.assign({}, state.ui.ourColFilters);
+      if (chosen.size === dist.length) delete f[col.k]; else f[col.k] = [...chosen];
+      state.ui.ourColFilters = f; hideModal(); oCur = oSel = null; renderOur(); saveSoon();
+    } }
+  ]);
+  setTimeout(() => si.focus(), 30);
+}
+
+/* ----------------------------------------------------------- status bar */
+function renderOurStatus(){
+  const s = $('#ourStatus'); if (!s) return;
+  s.innerHTML = '';
+  const add = html => { const d = el('span'); d.innerHTML = html; s.appendChild(d); };
+  if (!oCur || !oView.rows[oCur.r]) { add('Click a cell, or paste a range from Excel with <kbd>Ctrl</kbd>+<kbd>V</kbd>. Press <kbd>?</kbd> for shortcuts.'); return; }
+  const row = oView.rows[oCur.r], col = oView.cols[oCur.c];
+  add('<b>' + col.L + (state.our.rows.indexOf(row) + 1) + '</b> ' + esc(col.name));
+  const rg = rangeNorm(oSel);
+  if (rg && (rg.r1 !== rg.r2 || rg.c1 !== rg.c2)) {
+    let sum = 0, cnt = 0, vals = 0;
+    for (let r = rg.r1; r <= rg.r2; r++) { const rw = oView.rows[r]; if (!rw) continue;
+      for (let c = rg.c1; c <= rg.c2; c++) { const v = ourCell(rw, oView.cols[c]).raw; if (v !== '') vals++; const n = priceNum(v); if (n !== null && !isNaN(n)) { sum += n; cnt++; } } }
+    add((rg.r2 - rg.r1 + 1) + ' \u00d7 ' + (rg.c2 - rg.c1 + 1) + ' selected \u00b7 Count <b>' + vals + '</b>' + (cnt ? ' \u00b7 Sum <b>' + fmtQty(Math.round(sum * 1e6) / 1e6) + '</b> \u00b7 Average <b>' + fmtQty(Math.round(sum / cnt * 1e4) / 1e4) + '</b>' : ''));
+  } else {
+    if (col.kind === 'calc') { const t = traceOf(calcInnerPack(row.packagingDetails, row.factorQty)); if (t) add(esc(t)); }
+    if (col.k === 'source' && (row.aggregatedFrom || []).length) { const b = el('button', 'btn sm', 'Show merged records'); b.addEventListener('click', () => showOurSources(row)); s.appendChild(b); }
+    if (col.kind === 'tier' && row.program && programById(row.program) === col.program) add(esc(tierLabel(col.tier) + (col.tier.contract ? ' \u00b7 contract ' + col.tier.contract : '')));
+  }
+  const iss = (ourD.rowIssues[row.id] || []).filter(i => i.level !== 'info');
+  s.appendChild(el('span', 'spacer'));
+  if (iss.length) add('<span class="dot ' + (iss.some(i => i.level === 'error') ? 'err' : 'warn') + '"></span>' + esc(iss[0].text) + (iss.length > 1 ? ' (+' + (iss.length - 1) + ' more)' : ''));
+  else add('<span class="dot ok"></span>No issues');
+}
+
+/* --------------------------------------------------------------- mouse */
+{
+  const pane = $('#paneOur');
+  pane.tabIndex = 0;
+  let dragging = false, dragPt = null, dragTimer = null;
+  const cellAt = t => t && t.closest ? t.closest('td.oc') : null;
+  const pos = td => ({ r:+td.parentNode.dataset.r, c:+td.dataset.c });
+  pane.addEventListener('mousedown', e => {
+    if (e.button !== 0) return;
+    if (oEditor && e.target === oEditor.inp) return;
+    const gut = e.target.closest('td.gut');
+    if (gut) { e.preventDefault(); ourSelectRow(+gut.parentNode.dataset.r, e.shiftKey); return; }
+    const td = cellAt(e.target); if (!td) return;
+    e.preventDefault();
+    ourCommitEdit();
+    const p = pos(td);
+    if (!oView.tds[p.r]) return;
+    ourSetCur(p.r, p.c, e.shiftKey);
+    pane.focus({ preventScroll:true });
+    dragging = true; dragPt = { x:e.clientX, y:e.clientY };
+    clearInterval(dragTimer); dragTimer = setInterval(tick, 40);
+  });
+  const dragTo = td => {
+    if (!td) return; const p = pos(td); if (!oView.tds[p.r] || !oSel) return;
+    if (oSel.r2 !== p.r || oSel.c2 !== p.c) { oSel.r2 = p.r; oSel.c2 = p.c; oCur = { r:p.r, c:p.c }; ourPaint(); renderOurStatus(); }
+  };
+  pane.addEventListener('mousemove', e => { if (dragging) dragTo(cellAt(e.target)); });
+  document.addEventListener('mousemove', e => { if (dragging) dragPt = { x:e.clientX, y:e.clientY }; });
+  document.addEventListener('mouseup', () => { dragging = false; clearInterval(dragTimer); dragTimer = null; });
+  function tick(){
+    if (!dragging || !dragPt) return;
+    const rc = pane.getBoundingClientRect(), E = 30;
+    let dy = 0, dx = 0;
+    if (dragPt.y > rc.bottom - E) dy = Math.min(40, (dragPt.y - rc.bottom + E) / 2 + 4);
+    else if (dragPt.y < rc.top + 40) dy = -Math.min(40, (rc.top + 40 - dragPt.y) / 2 + 4);
+    if (dragPt.x > rc.right - E) dx = Math.min(40, (dragPt.x - rc.right + E) / 2 + 4);
+    else if (dragPt.x < rc.left + 200 && pane.scrollLeft > 0) dx = -Math.min(40, (rc.left + 200 - dragPt.x) / 2 + 4);
+    if (!dx && !dy) return;
+    pane.scrollTop += dy; pane.scrollLeft += dx;
+    const hit = document.elementFromPoint(Math.min(rc.right - 20, Math.max(rc.left + 4, dragPt.x)), Math.min(rc.bottom - 20, Math.max(rc.top + 40, dragPt.y)));
+    dragTo(cellAt(hit));
+  }
+  pane.addEventListener('dblclick', e => {
+    const td = cellAt(e.target); if (!td) return;
+    const p = pos(td), row = oView.rows[p.r], col = oView.cols[p.c];
+    if (col && col.k === 'source' && row && (row.aggregatedFrom || []).length) { showOurSources(row); return; }
+    ourBeginEdit();
+  });
+
+  /* ------------------------------------------------------------ keyboard */
+  pane.addEventListener('keydown', e => {
+    if (oEditor) return;
+    if (e.target !== pane) return;   // checkboxes and buttons inside the grid keep their keys
+    const n = oView.rows.length; if (!n) return;
+    const meta = e.ctrlKey || e.metaKey, k = e.key;
+    if (meta && k.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? doRedo() : doUndo(); return; }
+    if (meta && k.toLowerCase() === 'y') { e.preventDefault(); doRedo(); return; }
+    if (meta && k.toLowerCase() === 'a') { e.preventDefault(); oSel = { r1:0, c1:0, r2:n - 1, c2:oView.cols.length - 1 }; oCur = oCur || { r:0, c:0 }; ourPaint(); renderOurStatus(); return; }
+    if (meta && !e.altKey && (k.toLowerCase() === 'd' || k.toLowerCase() === 'r')) { e.preventDefault(); ourFill(k.toLowerCase() === 'd' ? 'down' : 'right'); return; }
+    if (!oCur) { if (k.startsWith('Arrow') || k === 'Tab' || k === 'Enter') { e.preventDefault(); ourSetCur(0, 0); } return; }
+    const last = oView.cols.length - 1;
+    if (meta && k.startsWith('Arrow')) {
+      e.preventDefault();
+      if (k === 'ArrowUp') ourSetCur(0, oCur.c, e.shiftKey);
+      if (k === 'ArrowDown') ourSetCur(n - 1, oCur.c, e.shiftKey);
+      if (k === 'ArrowLeft') ourSetCur(oCur.r, 0, e.shiftKey);
+      if (k === 'ArrowRight') ourSetCur(oCur.r, last, e.shiftKey);
+      return;
+    }
+    if (meta && k === 'Home') { e.preventDefault(); ourSetCur(0, 0, e.shiftKey); return; }
+    if (meta && k === 'End') { e.preventDefault(); ourSetCur(n - 1, last, e.shiftKey); return; }
+    if (meta) return;
+    const page = Math.max(1, Math.floor(pane.clientHeight / 26) - 2);
+    switch (k) {
+      case 'ArrowDown':  e.preventDefault(); ourSetCur(oCur.r + 1, oCur.c, e.shiftKey); break;
+      case 'ArrowUp':    e.preventDefault(); ourSetCur(oCur.r - 1, oCur.c, e.shiftKey); break;
+      case 'ArrowLeft':  e.preventDefault(); ourSetCur(oCur.r, oCur.c - 1, e.shiftKey); break;
+      case 'ArrowRight': e.preventDefault(); ourSetCur(oCur.r, oCur.c + 1, e.shiftKey); break;
+      case 'Home':       e.preventDefault(); ourSetCur(oCur.r, 0, e.shiftKey); break;
+      case 'End':        e.preventDefault(); ourSetCur(oCur.r, last, e.shiftKey); break;
+      case 'PageDown':   e.preventDefault(); ourSetCur(oCur.r + page, oCur.c, e.shiftKey); break;
+      case 'PageUp':     e.preventDefault(); ourSetCur(oCur.r - page, oCur.c, e.shiftKey); break;
+      case 'Tab':        e.preventDefault(); ourSetCur(oCur.r, oCur.c + (e.shiftKey ? -1 : 1)); break;
+      case 'Enter':      e.preventDefault(); ourBeginEdit(); break;
+      case 'F2':         e.preventDefault(); ourBeginEdit(); break;
+      case 'Escape':     if (oCopy) { e.preventDefault(); oCopy = null; ourPaint(); } break;
+      case 'Delete': case 'Backspace': e.preventDefault(); ourClearSelection(); break;
+      default:
+        if (k.length === 1 && !e.altKey) { e.preventDefault(); ourBeginEdit(k); }
+    }
+  });
+}
+
+/* ------------------------------------------------------------ clipboard */
+const ourGridActive = () => state.ui.tab === 'our' && !$('#scrim').classList.contains('on');
+document.addEventListener('copy', e => {
+  if (!ourGridActive() || oEditor || !oSel || document.activeElement !== $('#paneOur')) return;
+  const text = ourSelectionTSV(); if (!text) return;
+  e.preventDefault(); e.clipboardData.setData('text/plain', text);
+  oCopy = rangeNorm(oSel); ourPaint();
+  const rg = oCopy, cells = (rg.r2 - rg.r1 + 1) * (rg.c2 - rg.c1 + 1);
+  toast('Copied ' + cells + ' cell' + (cells === 1 ? '' : 's') + ' \u2014 paste into Excel or elsewhere on this sheet.');
 });
+document.addEventListener('cut', e => {
+  if (!ourGridActive() || oEditor || !oSel || document.activeElement !== $('#paneOur')) return;
+  const text = ourSelectionTSV(); if (!text) return;
+  e.preventDefault(); e.clipboardData.setData('text/plain', text);
+  ourClearSelection();
+});
+document.addEventListener('paste', e => {
+  if (!ourGridActive()) return;
+  const t = e.target;
+  if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA') && !(oEditor && t === oEditor.inp)) return;
+  const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+  if (!text) return;
+  const m = parseClipboard(text, true);
+  if (oEditor) { if (m.length === 1 && m[0].length === 1) return; e.preventDefault(); ourCommitEdit(); }
+  else e.preventDefault();
+  /* a range that starts with a header row goes through the import preview, which matches columns by name */
+  const hm = m.length > 1 ? mapOurHeader(m) : null;
+  if (hm && hm.row === 0) {
+    showOurImportPreview({ drafts:draftsFromMatrix(m, hm, 'Pasted ' + new Date().toISOString().slice(0, 10)), how:'Pasted range with header row', hm, header:m[0] });
+    return;
+  }
+  if (!state.our.rows.length) { oCur = { r:0, c:0 }; oSel = { r1:0, c1:0, r2:0, c2:0 }; }
+  ourPasteMatrix(m.filter((r, i) => i < m.length - 1 || r.length > 1 || r[0] !== ''));
+});
+
 function showOurSources(r){
   const b = el('div');
   b.appendChild(el('p', 'hint', 'These source records were combined into Item # ' + (r.itemNumber || '') + '. They are kept unchanged for the audit trail.'));
@@ -8706,7 +9259,7 @@ $('#btnOurAdd').addEventListener('click', () => {
   const r = blankOurRow(); r.source = 'Entered';
   state.our.rows.push(r);
   state.ui.ourSearch = ''; $('#ourSearch').value = '';
-  ourFocus = { id:r.id, k:'itemNumber' };
+  oAnchor = { id:r.id, k:'itemNumber', sel:null }; oPendingEdit = true;
   logEvent('Our Pricing record added', 'Our record ' + r.id, '');
   refresh();
   const pane = $('#paneOur'); pane.scrollTop = pane.scrollHeight;
