@@ -8353,14 +8353,14 @@ function computeXref(){
       const on = priceNum(ov.contractPrice);
       if (okNum(on)) { r.override = on; r.effectivePrice = on; }
       else if (on !== null) r.notes.push('Override \u201c' + ov.contractPrice + '\u201d is not a number and was ignored.');
-      const perCase = isCaseUnit(r.priceUnit);
-      r.contractEach = perCase ? (r.epc ? r.effectivePrice / r.epc : null) : r.effectivePrice;
+      /* Each price is always price \u00f7 eaches per case \u2014 Price Unit is a label and never changes it. */
+      r.contractEach = r.epc ? r.effectivePrice / r.epc : null;
       r.expectedTotal = r.contractEach == null || !okNum(r.eaches) ? null : r.contractEach * r.eaches;
       r.diff = r.expectedTotal == null ? null : r.observedTotal - r.expectedTotal;     // + = Our Pricing is lower
       r.eachDiff = r.contractEach == null || r.observedEach == null ? null : r.observedEach - r.contractEach;
       r.savePct = r.diff == null || !(r.observedTotal > 0) ? null : r.diff / r.observedTotal * 100;
-      if (perCase && r.epcSource === 'vendor') r.notes.push('Our Pricing item has no packaging, so eaches per case came from the Facility/Vendor pack size (' + fmtQty(r.epc) + ').');
-      if (perCase && !r.epc) r.notes.push('No eaches-per-case is known (Our Pricing packaging is blank), so a contract each price cannot be calculated.');
+      if (r.epcSource === 'vendor') r.notes.push('Our Pricing item has no packaging, so eaches per case came from the Facility/Vendor pack size (' + fmtQty(r.epc) + ').');
+      if (!r.epc) r.notes.push('No eaches-per-case is known (Our Pricing packaging is blank), so a contract each price cannot be calculated.');
     } else if (!isBlank(ov.contractPrice)) {
       r.notes.push('An override of ' + ov.contractPrice + ' is stored, but it is not applied until the cross resolves.');
     }
@@ -8408,7 +8408,7 @@ function refText(item, k, raw){
       if (r.state !== 'ok') return '';
       let v;
       if (isGroup) v = r.contractEach;
-      else v = isCaseUnit(r.priceUnit) ? (r.ourEachesPerCase ? r.basePrice / r.ourEachesPerCase : null) : r.basePrice;
+      else v = r.ourEachesPerCase ? r.basePrice / r.ourEachesPerCase : null;
       return v == null ? '' : raw ? String(v) : fmtPrice(v);
     }
   }
@@ -8642,7 +8642,6 @@ function ourCell(row, col, cb){
       const n = priceNum(src);
       if (n === null) { o.text = dash; o.cls = ' dim'; o.title = 'No ' + label + '.'; }
       else if (isNaN(n)) { o.text = '#VALUE!'; o.cls = ' bad'; o.title = label + ' is not a number.'; }
-      else if (!isCaseUnit(unit)) { o.raw = String(n); o.text = fmtPrice(n); o.title = label + ' is already per ' + unit + '.'; }
       else if (!epc) { o.text = 'No pack'; o.cls = ' need'; o.title = 'Packaging Details has no pack size, so the each price cannot be calculated.'; }
       else {
         const v = n / epc;
