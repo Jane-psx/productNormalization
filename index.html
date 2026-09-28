@@ -1001,6 +1001,14 @@ table.ourTable th.st,table.ourTable td.st{width:18px;text-align:center;cursor:he
 table.ourTable th.key{background:#dbe8f7;color:var(--navy-2)}
 table.ourTable th.tierH{background:#d7efe9;color:#0d5c4d;text-align:right}
 table.ourTable th.tierH small{display:block;font-weight:400;font-size:10px;max-width:170px;white-space:normal;line-height:1.25;color:#3b7466}
+/* cross editor (Cross Analysis, double-click) */
+.xcOur input.aggIn{border:1px solid var(--line);background:#fff;width:130px;height:24px}
+.xcOur td{vertical-align:middle}
+.xcOur .prices{font-family:var(--mono);font-size:11px;white-space:normal;line-height:1.5}
+.xcSum{display:flex;flex-wrap:wrap;gap:6px 22px;font-size:12px;color:var(--ink-2);margin:0 0 10px}
+.xcSum b{color:var(--navy-2);font-family:var(--mono)}
+.srcTable td.xcBad{color:var(--err);font-weight:600}
+.srcTable td.xcGood{color:var(--ok);font-weight:600}
 table.ourTable th.eachH{background:var(--zone-computed-h);color:var(--navy-2);text-align:right}
 table.ourTable th.eachH small{display:block;font-weight:400;font-size:10px;color:var(--ink-3)}
 table.ourTable td.tierCell{background:#f2faf8}
@@ -3437,6 +3445,7 @@ function refresh(){
 /** Keeps the override modal (opened via double-click on the main sheet)
  *  in sync as edits come in, instead of leaving it showing stale values. */
 function refreshOverrideModal(){
+  if (refreshCrossModal()) return;
   if (!overrideModalKey || !$('#scrim').classList.contains('on')) return;
   const g = derived.byKey[overrideModalKey];
   if (!g) { hideModal(); return; }
@@ -4537,7 +4546,7 @@ function setOrderedMany(items){
 }
 function restoreGridFocus(){
   const s = srcSel; if (!s || !s.focusPending) return;
-  const modalOn = overrideModalKey && $('#scrim').classList.contains('on');
+  const modalOn = (overrideModalKey || crossModalKey) && $('#scrim').classList.contains('on');
   const scope = modalOn ? $('#modalBody') : $('#paneAgg');
   if (!scope) return;
   const w = [...scope.querySelectorAll('.srcTableWrap')].find(x => x.dataset.gkey === s.gkey);
@@ -4590,7 +4599,7 @@ function srcEditTable(g){
   wrap.dataset.gkey = g.key;
   const t = el('table', 'srcTable');
   const detailKeys = activeDetailKeys();
-  const colDefs = lineItemColDefs();
+  const colDefs = [LINE_ITEM_FIXED_COLS[0]].concat(g.leadCols || [], lineItemColDefs().slice(1), g.tailCols || []);
   const nRows = g.detail.length;
   const NC = ED_FIELDS.length;
   const cellEls = [];
@@ -4838,6 +4847,7 @@ function srcEditTable(g){
       select(r, 0, r, NC - 1); wrap.focus({ preventScroll:true });
     });
     tr.appendChild(idx);
+    (g.leadCols || []).forEach(cd => tr.appendChild(cd.td(d)));
 
     cellEls[r] = [];
     ED_FIELDS.forEach((k, c) => {
@@ -4886,6 +4896,7 @@ function srcEditTable(g){
 
     tr.appendChild(el('td', 'n', resText(d.calc.orderedQtyNorm, 'qty')));
     tr.appendChild(el('td', 'n', resText(d.calc.eachPrice, 'price')));
+    (g.tailCols || []).forEach(cd => tr.appendChild(cd.td(d)));
     tb.appendChild(tr);
   });
 
@@ -6583,6 +6594,7 @@ function showModal(title, bodyNode, buttons, opts){
 function hideModal(){
   $('#scrim').classList.remove('on');
   overrideModalKey = null;
+  crossModalKey = null;
   xuHighlight = null;
 }
 $('#scrim').addEventListener('mousedown', e => { if (e.target === $('#scrim')) hideModal(); });
@@ -7644,7 +7656,7 @@ function xuLines(){
       item:String(r.itemNumber == null ? '' : r.itemNumber).trim(),
       sku:e.skuNumber, mfg:e.mfgCatalog,
       /* the raw Crossed To, trimmed \u2014 exactly what "Group by: Crossed To" groups on */
-      xto:String(r.crossedTo == null ? '' : r.crossedTo).trim(),
+      xto:String(e.crossedTo == null ? '' : e.crossedTo).trim(),
       desc:String(e.description || '').trim(), pack:String(e.packagingDetails || '').trim(),
       fac:xlBlankLbl(e.facility), ven:xlBlankLbl(e.vendorName),
       rawQty:rq === null ? 0 : rq, um:String(r.orderedUM || '').trim().toUpperCase(),
@@ -7858,24 +7870,21 @@ function renderUsageCompare(pane, cards){
        Facility A cells open A's group, the Facility B cells open B's group */
     const keyA = itemKeyOf(a.rows[0]), keyB = r.cross ? itemKeyOf(r.match[0].rows[0]) : null;
     tr.tabIndex = 0;
-    tr.title = 'Click to normalize Ordered QTY / UM \u2014 Facility A cells open ' + keyLabel(keyA) +
-      (keyB && keyB !== keyA ? ', Facility B cells open ' + keyLabel(keyB) : '');
-    tr.addEventListener('click', e => {
+    tr.title = 'Double-click (or Enter) to open cross \u201c' + a.group + '\u201d \u2014 every Facility/Vendor line with this Crossed To, together with its Our Pricing item, so Ordered QTY / UM can be normalized side by side';
+    tr.addEventListener('dblclick', e => {
       if (e.target.closest('.xsGrip') || document.body.classList.contains('xsResizing')) return;
-      const cell = e.target.closest('td');
-      openCross(cell && cell.cellIndex >= 12 ? 'B' : 'A');
+      openCross();
     });
-    tr.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); openCross('A'); } });
-    /* side = which half was clicked; < > keep to that side while it exists */
-    const openCross = side => {
+    tr.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); openCross(); } });
+    const openCross = () => {
       xuHighlight = {
         A:{ label:aL, items:a.item, key:keyA, ids:new Set(a.rows.map(x => x.id)) },
         B:r.cross ? { label:bL, items:[...new Set(r.match.map(m => m.item))].join(', '), key:keyB,
                       ids:new Set(r.match.flatMap(m => m.rows.map(x => x.id))) } : null
       };
-      openEditorFor(side === 'B' && keyB ? keyB : keyA, {
+      openCrossEditor(a.group, {
         ids:() => xuNavRows.map(x => x.id), cur:a.key, noun:'cross row',
-        go:id => { const x = xuNavRows.find(n => n.id === id); if (x) x.open(side); }
+        go:id => { const x = xuNavRows.find(n => n.id === id); if (x) x.open(); }
       });
     };
     xuNavRows.push({ id:a.key, open:openCross });
@@ -9931,19 +9940,278 @@ function pricingBlock(g){
 
 /* ================================== CROSS ANALYSIS: OUR PRICING vs FACILITY */
 let ocLast = null;
-function ourCompareRows(){
-  const F = state.ui.ocFac || XC_ALL, V = state.ui.ocVen || XC_ALL;
-  return derived.groups.map(g => ({ g, r:derived.xref[g.key] }))
-    .filter(x => x.r && (F === XC_ALL || xlBlankLbl(x.r.facility) === F) && (V === XC_ALL || xlBlankLbl(x.r.vendor) === V));
+const ocUniq = arr => [...new Set(arr.filter(v => v !== '' && v != null))];
+const ocJoin = (arr, max) => { const u = ocUniq(arr); max = max || 3; return u.length <= max ? u.join(', ') : u.slice(0, max).join(', ') + ' +' + (u.length - max); };
+
+/** Every Facility/Vendor source row priced on its own against Our Pricing through its
+ *  own Crossed To + Tier to Apply + Contract. Independent of the sheet's Group by. */
+function crossRowPricing(){
+  const detOf = new Map();
+  derived.groups.forEach(g => g.detail.forEach(d => detOf.set(d.row.id, { d, g })));
+  const out = new Map();
+  state.rows.forEach(row => {
+    const x = detOf.get(row.id); if (!x) return;
+    const d = x.d, g = x.g, e = d.eff;
+    const r = resolvePrice({ ourItemNumber:e.crossedTo, tierToApply:e.tierToApply, contract:e.contractToApply });
+    r.row = row; r.d = d; r.g = g;
+    r.facility = String(e.facility == null ? '' : e.facility).trim();
+    r.vendor = String(e.vendorName == null ? '' : e.vendorName).trim();
+    r.channel = normalizeChannel(e.purchaseChannel);
+    r.orderRef = String(e.orderRef == null ? '' : e.orderRef).trim();
+    const q = d.calc.orderedQtyNorm;
+    r.eaches = q && !q.err && okNum(q.v) ? q.v : null;
+    r.observedTotal = numOrZero(row.netSales);
+    r.observedEach = r.eaches ? r.observedTotal / r.eaches : null;
+    let epc = r.ourEachesPerCase || null, src = epc ? 'our' : null;
+    const ip = d.calc.innerPack;
+    if (!epc && ip && okNum(ip.v) && ip.v > 0) { epc = ip.v; src = 'vendor'; }
+    r.epc = epc; r.epcSource = src;
+    r.cases = r.eaches != null && epc ? r.eaches / epc
+            : (!isBlank(row.orderedUM) && isCaseUnit(row.orderedUM) ? numOrZero(row.orderedQty) : null);
+    out.set(row.id, r);
+  });
+  /* order-level rules: same program + facility + vendor + channel + order ref = one order */
+  const buckets = new Map();
+  out.forEach((r, id) => {
+    if (r.state !== 'ok' || !r.program || !(r.program.adjustments || []).length) return;
+    const k = [r.program.id, normIdent(r.facility), normIdent(r.vendor), normIdent(r.channel), normIdent(r.orderRef)].join('\u0001');
+    (buckets.get(k) || buckets.set(k, []).get(k)).push(id);
+  });
+  buckets.forEach(ids => {
+    let total = 0, known = true;
+    ids.forEach(id => { const c = out.get(id).cases; if (c == null) known = false; else total += c; });
+    ids.forEach(id => { const r = out.get(id); r.orderCases = known ? total : null; r.orderLines = ids.length;
+      applyOrderAdjustments(r, { channel:r.channel, orderCases:r.orderCases }); });
+  });
+  out.forEach(r => {
+    if (r.state !== 'ok') return;
+    const ov = state.overrides[r.g.key] || {};
+    r.effectivePrice = r.adjustedPrice;
+    const on = priceNum(ov.contractPrice);
+    r.override = okNum(on) ? on : null;
+    if (r.override != null) { r.effectivePrice = on; r.overrideReason = ov.contractPriceReason || ''; }
+    r.contractEach = r.epc ? r.effectivePrice / r.epc : null;
+    r.expectedTotal = r.contractEach == null || r.eaches == null ? null : r.contractEach * r.eaches;
+  });
+  return out;
 }
+const lineOk = r => r.state === 'ok' && r.expectedTotal != null;
+function lineStatus(r){
+  if (lineOk(r)) return 'Priced';
+  if (r.state === 'ok') return r.eaches == null ? 'No quantity' : 'No pack size';
+  return XSTATE[r.state].label;
+}
+function lineMessage(r){
+  if (lineOk(r)) return '';
+  if (r.state === 'ok') return r.eaches == null ? 'Ordered Quantity could not be calculated for this line.' : 'No eaches-per-case is known (Our Pricing and the line both lack a pack size).';
+  return r.message || XSTATE[r.state].label;
+}
+/** One cross per Crossed To value (case-insensitive), whatever the sheet is grouped by. */
+function buildCrosses(){
+  const rp = crossRowPricing();
+  const F = state.ui.ocFac || XC_ALL, V = state.ui.ocVen || XC_ALL;
+  const m = new Map(), list = [], notCrossed = { lines:0, net:0 };
+  rp.forEach(r => {
+    if ((F !== XC_ALL && xlBlankLbl(r.facility) !== F) || (V !== XC_ALL && xlBlankLbl(r.vendor) !== V)) return;
+    const k = normIdent(r.ourItemNumber);
+    if (!k) { notCrossed.lines++; notCrossed.net += r.observedTotal; return; }
+    let c = m.get(k);
+    if (!c) { c = { key:k, label:r.ourItemNumber, lines:[] }; m.set(k, c); list.push(c); }
+    c.lines.push(r);
+  });
+  list.forEach(c => {
+    const L = c.lines;
+    c.net = L.reduce((s, r) => s + r.observedTotal, 0);
+    c.eaches = L.reduce((s, r) => s + (r.eaches || 0), 0);
+    c.bad = L.filter(r => !lineOk(r));
+    c.ok = !c.bad.length;
+    c.expected = c.ok ? L.reduce((s, r) => s + r.expectedTotal, 0) : null;
+    c.observedEach = c.eaches > 0 ? c.net / c.eaches : null;
+    c.contractEach = c.ok && c.eaches > 0 ? c.expected / c.eaches : null;
+    c.diff = c.ok ? c.net - c.expected : null;
+    c.savePct = c.diff != null && c.net > 0 ? c.diff / c.net * 100 : null;
+    c.our = L.find(r => r.group) || null;
+    c.status = c.ok ? 'Resolved' : lineStatus(c.bad[0]) + (L.length > 1 ? ' (' + c.bad.length + ' of ' + L.length + ' lines)' : '');
+    c.messages = ocUniq(c.bad.map(lineMessage));
+    c.search = [c.label, c.our ? c.our.description : '', ...L.map(r => [r.facility, r.vendor, r.row.itemNumber, r.d.eff.description].join(' '))].join(' ').toLowerCase();
+  });
+  return { list, notCrossed, rp };
+}
+function crossLinesFor(key, rp){
+  const out = [];
+  rp.forEach(r => { if (normIdent(r.ourItemNumber) === key) out.push(r); });
+  const cmp = (a, b) => String(a).localeCompare(String(b), undefined, { numeric:true });
+  out.sort((a, b) => cmp(xlBlankLbl(a.facility), xlBlankLbl(b.facility)) || cmp(xlBlankLbl(a.vendor), xlBlankLbl(b.vendor)) || cmp(a.row.itemNumber || '', b.row.itemNumber || ''));
+  return out;
+}
+
+/* ------------------------------------------------ cross editor (double-click) */
+let crossModalKey = null;
+function crossNav(id){ return { ids:() => xuNavRows.map(x => x.id), cur:id, noun:'cross', go:id2 => { xuHighlight = null; openCrossEditor(id2, crossNav(id2)); } }; }
+function openCrossEditor(value, nav){
+  const key = normIdent(value); if (!key) return;
+  modalNavCur = nav || null;
+  overrideModalKey = null; srcSel = null;
+  refreshUmList();
+  const panel = buildCrossPanel(key);
+  const og = ourD.byKey.get(ourKey(panel.dataset.label));
+  showModal('Cross \u2014 ' + panel.dataset.label + (og && og.rep.description ? ' \u2014 ' + og.rep.description : ''), panel,
+    [{ label:'Done', cls:'btn primary', fn:hideModal }], { wide:true });
+  crossModalKey = key;
+  if (nav) renderModalNav(nav);
+  const ae = document.activeElement;
+  if (ae && ae !== document.body && !$('#modal').contains(ae) && ae.blur) ae.blur();
+}
+function refreshCrossModal(){
+  if (!crossModalKey || !$('#scrim').classList.contains('on')) return false;
+  const mb = $('#modalBody'), st = mb.scrollTop;
+  mb.innerHTML = ''; mb.appendChild(buildCrossPanel(crossModalKey));
+  mb.scrollTop = st;
+  if (modalNavCur) renderModalNav(modalNavCur);
+  restoreGridFocus();
+  return true;
+}
+function buildCrossPanel(key){
+  const rp = crossRowPricing();
+  const lines = crossLinesFor(key, rp);
+  const label = lines.length ? lines[0].ourItemNumber : key;
+  const og = ourD.byKey.get(ourKey(label));
+  const p = el('div', 'edPanel');
+  p.dataset.key = key; p.dataset.label = label;
+  p.addEventListener('click', e => e.stopPropagation());
+
+  const net = lines.reduce((s, r) => s + r.observedTotal, 0), eaches = lines.reduce((s, r) => s + (r.eaches || 0), 0);
+  const facs = ocUniq(lines.map(r => xlBlankLbl(r.facility)));
+  const hd = el('div', 'edHead');
+  hd.appendChild(el('h3', null, label));
+  hd.appendChild(el('span', 'edDesc' + (og ? '' : ' none'), og ? (og.rep.description || '(no description)') : 'Not in Our Pricing'));
+  hd.appendChild(el('span', 'meta', lines.length + ' Facility/Vendor line' + (lines.length === 1 ? '' : 's') + ' \u00b7 ' +
+    facs.length + ' facilit' + (facs.length === 1 ? 'y' : 'ies') + ' \u00b7 ' + fmtMoney(net) + ' \u00b7 ' + fmtQty(Math.round(eaches * 1e4) / 1e4) + ' eaches'));
+  p.appendChild(hd);
+
+  /* ---- Our Pricing side ---- */
+  const so = el('div', 'block xcOur');
+  so.appendChild(el('h4', null, 'Our Pricing \u2014 Item # ' + label + ' (Packaging Details and Factor QTY are editable)'));
+  if (!og) {
+    so.appendChild(Object.assign(el('div', 'msg err'), { textContent:'No Our Pricing record has Item # \u201c' + label +
+      '\u201d. Add it on the Our Pricing tab, or correct Crossed To on the lines below.' }));
+  } else {
+    const t = el('table', 'aggPreviewTable');
+    const hr = el('tr');
+    ['Item #', 'Product Code', 'Description', 'Packaging Details', 'Factor QTY', 'Eaches / Case', 'Program', 'Contract', 'Prices (case \u00b7 each)']
+      .forEach(h => hr.appendChild(el('th', null, h)));
+    t.appendChild(hr);
+    og.rows.forEach(rec => {
+      const tr = el('tr');
+      tr.appendChild(el('td', null, rec.itemNumber || dash));
+      tr.appendChild(el('td', null, rec.productCode || dash));
+      tr.appendChild(el('td', null, rec.description || dash));
+      ['packagingDetails', 'factorQty'].forEach(k => {
+        const td = el('td'), inp = el('input', 'aggIn');
+        const orig = rec[k] == null ? '' : String(rec[k]);
+        inp.value = orig; inp.placeholder = k === 'factorQty' ? '1' : 'e.g. 24/CS';
+        if (k === 'factorQty') inp.style.width = '60px';
+        inp.addEventListener('change', () => { if (setOurField(rec.id, k, inp.value)) refresh(); });
+        inp.addEventListener('keydown', e => {
+          e.stopPropagation();
+          if (e.key === 'Enter') { e.preventDefault(); inp.blur(); }
+          else if (e.key === 'Escape') { e.preventDefault(); inp.value = orig; inp.blur(); }
+        });
+        td.appendChild(inp); tr.appendChild(td);
+      });
+      const ip = calcInnerPack(rec.packagingDetails, rec.factorQty);
+      const epc = okNum(ip.v) && ip.v > 0 ? ip.v : null;
+      tr.appendChild(el('td', null, epc ? fmtQty(epc) : 'No pack'));
+      const pg = programById(rec.program), tiered = !!(pg && (pg.tiers || []).length);
+      tr.appendChild(el('td', null, pg ? progLabel(pg) : 'Standard'));
+      tr.appendChild(el('td', null, tiered ? ocJoin(pg.tiers.map(t2 => t2.contract || ''), 6) || dash : (rec.contract || dash)));
+      const pr = (name, v) => { const n = priceNum(v); if (n === null) return name + ' n/a'; if (isNaN(n)) return name + ' ?' + v;
+        return name + ' ' + fmtMoney(n) + (epc ? ' \u00b7 ' + fmtPrice(n / epc) + ' ea' : ''); };
+      const pt = el('td', 'prices');
+      pt.textContent = tiered ? pg.tiers.map(t2 => pr(t2.name, (rec.prices || {})[t2.id])).join('\n') : pr('Standard', rec.stdPrice);
+      pt.style.whiteSpace = 'pre-line';
+      tr.appendChild(pt);
+      t.appendChild(tr);
+    });
+    so.appendChild(t);
+  }
+  p.appendChild(so);
+
+  /* ---- summary ---- */
+  const bad = lines.filter(r => !lineOk(r));
+  const exp = bad.length ? null : lines.reduce((s, r) => s + r.expectedTotal, 0);
+  const sum = el('div', 'xcSum');
+  const put = (k, v) => { const x = el('span', null, k + ' '); x.appendChild(el('b', null, v)); sum.appendChild(x); };
+  put('Observed spend', fmtMoney(net));
+  put('Normalized eaches', fmtQty(Math.round(eaches * 1e4) / 1e4));
+  put('Observed each', eaches > 0 ? fmtPrice(net / eaches) : dash);
+  put('At Our Pricing', exp == null ? 'not all lines priced' : fmtMoney(exp));
+  put('Contract each', exp != null && eaches > 0 ? fmtPrice(exp / eaches) : dash);
+  put('Difference', exp == null ? dash : signedMoney(net - exp) + (net - exp >= 0 ? ' (Our Pricing lower)' : ' (Our Pricing higher)'));
+  p.appendChild(sum);
+  if (bad.length) {
+    const msgs = new Map();
+    bad.forEach(r => { const m = lineMessage(r); msgs.set(m, (msgs.get(m) || 0) + 1); });
+    p.appendChild(issueBox('', [...msgs.entries()].map(([m, n]) => ({ text:(n > 1 ? n + ' lines: ' : '1 line: ') + m }))));
+  }
+
+  /* ---- Facility/Vendor lines, editable together ---- */
+  const byId = new Map(lines.map(r => [r.row.id, r]));
+  const R = d => byId.get(d.row.id);
+  const cell = (txt, cls, title) => { const x = el('td', cls || null, txt == null || txt === '' ? dash : txt); if (title) x.title = title; return x; };
+  const pg = {
+    key:'xto:' + key, detail:lines.map(r => r.d), rows:lines.map(r => r.row),
+    leadCols:[{ key:'xc_item', label:'Item #', w:110, td:d => cell(String(d.row.itemNumber || '')) }],
+    tailCols:[
+      { key:'xc_tier', label:'Tier / Contract', w:120, td:d => { const r = R(d);
+          const t = r.tier ? r.tier.name + (r.contract ? ' \u00b7 ' + r.contract : '') : r.pricingType === 'standard' ? 'Standard' + (r.contract ? ' \u00b7 ' + r.contract : '') : (r.tierInput || '');
+          return cell(t, (r.state === 'tierRequired' || r.state === 'tierInvalid' || r.state === 'contractRequired' || r.state === 'contractNotFound') ? 'xcBad' : null); } },
+      { key:'xc_cases', label:'Our Cases', w:86, numeric:true, td:d => { const r = R(d);
+          return cell(r.eaches != null && r.epc ? fmtQty(Math.round(r.eaches / r.epc * 1e4) / 1e4) : '', 'n',
+            r.epc ? 'Normalized eaches \u00f7 ' + fmtQty(r.epc) + ' eaches per case' + (r.epcSource === 'vendor' ? ' (line pack \u2014 Our Pricing has no packaging)' : '') : ''); } },
+      { key:'xc_ceach', label:'Contract Each', w:96, numeric:true, td:d => { const r = R(d); return cell(r.contractEach == null ? '' : fmtPrice(r.contractEach), 'n'); } },
+      { key:'xc_exp', label:'Expected', w:96, numeric:true, td:d => { const r = R(d); return cell(r.expectedTotal == null ? '' : fmtMoney(r.expectedTotal), 'n'); } },
+      { key:'xc_diff', label:'Difference', w:96, numeric:true, td:d => { const r = R(d);
+          const v = r.expectedTotal == null ? null : r.observedTotal - r.expectedTotal;
+          return cell(v == null ? '' : signedMoney(v), 'n' + (v > 0.005 ? ' xcGood' : v < -0.005 ? ' xcBad' : '')); } },
+      { key:'xc_status', label:'Status', w:140, td:d => { const r = R(d); return cell(lineStatus(r), lineOk(r) ? null : 'xcBad', lineMessage(r) || provenanceText(r)); } }
+    ]
+  };
+  const ss = el('div', 'block');
+  const leg = xuLegend(pg); if (leg) ss.appendChild(leg);
+  const sh = el('div', 'edSubhead');
+  sh.appendChild(el('h4', null, 'Facility/Vendor lines crossed to ' + label + ' (' + lines.length + ') \u2014 edit Ordered QTY and Ordered UM here'));
+  const colsBtn = el('button', 'btn sm' + (lineItemColsOpen ? ' on' : ''), '\u2699 Columns');
+  colsBtn.type = 'button'; colsBtn.addEventListener('click', toggleLineItemColsPicker);
+  sh.appendChild(colsBtn);
+  ss.appendChild(sh);
+  if (lineItemColsOpen) ss.appendChild(lineItemColsPicker());
+  if (lines.length) {
+    const bar = el('div', 'umBar');
+    bar.appendChild(el('span', null, 'Set every line\u2019s Ordered UM to'));
+    const umAll = el('input'); umAll.setAttribute('list', 'umList'); umAll.placeholder = 'EA';
+    const umBtn = el('button', 'btn sm', 'Apply to all ' + lines.length + ' line' + (lines.length === 1 ? '' : 's'));
+    umBtn.addEventListener('click', () => setUMAll(pg, umAll.value.trim().toUpperCase()));
+    umAll.addEventListener('keydown', ev => { ev.stopPropagation(); if (ev.key === 'Enter') { ev.preventDefault(); umBtn.click(); } });
+    bar.appendChild(umAll); bar.appendChild(umBtn);
+    bar.appendChild(el('span', 'hint', 'Drag to select \u00b7 Ctrl+C / Ctrl+V \u00b7 Delete clears \u00b7 Ctrl+D fills down \u00b7 F2 or double-click edits. Our Cases shows each line in Our Pricing cases so the orders line up.'));
+    ss.appendChild(bar);
+    ss.appendChild(srcEditTable(pg));
+  } else ss.appendChild(el('p', 'hint', 'No Facility/Vendor line has this Crossed To value.'));
+  p.appendChild(ss);
+  return p;
+}
+
 function renderOurCompare(pane, cards){
   const keep = pane.scrollTop;
   pane.innerHTML = ''; cards.innerHTML = ''; $('#xsSetup').innerHTML = '';
   ocLast = null;
-  if (!derived.groups.length) { pane.appendChild(emptyNote('Nothing to compare yet. Add Facility/Vendor Pricing rows and cross them to Our Pricing.')); return; }
+  if (!state.rows.length) { pane.appendChild(emptyNote('Nothing to compare yet. Add Facility/Vendor Pricing rows and cross them to Our Pricing.')); return; }
   /* facility / vendor filter */
-  const facs = [...new Set(derived.groups.map(g => xlBlankLbl(gVal(g, 'facility'))))].sort((a, b) => a.localeCompare(b, undefined, { numeric:true }));
-  const vens = [...new Set(derived.groups.map(g => xlBlankLbl(gVal(g, 'vendorName'))))].sort((a, b) => a.localeCompare(b, undefined, { numeric:true }));
+  const effAll = []; derived.groups.forEach(g => g.detail.forEach(d => effAll.push(d.eff)));
+  const byName = (a, b) => a.localeCompare(b, undefined, { numeric:true });
+  const facs = [...new Set(effAll.map(e => xlBlankLbl(e.facility)))].sort(byName);
+  const vens = [...new Set(effAll.map(e => xlBlankLbl(e.vendorName)))].sort(byName);
   const box = el('div', 'xuSetup');
   const line = el('div', 'xuLine base'); line.style.gridTemplateColumns = '118px 170px 170px';
   const lbl = el('div', 'lbl', 'Facility/Vendor'); lbl.appendChild(el('small', null, 'usage + observed price')); line.appendChild(lbl);
@@ -9953,138 +10221,150 @@ function renderOurCompare(pane, cards){
   line.appendChild(mk(facs, 'All facilities', state.ui.ocFac, v => state.ui.ocFac = v));
   line.appendChild(mk(vens, 'All vendors', state.ui.ocVen, v => state.ui.ocVen = v));
   box.appendChild(line);
-  const l2 = el('div', 'xuLine'); l2.style.gridTemplateColumns = '118px 346px'; const lb2 = el('div', 'lbl', 'Our Pricing'); lb2.appendChild(el('small', null, 'Crossed To + Tier to Apply')); l2.appendChild(lb2);
-  l2.appendChild(el('div', 'xuMsg ok', 'Priced by the resolver: base tier/standard price \u2192 order adjustments \u2192 override.'));
+  const l2 = el('div', 'xuLine'); l2.style.gridTemplateColumns = '118px 346px'; const lb2 = el('div', 'lbl', 'Our Pricing'); lb2.appendChild(el('small', null, 'crossed by Crossed To only')); l2.appendChild(lb2);
+  l2.appendChild(el('div', 'xuMsg ok', 'One row per Crossed To value, whatever the sheet is grouped by. Each line is priced at its own Tier to Apply.'));
   box.appendChild(l2);
   $('#xsSetup').appendChild(box);
 
-  const all = ourCompareRows();
-  const T = { obs:0, obsRes:0, exp:0, res:0, attn:0, notAssigned:0, ourWin:0, facWin:0, same:0, noEach:0 };
-  all.forEach(({ r }) => {
-    T.obs += r.observedTotal || 0;
-    if (r.state === 'notAssigned') { T.notAssigned++; return; }
-    if (r.state !== 'ok') { T.attn++; return; }
-    if (r.expectedTotal == null) { T.noEach++; return; }
-    T.res++; T.obsRes += r.observedTotal || 0; T.exp += r.expectedTotal;
-    if (r.contractEach != null && r.observedEach != null) {
-      if (r.contractEach < r.observedEach - 1e-9) T.ourWin++; else if (r.observedEach < r.contractEach - 1e-9) T.facWin++; else T.same++;
+  const X = buildCrosses(), all = X.list;
+  const T = { obs:X.notCrossed.net, obsRes:0, exp:0, res:0, attn:0, ourWin:0, facWin:0, same:0 };
+  all.forEach(c => {
+    T.obs += c.net;
+    if (!c.ok) { T.attn++; return; }
+    T.res++; T.obsRes += c.net; T.exp += c.expected;
+    if (c.contractEach != null && c.observedEach != null) {
+      if (c.contractEach < c.observedEach - 1e-9) T.ourWin++; else if (c.observedEach < c.contractEach - 1e-9) T.facWin++; else T.same++;
     }
   });
   const card = (n, l, sub, cls) => { const c = xsCard(n, l, cls); if (sub) c.appendChild(el('div', 's', sub)); return c; };
-  cards.appendChild(card(fmtMoney(T.obs), 'Facility/Vendor spend', all.length + ' item' + (all.length === 1 ? '' : 's') + (T.notAssigned ? ', ' + T.notAssigned + ' not crossed' : ''), 'base'));
-  cards.appendChild(card(fmtMoney(T.obsRes), 'Spend on priced crosses', T.res + ' item' + (T.res === 1 ? '' : 's') + ' resolved to Our Pricing'));
-  cards.appendChild(card(fmtMoney(T.exp), 'Same usage at Our Pricing', 'Effective contract price \u00d7 normalized eaches'));
-  const d = T.obsRes - T.exp, won = T.res && d > 0.005, lost = T.res && d < -0.005;
+  cards.appendChild(card(fmtMoney(T.obs), 'Facility/Vendor spend', all.length + ' cross' + (all.length === 1 ? '' : 'es') +
+    (X.notCrossed.lines ? ', ' + X.notCrossed.lines + ' line' + (X.notCrossed.lines === 1 ? '' : 's') + ' with no Crossed To' : ''), 'base'));
+  cards.appendChild(card(fmtMoney(T.obsRes), 'Spend on priced crosses', T.res + ' cross' + (T.res === 1 ? '' : 'es') + ' fully priced at Our Pricing'));
+  cards.appendChild(card(fmtMoney(T.exp), 'Same usage at Our Pricing', 'Contract each \u00d7 normalized eaches, line by line'));
+  const dd = T.obsRes - T.exp, won = T.res && dd > 0.005, lost = T.res && dd < -0.005;
   cards.appendChild(card(!T.res ? '\u2014' : won ? 'Yes \u2014 won' : lost ? 'No \u2014 lost' : 'Tie', 'Our Pricing: did we win?',
-    !T.res ? 'No priced crosses yet' : (won ? 'Lower by ' : lost ? 'Higher by ' : 'Same, ') + fmtMoney(Math.abs(d)) + ' \u00b7 lower on ' + T.ourWin + ' of ' + T.res, won ? 'win' : lost ? 'lose' : ''));
-  const pct = T.obsRes > 0 ? d / T.obsRes * 100 : null;
+    !T.res ? 'No priced crosses yet' : (won ? 'Lower by ' : lost ? 'Higher by ' : 'Same, ') + fmtMoney(Math.abs(dd)) + ' \u00b7 lower on ' + T.ourWin + ' of ' + T.res, won ? 'win' : lost ? 'lose' : ''));
+  const pct = T.obsRes > 0 ? dd / T.obsRes * 100 : null;
   cards.appendChild(card(pct === null ? '\u2014' : (pct < 0 ? '\u2212' : '') + Math.abs(pct).toFixed(1) + '%', 'Percentage in saving',
-    pct === null ? '' : pct >= 0 ? fmtMoney(d) + ' saved' : fmtMoney(-d) + ' more', pct === null ? '' : pct > 0.05 ? 'save' : pct < -0.05 ? 'cost' : ''));
-  cards.appendChild(card(String(T.attn + T.noEach), 'Needs attention', 'Unmatched, tier required, invalid tier, no price or no pack size', T.attn + T.noEach ? 'warn' : ''));
+    pct === null ? '' : pct >= 0 ? fmtMoney(dd) + ' saved' : fmtMoney(-dd) + ' more', pct === null ? '' : pct > 0.05 ? 'save' : pct < -0.05 ? 'cost' : ''));
+  cards.appendChild(card(String(T.attn), 'Needs attention', 'Crosses with a line that is unmatched, missing a tier or contract, or has no price / pack size', T.attn ? 'warn' : ''));
 
   const showNC = !!state.ui.xuShowNoCross;
   $('#chkXuNoCross').checked = showNC;
-  $('#cntXuNoCross').textContent = (T.attn + T.notAssigned + T.noEach) ? String(T.attn + T.notAssigned + T.noEach) : '';
+  $('#cntXuNoCross').textContent = T.attn ? String(T.attn) : '';
   const q = String(state.ui.xsSearch || '').trim().toLowerCase();
-  let rows = all.filter(x => showNC || (x.r.state === 'ok' && x.r.expectedTotal != null));
-  if (q) rows = rows.filter(({ g, r }) => [keyLabel(g.key), gVal(g, 'description'), r.facility, r.vendor, r.ourItemNumber, r.description, pricingLabel(r)].join(' ').toLowerCase().indexOf(q) >= 0);
-  rows.sort((a, b) => ((b.r.state === 'ok') - (a.r.state === 'ok')) || (b.r.observedTotal || 0) - (a.r.observedTotal || 0));
+  let rows = all.filter(c => showNC || c.ok);
+  if (q) rows = rows.filter(c => c.search.indexOf(q) >= 0);
+  rows.sort((a, b) => (b.ok - a.ok) || b.net - a.net);
   ocLast = rows;
 
   const t = el('table', 'grid xuTable ocTable');
   const thead = el('thead'), h1 = el('tr'), h2 = el('tr', 'xuH2');
   const grp = (txt, span, cls) => { const x = el('th', 'side ' + (cls || ''), txt); x.colSpan = span; h1.appendChild(x); };
-  grp('Comparison', 4, 'xuCmpH'); grp('Facility/Vendor Pricing \u2014 observed', 9, 'xuAH'); grp('Our Pricing \u2014 resolved from Crossed To + Tier to Apply', 12, 'xuBH');
+  grp('Comparison', 4, 'xuCmpH'); grp('Facility/Vendor Pricing \u2014 observed (all lines with this Crossed To)', 10, 'xuAH'); grp('Our Pricing \u2014 resolved from Crossed To + Tier to Apply', 12, 'xuBH');
   const heads = [['Observed Each', 'num'], ['Contract Each', 'num'], ['Best Priced', ''], ['Difference', 'num'],
-    ['Order Qty', 'num sideStart'], ['UOM', ''], ['Facility', ''], ['Vendor', ''], ['Item #', ''], ['Description', ''], ['Channel', ''], ['Each Price', 'num'], ['Total Net Sales', 'num'],
+    ['Lines', 'num sideStart'], ['Order Qty', 'num'], ['UOM', ''], ['Facility', ''], ['Vendor', ''], ['Item #', ''], ['Description', ''], ['Channel', ''], ['Each Price', 'num'], ['Total Net Sales', 'num'],
     ['Crossed To', 'sideStart'], ['Our Description', ''], ['Program \u00b7 Tier', ''], ['Contract', ''], ['Base Price', 'num'], ['Adjustment', ''], ['Override', 'num'],
     ['Effective Price', 'num'], ['Eaches/Case', 'num'], ['Contract Each', 'num'], ['Expected Net Sales', 'num'], ['Status', '']];
   heads.forEach(([h, c]) => h2.appendChild(el('th', c, h)));
   thead.appendChild(h1); thead.appendChild(h2); t.appendChild(thead);
   const tb = el('tbody');
-  const td = (tr, txt, cls, title) => { const x = el('td', cls || null, txt == null ? '' : txt); if (title) x.title = title; tr.appendChild(x); return x; };
+  const td = (tr, txt, cls, title) => { const x = el('td', cls || null, txt == null || txt === '' ? dash : txt); if (title) x.title = title; tr.appendChild(x); return x; };
   if (!rows.length) {
-    const tr = el('tr'), x = el('td', null, all.length ? 'No priced cross matches. Tick \u201cShow unresolved\u201d to list items that still need a cross, a tier or a price.' : 'No items for this facility and vendor.');
+    const tr = el('tr'), x = el('td', null, all.length ? 'No fully priced cross matches. Tick \u201cShow unresolved\u201d to list crosses that still need a cross, a tier or a price.' : 'No Facility/Vendor line has a Crossed To value for this facility and vendor.');
     x.colSpan = heads.length; x.style.cssText = 'padding:12px;color:var(--ink-3)'; tr.appendChild(x); tb.appendChild(tr);
   }
   xuNavRows = [];
-  rows.forEach(({ g, r }) => {
-    const ok = r.state === 'ok' && r.expectedTotal != null;
-    const tr = el('tr', 'xuRow' + (ok ? '' : ' nocross'));
+  rows.forEach(c => {
+    const L = c.lines, o = c.our;
+    const tr = el('tr', 'xuRow' + (c.ok ? '' : ' nocross'));
     tr.tabIndex = 0;
-    tr.title = provenanceText(r);
-    const open = () => openEditorFor(g.key, { ids:() => xuNavRows.map(x => x.id), cur:g.key, noun:'item', go:id => openEditorFor(id, null) });
-    tr.addEventListener('click', e => { if (e.target.closest('.xsGrip') || document.body.classList.contains('xsResizing')) return; open(); });
+    tr.title = 'Double-click (or Enter) to open this cross with its Our Pricing item and normalize the lines together' + (c.messages.length ? '\n\n' + c.messages.join('\n') : '');
+    const open = () => { xuHighlight = null; openCrossEditor(c.key, crossNav(c.key)); };
+    tr.addEventListener('dblclick', e => { if (e.target.closest('.xsGrip') || document.body.classList.contains('xsResizing')) return; open(); });
     tr.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); open(); } });
-    xuNavRows.push({ id:g.key, open });
-    const best = ok && r.observedEach != null && r.contractEach != null
-      ? (r.contractEach < r.observedEach - 1e-9 ? 'our' : r.observedEach < r.contractEach - 1e-9 ? 'fac' : 'same') : null;
-    td(tr, r.observedEach == null ? dash : fmtPrice(r.observedEach), 'num' + (best === 'fac' ? ' best' : ''));
-    td(tr, ok && r.contractEach != null ? fmtPrice(r.contractEach) : (r.state === 'ok' ? 'No pack' : XSTATE[r.state].short), ok ? 'num' + (best === 'our' ? ' best' : '') : 'nc');
+    xuNavRows.push({ id:c.key, open });
+    const best = c.ok && c.observedEach != null && c.contractEach != null
+      ? (c.contractEach < c.observedEach - 1e-9 ? 'our' : c.observedEach < c.contractEach - 1e-9 ? 'fac' : 'same') : null;
+    td(tr, c.observedEach == null ? '' : fmtPrice(c.observedEach), 'num' + (best === 'fac' ? ' best' : ''));
+    td(tr, c.ok ? (c.contractEach == null ? '' : fmtPrice(c.contractEach)) : lineStatus(c.bad[0]), c.ok ? 'num' + (best === 'our' ? ' best' : '') : 'nc');
     const bp = el('td');
-    if (!best) { bp.textContent = ok ? 'No price' : XSTATE[r.state].short || 'No price'; bp.className = ok ? 'dim' : 'nc'; }
+    if (!best) { bp.textContent = c.ok ? 'No price' : 'Unresolved'; bp.className = c.ok ? 'dim' : 'nc'; }
     else bp.appendChild(el('span', 'bestTag' + (best === 'fac' ? ' cur' : best === 'same' ? ' same' : ''), best === 'our' ? 'Our Pricing' : best === 'fac' ? 'Facility' : 'Same'));
     tr.appendChild(bp);
-    td(tr, r.diff == null ? dash : signedMoney(r.diff), 'num' + (r.diff > 0.005 ? ' better' : r.diff < -0.005 ? ' worse' : ''),
-       r.diff == null ? '' : (r.diff >= 0 ? 'Our Pricing saves ' : 'Our Pricing costs ') + fmtMoney(Math.abs(r.diff)) + (r.savePct != null ? ' (' + r.savePct.toFixed(1) + '%)' : ''));
-    td(tr, fmtQty(r.eaches), 'num sideStart', 'Normalized Ordered Quantity (column M) \u2014 as bought: ' + fmtQty(g.sumRawQty) + ' ' + (g.umConflict ? 'mixed UM' : gVal(g, 'orderedUM')));
-    td(tr, gVal(g, 'factorUM') || 'EA');
-    td(tr, xlBlankLbl(r.facility)); td(tr, xlBlankLbl(r.vendor));
-    td(tr, keyLabel(g.key));
-    const dsc = td(tr, gVal(g, 'description'), 'desc', gVal(g, 'description'));
-    dsc.insertBefore(itemCopyBtn({ item:keyLabel(g.key), mfg:gVal(g, 'mfgCatalog'), desc:gVal(g, 'description'), vendor:r.vendor }), dsc.firstChild);
-    td(tr, r.channel || dash);
-    td(tr, r.observedEach == null ? dash : fmtPrice(r.observedEach), 'num');
-    td(tr, fmtMoney(r.observedTotal), 'num');
-    td(tr, r.ourItemNumber || 'Not Assigned', 'sideStart' + (r.state === 'notAssigned' || r.state === 'unmatched' ? ' nc' : ''));
-    td(tr, r.group ? r.description : dash, 'desc', r.description || '');
-    td(tr, r.group ? pricingLabel(r) : dash, r.state === 'tierRequired' || r.state === 'tierInvalid' ? 'nc' : null, r.tier ? tierLabel(r.tier) : '');
-    td(tr, r.contract || dash);
-    td(tr, r.basePrice == null ? dash : fmtMoney(r.basePrice) + '/' + r.priceUnit, 'num');
-    const adj = (r.adjustments || []).filter(a => a.applied || a.status === 'unknown');
-    td(tr, adj.length ? adj.map(a => a.applied ? '+' + fmtMoney(a.perCase) + '/case' : '? ' + a.label).join('; ') : dash,
-       adj.some(a => a.status === 'unknown') ? 'worse' : null, (r.adjustments || []).map(a => a.label + ': ' + a.reason).join('\n'));
-    td(tr, r.override == null ? dash : fmtMoney(r.override), 'num' + (r.override != null ? ' ovrcell' : ''), r.overrideReason || '');
-    td(tr, r.state === 'ok' ? fmtMoney(r.effectivePrice) + '/' + r.priceUnit : dash, 'num');
-    td(tr, r.epc ? fmtQty(r.epc) : dash, 'num', r.epcSource === 'vendor' ? 'From the Facility/Vendor pack size \u2014 Our Pricing has no packaging' : '');
-    td(tr, r.contractEach == null ? dash : fmtPrice(r.contractEach), 'num');
-    td(tr, r.expectedTotal == null ? dash : fmtMoney(r.expectedTotal), 'num');
-    td(tr, r.state === 'ok' ? (r.expectedTotal == null ? 'No pack size' : 'Resolved') : XSTATE[r.state].label, r.state === 'ok' && r.expectedTotal != null ? 'dim' : 'nc', r.message || '');
+    td(tr, c.diff == null ? '' : signedMoney(c.diff), 'num' + (c.diff > 0.005 ? ' better' : c.diff < -0.005 ? ' worse' : ''),
+       c.diff == null ? '' : (c.diff >= 0 ? 'Our Pricing saves ' : 'Our Pricing costs ') + fmtMoney(Math.abs(c.diff)) + (c.savePct != null ? ' (' + c.savePct.toFixed(1) + '%)' : ''));
+    td(tr, String(L.length), 'num sideStart');
+    td(tr, fmtQty(Math.round(c.eaches * 1e4) / 1e4), 'num', 'Normalized Ordered Quantity (column M), summed over every line with this Crossed To');
+    td(tr, ocJoin(L.map(r => String(r.d.eff.factorUM || '').trim().toUpperCase() || 'EA')));
+    td(tr, ocJoin(L.map(r => xlBlankLbl(r.facility))), null, ocUniq(L.map(r => xlBlankLbl(r.facility))).join('\n'));
+    td(tr, ocJoin(L.map(r => xlBlankLbl(r.vendor))), null, ocUniq(L.map(r => xlBlankLbl(r.vendor))).join('\n'));
+    td(tr, ocJoin(L.map(r => String(r.row.itemNumber || '').trim())), null, ocUniq(L.map(r => String(r.row.itemNumber || '').trim())).join('\n'));
+    const descs = ocUniq(L.map(r => String(r.d.eff.description || '').trim()));
+    const dsc = td(tr, descs.length ? descs[0] + (descs.length > 1 ? ' (+' + (descs.length - 1) + ')' : '') : '', 'desc', descs.join('\n'));
+    const first = L[0];
+    dsc.insertBefore(itemCopyBtn({ item:first.row.itemNumber, mfg:first.d.eff.mfgCatalog, desc:first.d.eff.description, vendor:first.vendor }), dsc.firstChild);
+    td(tr, ocJoin(L.map(r => r.channel)));
+    td(tr, c.observedEach == null ? '' : fmtPrice(c.observedEach), 'num');
+    td(tr, fmtMoney(c.net), 'num');
+    td(tr, c.label, 'sideStart' + (!o ? ' nc' : ''));
+    td(tr, o ? o.description : 'Not in Our Pricing', 'desc' + (o ? '' : ' nc'), o ? o.description : '');
+    td(tr, ocJoin(L.map(r => r.group ? pricingLabel(r) : ''), 4), L.some(r => r.state === 'tierRequired' || r.state === 'tierInvalid') ? 'nc' : null,
+       ocUniq(L.map(r => r.tier ? tierLabel(r.tier) : '')).join('\n'));
+    td(tr, ocJoin(L.map(r => r.contract || '')));
+    td(tr, ocJoin(L.map(r => r.basePrice == null ? '' : fmtMoney(r.basePrice) + '/' + r.priceUnit)), 'num');
+    const adj = [];
+    L.forEach(r => (r.adjustments || []).forEach(a => { if (a.applied) adj.push('+' + fmtMoney(a.perCase) + '/case'); else if (a.status === 'unknown') adj.push('? ' + a.label); }));
+    td(tr, ocJoin(adj), adj.some(a => a.charAt(0) === '?') ? 'worse' : null,
+       ocUniq(L.flatMap(r => (r.adjustments || []).map(a => a.label + ': ' + a.reason))).join('\n'));
+    const ovs = ocUniq(L.map(r => r.override == null ? '' : fmtMoney(r.override)));
+    td(tr, ovs.join(', '), 'num' + (ovs.length ? ' ovrcell' : ''), ocUniq(L.map(r => r.override != null ? r.overrideReason || '' : '')).join('\n'));
+    td(tr, ocJoin(L.map(r => r.state === 'ok' ? fmtMoney(r.effectivePrice) + '/' + r.priceUnit : '')), 'num');
+    td(tr, ocJoin(L.map(r => r.epc ? fmtQty(r.epc) : '')), 'num', L.some(r => r.epcSource === 'vendor') ? 'Some lines use their own pack size \u2014 Our Pricing has no packaging' : '');
+    td(tr, c.contractEach == null ? '' : fmtPrice(c.contractEach), 'num', 'Expected Net Sales \u00f7 normalized eaches');
+    td(tr, c.expected == null ? '' : fmtMoney(c.expected), 'num');
+    td(tr, c.status, c.ok ? 'dim' : 'nc', c.messages.join('\n'));
     tb.appendChild(tr);
   });
-  const shown = rows.filter(x => x.r.state === 'ok' && x.r.expectedTotal != null);
-  const sObs = shown.reduce((s, x) => s + (x.r.observedTotal || 0), 0), sExp = shown.reduce((s, x) => s + x.r.expectedTotal, 0);
+  const shown = rows.filter(c => c.ok);
+  const sObs = shown.reduce((s, c) => s + c.net, 0), sExp = shown.reduce((s, c) => s + c.expected, 0);
   const tt = el('tr', 'xuTot');
-  td(tt, ''); td(tt, ''); td(tt, T.ourWin + ' Our \u00b7 ' + T.facWin + ' Fac'); td(tt, signedMoney(sObs - sExp), 'num');
-  td(tt, 'Total', 'sideStart'); for (let i = 0; i < 7; i++) td(tt, '');
-  td(tt, fmtMoney(sObs), 'num');
-  td(tt, shown.length + ' priced', 'sideStart'); for (let i = 0; i < 9; i++) td(tt, '');
-  td(tt, fmtMoney(sExp), 'num' + (sExp < sObs - 0.005 ? ' better' : sExp > sObs + 0.005 ? ' worse' : '')); td(tt, '');
+  const tdt = (txt, cls) => { const x = el('td', cls || null, txt == null ? '' : txt); tt.appendChild(x); return x; };
+  tdt(''); tdt(''); tdt(T.ourWin + ' Our \u00b7 ' + T.facWin + ' Fac'); tdt(signedMoney(sObs - sExp), 'num');
+  tdt('Total', 'sideStart'); for (let i = 0; i < 8; i++) tdt('');
+  tdt(fmtMoney(sObs), 'num');
+  tdt(shown.length + ' priced', 'sideStart'); for (let i = 0; i < 9; i++) tdt('');
+  tdt(fmtMoney(sExp), 'num' + (sExp < sObs - 0.005 ? ' better' : sExp > sObs + 0.005 ? ' worse' : '')); tdt('');
   tb.appendChild(tt);
   t.appendChild(tb);
   pane.appendChild(t);
   makeColsResizable(t, [...h2.children], 'ocColWidths');
   pane.appendChild(el('div', 'xuFoot',
-    'Each Facility/Vendor item is priced at the Our Pricing item named in Crossed To. Tiered items use the Tier to Apply on the Facility/Vendor record \u2014 the tier price itself lives only on Our Pricing. ' +
-    'Order-level rules from the pricing program (e.g. a direct-order surcharge under a minimum case count) are added after the tier price, per order (same facility, vendor, channel and Order Ref). ' +
-    'Contract Each = effective case price \u00f7 eaches per case; Expected Net Sales = Contract Each \u00d7 normalized Ordered Quantity. Difference = observed Total Net Sales \u2212 expected (positive means Our Pricing is lower). ' +
-    'Nothing is priced silently: a missing cross, missing tier, invalid tier or missing tier price is shown as such and left out of the totals.'));
+    'Crossing uses only the Crossed To column: every Facility/Vendor line with the same Crossed To value is one cross, whatever the Facility/Vendor sheet is grouped by. ' +
+    'Each line is priced at the Our Pricing item named in Crossed To and at its own Tier to Apply; order-level rules are added per order (same facility, vendor, channel and Order Ref). ' +
+    'Double-click a row to open the cross: the Our Pricing item and all its Facility/Vendor lines together, where Ordered QTY / UM and the Our Pricing pack size can be normalized side by side. ' +
+    'Contract Each = expected net sales \u00f7 normalized eaches. Difference = observed Total Net Sales \u2212 expected (positive means Our Pricing is lower). ' +
+    'A cross with any unresolved line is left out of the totals and listed under \u201cShow unresolved\u201d.'));
   pane.scrollTop = keep;
 }
 function ocCopyTable(){
   if (!ocLast) { toast('Nothing to copy yet.', true); return; }
-  const head = ['Observed Each', 'Contract Each', 'Difference', 'Order Qty (eaches)', 'Facility', 'Vendor', 'Item #', 'Description', 'Channel', 'Total Net Sales',
-    'Crossed To', 'Our Description', 'Program', 'Tier to Apply', 'Contract', 'Base Price', 'Adjustments', 'Override', 'Effective Price', 'Price Unit', 'Eaches/Case', 'Expected Net Sales', 'Status'];
+  const head = ['Crossed To', 'Our Description', 'Lines', 'Order Qty (eaches)', 'Facilities', 'Vendors', 'Item #s', 'Descriptions', 'Channels', 'Total Net Sales', 'Observed Each',
+    'Program \u00b7 Tier', 'Contracts', 'Base Prices', 'Overrides', 'Effective Prices', 'Eaches/Case', 'Contract Each', 'Expected Net Sales', 'Difference', 'Status'];
   const n = v => v == null ? '' : String(Math.round(v * 10000) / 10000);
+  const u = arr => ocUniq(arr).join('; ');
   const out = [head.join('\t')];
-  ocLast.forEach(({ g, r }) => {
-    out.push([n(r.observedEach), n(r.contractEach), n(r.diff), n(r.eaches), r.facility, r.vendor, keyLabel(g.key), gVal(g, 'description'), r.channel,
-      n(r.observedTotal), r.ourItemNumber, r.description || '', r.program ? r.program.name : r.group ? 'Standard' : '', r.tier ? r.tier.name : r.tierInput,
-      r.contract || '', n(r.basePrice), (r.adjustments || []).filter(a => a.applied).map(a => a.label + ' +' + a.perCase + '/case').join('; '),
-      n(r.override), n(r.state === 'ok' ? r.effectivePrice : null), r.priceUnit || '', n(r.epc), n(r.expectedTotal), XSTATE[r.state].label]
+  ocLast.forEach(c => {
+    const L = c.lines;
+    out.push([c.label, c.our ? c.our.description : 'Not in Our Pricing', L.length, n(c.eaches), u(L.map(r => xlBlankLbl(r.facility))), u(L.map(r => xlBlankLbl(r.vendor))),
+      u(L.map(r => String(r.row.itemNumber || '').trim())), u(L.map(r => String(r.d.eff.description || '').trim())), u(L.map(r => r.channel)),
+      n(c.net), n(c.observedEach), u(L.map(r => r.group ? pricingLabel(r) : '')), u(L.map(r => r.contract || '')),
+      u(L.map(r => r.basePrice == null ? '' : r.basePrice + '/' + r.priceUnit)), u(L.map(r => r.override == null ? '' : String(r.override))),
+      u(L.map(r => r.state === 'ok' ? r.effectivePrice + '/' + r.priceUnit : '')), u(L.map(r => r.epc ? String(r.epc) : '')),
+      n(c.contractEach), n(c.expected), n(c.diff), c.status]
       .map(v => String(v == null ? '' : v).replace(/[\t\r\n]+/g, ' ')).join('\t'));
   });
-  copyText(out.join('\n'), 'Copied ' + ocLast.length + ' items');
+  copyText(out.join('\n'), 'Copied ' + ocLast.length + ' crosses');
 }
 
 /* ============================================================ AUDIT LOG */
