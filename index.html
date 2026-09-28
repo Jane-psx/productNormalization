@@ -765,6 +765,9 @@ table.xuTable tr.xuRow{cursor:pointer}
 table.xuTable tr.xuRow:hover > td:not(.best):not(.nc){background:#eef4fc}
 table.xuTable tr.xuRow.nocross:hover > td:not(.nc){background:#fbe6e4}
 table.xuTable tr.xuRow:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+table.xuTable tr.xuRow.gapFlag > td:not(.best){background:#fdecea}
+table.xuTable tr.xuRow.gapFlag:hover > td:not(.best){background:#fbdcd8}
+table.xuTable td.gapCell{color:var(--err);font-weight:700}
 table.xuTable tr.xuRow.picked > td{box-shadow:inset 0 2px 0 #e0a52a, inset 0 -2px 0 #e0a52a}
 table.xuTable tr.xuRow.picked > td:first-child{box-shadow:inset 4px 0 0 #e0a52a, inset 0 2px 0 #e0a52a, inset 0 -2px 0 #e0a52a}
 table.xuTable tr.xuRow.picked > td:not(.best):not(.nc){background:#fff3c4 !important}
@@ -6672,7 +6675,7 @@ const VIEW_UI_KEYS = ['tab','mode','search','colFilters','freeze','issuesOnly','
   'modeB','searchB','sortKeyB','sortDirB','freezeB','issuesOnlyB','aggSearchB','aggAttnB','aggSelectedOnlyB','lastSubA','lastSubB',
   'lineItemCols','lineItemColWidths','lineItemView','lineItemCombineStat',
   'hideNoCross','xuShowNoCross','xsView','xsSearch','xuBase','xuSides','xuColWidths','xsRelColWidths',
-  'xsMode','ourSearch','ourIssuesOnly','ourMode','ourColWidths','ourColFilters','ocFac','ocVen','ocColWidths'];
+  'xsMode','xsGapX','xsGapExcl','xsGapOnly','ourSearch','ourIssuesOnly','ourMode','ourColWidths','ourColFilters','ocFac','ocVen','ocColWidths'];
 const VIEW_KEY_SET = new Set(VIEW_UI_KEYS);
 const clone = o => JSON.parse(JSON.stringify(o === undefined ? null : o));
 const pickView = ui => { const o = {}; VIEW_UI_KEYS.forEach(k => { if (ui[k] !== undefined) o[k] = ui[k]; }); return o; };
@@ -10012,10 +10015,18 @@ function crossRowPricing(){
     if (r.override != null) { r.effectivePrice = on; r.overrideReason = ov.contractPriceReason || ''; }
     r.contractEach = r.epc ? r.effectivePrice / r.epc : null;
     r.expectedTotal = r.contractEach == null || r.eaches == null ? null : r.contractEach * r.eaches;
+    r.gap = r.expectedTotal == null ? null : gapOf(r.observedEach, r.contractEach);
   });
   return out;
 }
 const lineOk = r => r.state === 'ok' && r.expectedTotal != null;
+/* Large price gap: observed each vs contract each differ by at least this many times \u2014
+   almost always a packaging / Factor QTY / Ordered UM mismatch rather than a real price. */
+function xsGapX(){ const n = toNum(state.ui.xsGapX); return n && n > 1 ? n : 3; }
+const xsGapExcl = () => state.ui.xsGapExcl !== false;
+const gapOf = (a, b) => a > 0 && b > 0 ? Math.max(a, b) / Math.min(a, b) : null;
+const fmtGap = g => (g >= 10 ? Math.round(g).toLocaleString() : String(Math.round(g * 10) / 10)) + '\u00d7';
+const GAP_HINT = 'The observed each price and the contract each price are far apart. Usually the pack size is read differently on the two sides \u2014 check Packaging Details, Factor QTY and Ordered UM on the Facility/Vendor lines and on the Our Pricing item (double-click to open the cross).';
 function lineStatus(r){
   if (lineOk(r)) return 'Priced';
   if (r.state === 'ok') return r.eaches == null ? 'No quantity' : 'No pack size';
@@ -10050,6 +10061,8 @@ function buildCrosses(){
     c.contractEach = c.ok && c.eaches > 0 ? c.expected / c.eaches : null;
     c.diff = c.ok ? c.net - c.expected : null;
     c.savePct = c.diff != null && c.net > 0 ? c.diff / c.net * 100 : null;
+    c.gap = c.ok ? gapOf(c.observedEach, c.contractEach) : null;
+    c.flag = c.gap != null && c.gap >= xsGapX();
     c.our = L.find(r => r.group) || null;
     c.status = c.ok ? 'Resolved' : lineStatus(c.bad[0]) + (L.length > 1 ? ' (' + c.bad.length + ' of ' + L.length + ' lines)' : '');
     c.messages = ocUniq(c.bad.map(lineMessage));
@@ -10209,6 +10222,9 @@ function buildCrossPanel(key){
   put('Contract each', exp != null && eaches > 0 ? fmtPrice(exp / eaches) : dash);
   put('Difference', exp == null ? dash : signedMoney(net - exp) + (net - exp >= 0 ? ' (Our Pricing lower)' : ' (Our Pricing higher)'));
   p.appendChild(sum);
+  const bg = exp != null && eaches > 0 ? gapOf(net / eaches, exp / eaches) : null;
+  if (bg != null && bg >= xsGapX()) p.appendChild(Object.assign(el('div', 'msg err'), { innerHTML:'<b>\u26a0 Price gap ' + esc(fmtGap(bg)) +
+    '.</b> Observed ' + esc(fmtPrice(net / eaches)) + ' each vs contract ' + esc(fmtPrice(exp / eaches)) + ' each. ' + esc(GAP_HINT.replace(/ \(double-click.*\)\.$/, '.')) }));
   if (bad.length) {
     const msgs = new Map();
     bad.forEach(r => { const m = lineMessage(r); msgs.set(m, (msgs.get(m) || 0) + 1); });
@@ -10235,7 +10251,9 @@ function buildCrossPanel(key){
       { key:'xc_diff', label:'Difference', w:96, numeric:true, td:d => { const r = R(d);
           const v = r.expectedTotal == null ? null : r.observedTotal - r.expectedTotal;
           return cell(v == null ? '' : signedMoney(v), 'n' + (v > 0.005 ? ' xcGood' : v < -0.005 ? ' xcBad' : '')); } },
-      { key:'xc_status', label:'Status', w:140, td:d => { const r = R(d); return cell(lineStatus(r), lineOk(r) ? null : 'xcBad', lineMessage(r) || provenanceText(r)); } }
+      { key:'xc_status', label:'Status', w:140, td:d => { const r = R(d);
+          if (lineOk(r) && r.gap != null && r.gap >= xsGapX()) return cell('\u26a0 ' + fmtGap(r.gap) + ' price gap', 'xcBad', GAP_HINT);
+          return cell(lineStatus(r), lineOk(r) ? null : 'xcBad', lineMessage(r) || provenanceText(r)); } }
     ]
   };
   const ss = el('div', 'block');
@@ -10291,13 +10309,28 @@ function renderOurCompare(pane, cards){
   const l2 = el('div', 'xuLine'); l2.style.gridTemplateColumns = '118px 346px'; const lb2 = el('div', 'lbl', 'Our Pricing'); lb2.appendChild(el('small', null, 'crossed by Crossed To only')); l2.appendChild(lb2);
   l2.appendChild(el('div', 'xuMsg ok', 'One row per Crossed To value, whatever the sheet is grouped by. Each line is priced at its own Tier to Apply.'));
   box.appendChild(l2);
+  const l3 = el('div', 'xuMatch');
+  l3.appendChild(el('span', null, 'Flag a price gap of'));
+  const gx = el('input'); gx.type = 'number'; gx.min = '1.5'; gx.step = '0.5'; gx.value = String(xsGapX());
+  gx.style.cssText = 'width:62px;height:24px;border:1px solid var(--line);border-radius:3px;padding:0 5px';
+  gx.title = 'A cross is flagged when its observed each price and contract each price differ by at least this many times';
+  gx.addEventListener('change', () => { state.ui.xsGapX = gx.value; saveViewPrefs(); renderCrosses(); });
+  gx.addEventListener('keydown', e => e.stopPropagation());
+  l3.appendChild(gx); l3.appendChild(el('span', null, '\u00d7 or more'));
+  const mkChk = (label, on, set, title) => { const l = el('label', 'chk'); const b = el('input'); b.type = 'checkbox'; b.checked = on;
+    b.addEventListener('change', () => { set(b.checked); saveViewPrefs(); renderCrosses(); }); l.appendChild(b); l.appendChild(document.createTextNode(' ' + label)); if (title) l.title = title; return l; };
+  l3.appendChild(mkChk('Leave flagged out of totals', xsGapExcl(), v => state.ui.xsGapExcl = v, 'Flagged crosses are usually a unit mismatch; leaving them out keeps the cards and totals honest until they are fixed'));
+  l3.appendChild(mkChk('Flagged only', !!state.ui.xsGapOnly, v => state.ui.xsGapOnly = v));
+  box.appendChild(l3);
   $('#xsSetup').appendChild(box);
 
   const X = buildCrosses(), all = X.list;
-  const T = { obs:X.notCrossed.net, obsRes:0, exp:0, res:0, attn:0, ourWin:0, facWin:0, same:0 };
+  const T = { obs:X.notCrossed.net, obsRes:0, exp:0, res:0, attn:0, ourWin:0, facWin:0, same:0, flag:0, flagNet:0, flagExp:0 };
+  const excl = xsGapExcl();
   all.forEach(c => {
     T.obs += c.net;
     if (!c.ok) { T.attn++; return; }
+    if (c.flag) { T.flag++; T.flagNet += c.net; T.flagExp += c.expected; if (excl) return; }
     T.res++; T.obsRes += c.net; T.exp += c.expected;
     if (c.contractEach != null && c.observedEach != null) {
       if (c.contractEach < c.observedEach - 1e-9) T.ourWin++; else if (c.observedEach < c.contractEach - 1e-9) T.facWin++; else T.same++;
@@ -10315,12 +10348,17 @@ function renderOurCompare(pane, cards){
   cards.appendChild(card(pct === null ? '\u2014' : (pct < 0 ? '\u2212' : '') + Math.abs(pct).toFixed(1) + '%', 'Percentage in saving',
     pct === null ? '' : pct >= 0 ? fmtMoney(dd) + ' saved' : fmtMoney(-dd) + ' more', pct === null ? '' : pct > 0.05 ? 'save' : pct < -0.05 ? 'cost' : ''));
   cards.appendChild(card(String(T.attn), 'Needs attention', 'Crosses with a line that is unmatched, missing a tier or contract, or has no price / pack size', T.attn ? 'warn' : ''));
+  const fc = card(String(T.flag), 'Large price gaps', !T.flag ? 'No cross is ' + fmtGap(xsGapX()) + ' or more apart' :
+    fmtMoney(T.flagNet) + ' observed vs ' + fmtMoney(T.flagExp) + ' expected \u00b7 ' + (excl ? 'left out of totals' : 'included in totals'), T.flag ? 'lose' : '');
+  if (T.flag) { fc.style.cursor = 'pointer'; fc.title = 'Click to list only the flagged crosses'; fc.addEventListener('click', () => { state.ui.xsGapOnly = true; saveViewPrefs(); renderCrosses(); }); }
+  cards.appendChild(fc);
 
   const showNC = !!state.ui.xuShowNoCross;
   $('#chkXuNoCross').checked = showNC;
   $('#cntXuNoCross').textContent = T.attn ? String(T.attn) : '';
   const q = String(state.ui.xsSearch || '').trim().toLowerCase();
   let rows = all.filter(c => showNC || c.ok);
+  if (state.ui.xsGapOnly) rows = rows.filter(c => c.flag);
   if (q) rows = rows.filter(c => c.search.indexOf(q) >= 0);
   rows.sort((a, b) => (b.ok - a.ok) || b.net - a.net);
   ocLast = rows;
@@ -10344,7 +10382,7 @@ function renderOurCompare(pane, cards){
   xuNavRows = [];
   rows.forEach(c => {
     const L = c.lines, o = c.our;
-    const tr = el('tr', 'xuRow' + (c.ok ? '' : ' nocross'));
+    const tr = el('tr', 'xuRow' + (c.ok ? '' : ' nocross') + (c.flag ? ' gapFlag' : ''));
     tr.tabIndex = 0;
     tr.title = 'Double-click (or Enter) to open this cross with its Our Pricing item and normalize the lines together' + (c.messages.length ? '\n\n' + c.messages.join('\n') : '');
     tr.dataset.pid = c.key;
@@ -10362,7 +10400,8 @@ function renderOurCompare(pane, cards){
     if (!best) { bp.textContent = c.ok ? 'No price' : 'Unresolved'; bp.className = c.ok ? 'dim' : 'nc'; }
     else bp.appendChild(el('span', 'bestTag' + (best === 'fac' ? ' cur' : best === 'same' ? ' same' : ''), best === 'our' ? 'Our Pricing' : best === 'fac' ? 'Facility' : 'Same'));
     tr.appendChild(bp);
-    td(tr, c.diff == null ? '' : signedMoney(c.diff), 'num' + (c.diff > 0.005 ? ' better' : c.diff < -0.005 ? ' worse' : ''),
+    if (c.flag) td(tr, '\u26a0 ' + signedMoney(c.diff), 'num gapCell', 'Price gap ' + fmtGap(c.gap) + ' \u2014 ' + GAP_HINT);
+    else td(tr, c.diff == null ? '' : signedMoney(c.diff), 'num' + (c.diff > 0.005 ? ' better' : c.diff < -0.005 ? ' worse' : ''),
        c.diff == null ? '' : (c.diff >= 0 ? 'Our Pricing saves ' : 'Our Pricing costs ') + fmtMoney(Math.abs(c.diff)) + (c.savePct != null ? ' (' + c.savePct.toFixed(1) + '%)' : ''));
     td(tr, String(L.length), 'num sideStart');
     td(tr, fmtQty(Math.round(c.eaches * 1e4) / 1e4), 'num', 'Normalized Ordered Quantity (column M), summed over every line with this Crossed To');
@@ -10393,10 +10432,11 @@ function renderOurCompare(pane, cards){
     td(tr, ocJoin(L.map(r => r.epc ? fmtQty(r.epc) : '')), 'num', L.some(r => r.epcSource === 'vendor') ? 'Some lines use their own pack size \u2014 Our Pricing has no packaging' : '');
     td(tr, c.contractEach == null ? '' : fmtPrice(c.contractEach), 'num', 'Expected Net Sales \u00f7 normalized eaches');
     td(tr, c.expected == null ? '' : fmtMoney(c.expected), 'num');
-    td(tr, c.status, c.ok ? 'dim' : 'nc', c.messages.join('\n'));
+    if (c.flag) td(tr, '\u26a0 Check \u2014 ' + fmtGap(c.gap) + ' gap', 'gapCell', GAP_HINT);
+    else td(tr, c.status, c.ok ? 'dim' : 'nc', c.messages.join('\n'));
     tb.appendChild(tr);
   });
-  const shown = rows.filter(c => c.ok);
+  const shown = rows.filter(c => c.ok && !(c.flag && excl));
   const sObs = shown.reduce((s, c) => s + c.net, 0), sExp = shown.reduce((s, c) => s + c.expected, 0);
   const tt = el('tr', 'xuTot');
   const tdt = (txt, cls) => { const x = el('td', cls || null, txt == null ? '' : txt); tt.appendChild(x); return x; };
