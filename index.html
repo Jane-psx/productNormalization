@@ -765,6 +765,11 @@ table.xuTable tr.xuRow{cursor:pointer}
 table.xuTable tr.xuRow:hover > td:not(.best):not(.nc){background:#eef4fc}
 table.xuTable tr.xuRow.nocross:hover > td:not(.nc){background:#fbe6e4}
 table.xuTable tr.xuRow:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+table.xuTable tr.xuRow.picked > td{box-shadow:inset 0 2px 0 #e0a52a, inset 0 -2px 0 #e0a52a}
+table.xuTable tr.xuRow.picked > td:first-child{box-shadow:inset 4px 0 0 #e0a52a, inset 0 2px 0 #e0a52a, inset 0 -2px 0 #e0a52a}
+table.xuTable tr.xuRow.picked > td:not(.best):not(.nc){background:#fff3c4 !important}
+.srcTable tr.actRow > td{background:#fff8dc}
+.srcTable tr.actRow > td.idxCell{background:#ffe19a;color:var(--ink);font-weight:600}
 table.xuTable th.xuCmpH{background:#e9eef5}
 table.xuTable th.xuAH{background:var(--zone-vendor-h)}
 table.xuTable th.xuBH{background:#ebe3f7}
@@ -4640,6 +4645,7 @@ function srcEditTable(g){
       td.classList.toggle('cL', inCp && c === cp.c1);
       td.classList.toggle('cR', inCp && c === cp.c2);
     }));
+    cellEls.forEach((rowEls, r) => { const tr = rowEls[0] && rowEls[0].parentNode; if (tr) tr.classList.toggle('actRow', !!(rg && r >= rg.r1 && r <= rg.r2)); });
     if (!rg) stat.textContent = '';
     else {
       const n = (rg.r2 - rg.r1 + 1) * (rg.c2 - rg.c1 + 1);
@@ -4843,6 +4849,13 @@ function srcEditTable(g){
     idx.title = 'Click to select this row\u2019s Ordered QTY and UM';
     idx.addEventListener('mousedown', e => {
       if (e.button !== 0) return; e.preventDefault();
+      if (openEdit) openEdit(true, null);
+      select(r, 0, r, NC - 1); wrap.focus({ preventScroll:true });
+    });
+    tr.addEventListener('mousedown', e => {
+      if (e.button !== 0) return;
+      const cl = e.target.closest('td');
+      if (!cl || cl.classList.contains('gcell') || cl.classList.contains('idxCell') || e.target.closest('button,input,a')) return;
       if (openEdit) openEdit(true, null);
       select(r, 0, r, NC - 1); wrap.focus({ preventScroll:true });
     });
@@ -6596,6 +6609,8 @@ function hideModal(){
   overrideModalKey = null;
   crossModalKey = null;
   xuHighlight = null;
+  const pk = state.ui.tab === 'crosses' && document.querySelector('#paneCrosses tr.xuRow.picked');
+  if (pk && pk.scrollIntoView) pk.scrollIntoView({ block:'nearest' });
 }
 $('#scrim').addEventListener('mousedown', e => { if (e.target === $('#scrim')) hideModal(); });
 
@@ -7875,8 +7890,12 @@ function renderUsageCompare(pane, cards){
       if (e.target.closest('.xsGrip') || document.body.classList.contains('xsResizing')) return;
       openCross();
     });
+    tr.dataset.pid = a.key;
+    if (a.key === xsPicked) tr.classList.add('picked');
+    tr.addEventListener('click', e => { if (!e.target.closest('.xsGrip, button')) pickCrossRow(a.key); });
     tr.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); openCross(); } });
     const openCross = () => {
+      pickCrossRow(a.key);
       xuHighlight = {
         A:{ label:aL, items:a.item, key:keyA, ids:new Set(a.rows.map(x => x.id)) },
         B:r.cross ? { label:bL, items:[...new Set(r.match.map(m => m.item))].join(', '), key:keyB,
@@ -8076,6 +8095,7 @@ const OUR_TEXT_FIELDS = [
   { k:'packagingDetails', name:'Packaging Details',w:140 },
   { k:'factorQty',        name:'Factor QTY',       w:70, num:true },
   { k:'priceUnit',        name:'Price Unit',       w:70 },
+  { k:'orderedUM',        name:'Ordered UM',       w:80 },
   { k:'status',           name:'Status',           w:80 },
   { k:'program',          name:'Pricing Program',  w:170 },
   { k:'contract',         name:'Contract',         w:100 },
@@ -8996,7 +9016,7 @@ function ourStatusList(){
 /** Program typed by name, short name or id -> stored as the program id; blank = standard. */
 function normalizeOurInput(k, v){
   v = String(v == null ? '' : v).trim();
-  if (k === 'priceUnit') return v.toUpperCase();
+  if (k === 'priceUnit' || k === 'orderedUM') return v.toUpperCase();
   if (k === 'program') { const p = programById(v); return p ? p.id : v; }
   return v;
 }
@@ -10047,7 +10067,43 @@ function crossLinesFor(key, rp){
 
 /* ------------------------------------------------ cross editor (double-click) */
 let crossModalKey = null;
-function crossNav(id){ return { ids:() => xuNavRows.map(x => x.id), cur:id, noun:'cross', go:id2 => { xuHighlight = null; openCrossEditor(id2, crossNav(id2)); } }; }
+let xsPicked = null;   // the Cross Analysis row last picked (clicked / opened), highlighted
+function markPicked(){
+  document.querySelectorAll('#paneCrosses tr.xuRow').forEach(t => t.classList.toggle('picked', t.dataset.pid === xsPicked));
+}
+function pickCrossRow(id){ xsPicked = id; markPicked(); }
+/** Eaches in one `um` of a packaging string (same reading as Ordered Quantity, column M). Null when the UM is not in it. */
+function eachesPerUM(vals, um){
+  um = String(um || '').trim().toUpperCase();
+  if (!um || !vals) return null;
+  const v = { packagingDetails:vals.packagingDetails, factorQty:vals.factorQty, orderedQty:'1', orderedUM:um };
+  const res = calcOrderedQty(v, calcInnerPack(v.packagingDetails, v.factorQty));
+  if (!res || res.err || !okNum(res.v) || res.v <= 0) return null;
+  if (res.path === 'each' && !/^(EA|EACH|EACHES)$/.test(um)) return null;
+  return res.v;
+}
+const ourUMOf = rec => String(rec && rec.orderedUM || '').trim().toUpperCase() || 'CS';
+/** Re-express every line in `um`, keeping its eaches (and so its Each Price) unchanged. One undo step. */
+function convertLinesToUM(lines, um){
+  const plan = [], skipped = [];
+  lines.forEach(r => {
+    const per = eachesPerUM(r.d.eff, um);
+    if (r.eaches == null || !per) { skipped.push(r.row.itemNumber || r.row.id); return; }
+    const q = String(Math.round(r.eaches / per * 1e6) / 1e6);
+    if (String(r.row.orderedQty) === q && String(r.row.orderedUM || '').trim().toUpperCase() === um) return;
+    plan.push({ row:r.row, q });
+  });
+  if (plan.length) {
+    pushUndo();
+    plan.forEach(x => { captureOrig(x.row); x.row.orderedQty = x.q; x.row.orderedUM = um; settleOrig(x.row); });
+    logEvent('Ordered UM normalized', plan.length + ' Facility/Vendor line' + (plan.length === 1 ? '' : 's'), 'Converted to ' + um + ' (eaches unchanged): ' + plan.map(x => x.row.itemNumber || x.row.id).join(', '));
+    refresh();
+  }
+  toast(plan.length ? plan.length + ' line' + (plan.length === 1 ? '' : 's') + ' converted to ' + um + ', eaches unchanged.' +
+          (skipped.length ? ' ' + skipped.length + ' skipped \u2014 ' + um + ' is not in their Packaging Details: ' + skipped.join(', ') : '')
+        : skipped.length ? 'Nothing converted \u2014 ' + um + ' is not in the Packaging Details of: ' + skipped.join(', ') : 'Every line is already in ' + um + '.', !!skipped.length);
+}
+function crossNav(id){ return { ids:() => xuNavRows.map(x => x.id), cur:id, noun:'cross', go:id2 => { pickCrossRow(id2); xuHighlight = null; openCrossEditor(id2, crossNav(id2)); } }; }
 function openCrossEditor(value, nav){
   const key = normIdent(value); if (!key) return;
   modalNavCur = nav || null;
@@ -10098,7 +10154,7 @@ function buildCrossPanel(key){
   } else {
     const t = el('table', 'aggPreviewTable');
     const hr = el('tr');
-    ['Item #', 'Product Code', 'Description', 'Packaging Details', 'Factor QTY', 'Eaches / Case', 'Program', 'Contract', 'Prices (case \u00b7 each)']
+    ['Item #', 'Product Code', 'Description', 'Packaging Details', 'Factor QTY', 'Ordered UM', 'Eaches / Ordered UM', 'Eaches / Case', 'Program', 'Contract', 'Prices (case \u00b7 each)']
       .forEach(h => hr.appendChild(el('th', null, h)));
     t.appendChild(hr);
     og.rows.forEach(rec => {
@@ -10106,12 +10162,14 @@ function buildCrossPanel(key){
       tr.appendChild(el('td', null, rec.itemNumber || dash));
       tr.appendChild(el('td', null, rec.productCode || dash));
       tr.appendChild(el('td', null, rec.description || dash));
-      ['packagingDetails', 'factorQty'].forEach(k => {
+      ['packagingDetails', 'factorQty', 'orderedUM'].forEach(k => {
         const td = el('td'), inp = el('input', 'aggIn');
         const orig = rec[k] == null ? '' : String(rec[k]);
-        inp.value = orig; inp.placeholder = k === 'factorQty' ? '1' : 'e.g. 24/CS';
-        if (k === 'factorQty') inp.style.width = '60px';
-        inp.addEventListener('change', () => { if (setOurField(rec.id, k, inp.value)) refresh(); });
+        inp.value = orig; inp.placeholder = k === 'factorQty' ? '1' : k === 'orderedUM' ? 'CS' : 'e.g. 24/CS';
+        if (k !== 'packagingDetails') inp.style.width = '64px';
+        if (k === 'orderedUM') { inp.setAttribute('list', 'umList'); inp.style.textTransform = 'uppercase';
+          inp.title = 'The unit the crossed Facility/Vendor lines are normalized to for this item (blank = CS). Does not change any price.'; }
+        inp.addEventListener('change', () => { if (setOurField(rec.id, k, normalizeOurInput(k, inp.value))) refresh(); });
         inp.addEventListener('keydown', e => {
           e.stopPropagation();
           if (e.key === 'Enter') { e.preventDefault(); inp.blur(); }
@@ -10121,6 +10179,8 @@ function buildCrossPanel(key){
       });
       const ip = calcInnerPack(rec.packagingDetails, rec.factorQty);
       const epc = okNum(ip.v) && ip.v > 0 ? ip.v : null;
+      const perU = eachesPerUM(rec, ourUMOf(rec));
+      tr.appendChild(el('td', perU ? null : 'xcBad', perU ? fmtQty(perU) + ' / ' + ourUMOf(rec) : 'not in packaging'));
       tr.appendChild(el('td', null, epc ? fmtQty(epc) : 'No pack'));
       const pg = programById(rec.program), tiered = !!(pg && (pg.tiers || []).length);
       tr.appendChild(el('td', null, pg ? progLabel(pg) : 'Standard'));
@@ -10157,6 +10217,7 @@ function buildCrossPanel(key){
 
   /* ---- Facility/Vendor lines, editable together ---- */
   const byId = new Map(lines.map(r => [r.row.id, r]));
+  const ourRep = og ? og.rep : null, ourUM = ourUMOf(ourRep), ourPer = ourRep ? eachesPerUM(ourRep, ourUM) : null;
   const R = d => byId.get(d.row.id);
   const cell = (txt, cls, title) => { const x = el('td', cls || null, txt == null || txt === '' ? dash : txt); if (title) x.title = title; return x; };
   const pg = {
@@ -10166,9 +10227,9 @@ function buildCrossPanel(key){
       { key:'xc_tier', label:'Tier / Contract', w:120, td:d => { const r = R(d);
           const t = r.tier ? r.tier.name + (r.contract ? ' \u00b7 ' + r.contract : '') : r.pricingType === 'standard' ? 'Standard' + (r.contract ? ' \u00b7 ' + r.contract : '') : (r.tierInput || '');
           return cell(t, (r.state === 'tierRequired' || r.state === 'tierInvalid' || r.state === 'contractRequired' || r.state === 'contractNotFound') ? 'xcBad' : null); } },
-      { key:'xc_cases', label:'Our Cases', w:86, numeric:true, td:d => { const r = R(d);
-          return cell(r.eaches != null && r.epc ? fmtQty(Math.round(r.eaches / r.epc * 1e4) / 1e4) : '', 'n',
-            r.epc ? 'Normalized eaches \u00f7 ' + fmtQty(r.epc) + ' eaches per case' + (r.epcSource === 'vendor' ? ' (line pack \u2014 Our Pricing has no packaging)' : '') : ''); } },
+      { key:'xc_ourqty', label:'Our Qty (' + ourUM + ')', w:100, numeric:true, td:d => { const r = R(d);
+          if (r.eaches == null || !ourPer) return cell('', 'n', ourPer ? '' : ourUM + ' is not in the Our Pricing Packaging Details');
+          return cell(fmtQty(Math.round(r.eaches / ourPer * 1e4) / 1e4) + ' ' + ourUM, 'n', 'Normalized eaches \u00f7 ' + fmtQty(ourPer) + ' eaches per ' + ourUM + ' (Our Pricing)'); } },
       { key:'xc_ceach', label:'Contract Each', w:96, numeric:true, td:d => { const r = R(d); return cell(r.contractEach == null ? '' : fmtPrice(r.contractEach), 'n'); } },
       { key:'xc_exp', label:'Expected', w:96, numeric:true, td:d => { const r = R(d); return cell(r.expectedTotal == null ? '' : fmtMoney(r.expectedTotal), 'n'); } },
       { key:'xc_diff', label:'Difference', w:96, numeric:true, td:d => { const r = R(d);
@@ -10189,12 +10250,18 @@ function buildCrossPanel(key){
   if (lines.length) {
     const bar = el('div', 'umBar');
     bar.appendChild(el('span', null, 'Set every line\u2019s Ordered UM to'));
-    const umAll = el('input'); umAll.setAttribute('list', 'umList'); umAll.placeholder = 'EA';
+    const umAll = el('input'); umAll.setAttribute('list', 'umList'); umAll.placeholder = ourUM;
     const umBtn = el('button', 'btn sm', 'Apply to all ' + lines.length + ' line' + (lines.length === 1 ? '' : 's'));
     umBtn.addEventListener('click', () => setUMAll(pg, umAll.value.trim().toUpperCase()));
     umAll.addEventListener('keydown', ev => { ev.stopPropagation(); if (ev.key === 'Enter') { ev.preventDefault(); umBtn.click(); } });
     bar.appendChild(umAll); bar.appendChild(umBtn);
-    bar.appendChild(el('span', 'hint', 'Drag to select \u00b7 Ctrl+C / Ctrl+V \u00b7 Delete clears \u00b7 Ctrl+D fills down \u00b7 F2 or double-click edits. Our Cases shows each line in Our Pricing cases so the orders line up.'));
+    const cv = el('button', 'btn sm primary', 'Convert every line to ' + (umAll.value.trim().toUpperCase() || ourUM) + ' (keep eaches)');
+    const cvLabel = () => { cv.textContent = 'Convert every line to ' + (umAll.value.trim().toUpperCase() || ourUM) + ' (keep eaches)'; };
+    umAll.addEventListener('input', cvLabel);
+    cv.title = 'Re-expresses each line\u2019s Ordered QTY in this UM using the line\u2019s own Packaging Details, so eaches and Each Price stay the same. Blank = the Our Pricing Ordered UM.';
+    cv.addEventListener('click', () => convertLinesToUM(lines, umAll.value.trim().toUpperCase() || ourUM));
+    bar.appendChild(cv);
+    bar.appendChild(el('span', 'hint', 'Click a line to highlight it \u00b7 drag to select \u00b7 Ctrl+C / Ctrl+V \u00b7 Delete clears \u00b7 Ctrl+D fills down \u00b7 F2 or double-click edits. Our Qty shows each line in the Our Pricing Ordered UM.'));
     ss.appendChild(bar);
     ss.appendChild(srcEditTable(pg));
   } else ss.appendChild(el('p', 'hint', 'No Facility/Vendor line has this Crossed To value.'));
@@ -10280,7 +10347,10 @@ function renderOurCompare(pane, cards){
     const tr = el('tr', 'xuRow' + (c.ok ? '' : ' nocross'));
     tr.tabIndex = 0;
     tr.title = 'Double-click (or Enter) to open this cross with its Our Pricing item and normalize the lines together' + (c.messages.length ? '\n\n' + c.messages.join('\n') : '');
-    const open = () => { xuHighlight = null; openCrossEditor(c.key, crossNav(c.key)); };
+    tr.dataset.pid = c.key;
+    if (c.key === xsPicked) tr.classList.add('picked');
+    tr.addEventListener('click', e => { if (!e.target.closest('.xsGrip, button')) pickCrossRow(c.key); });
+    const open = () => { pickCrossRow(c.key); xuHighlight = null; openCrossEditor(c.key, crossNav(c.key)); };
     tr.addEventListener('dblclick', e => { if (e.target.closest('.xsGrip') || document.body.classList.contains('xsResizing')) return; open(); });
     tr.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); open(); } });
     xuNavRows.push({ id:c.key, open });
