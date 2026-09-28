@@ -1001,6 +1001,8 @@ table.ourTable th.st,table.ourTable td.st{width:18px;text-align:center;cursor:he
 table.ourTable th.key{background:#dbe8f7;color:var(--navy-2)}
 table.ourTable th.tierH{background:#d7efe9;color:#0d5c4d;text-align:right}
 table.ourTable th.tierH small{display:block;font-weight:400;font-size:10px;max-width:170px;white-space:normal;line-height:1.25;color:#3b7466}
+table.ourTable th.eachH{background:var(--zone-computed-h);color:var(--navy-2);text-align:right}
+table.ourTable th.eachH small{display:block;font-weight:400;font-size:10px;color:var(--ink-3)}
 table.ourTable td.tierCell{background:#f2faf8}
 table.ourTable td.na{color:var(--line);text-align:center}
 .ourIn{border:1px solid var(--line);padding:3px 5px;border-radius:2px;font-size:12.5px}
@@ -8579,7 +8581,12 @@ function ourColumns(){
   const cols = [];
   OUR_TEXT_FIELDS.forEach(f => cols.push({ k:f.k, field:f.k, name:f.name, w:Math.max(f.w, Math.round(52 + f.name.length * 7)), num:!!f.num, kind:'field' }));
   cols.push({ k:'epc', name:'Eaches / Case', w:90, num:true, kind:'calc' });
-  ourTierCols().forEach(c => cols.push({ k:c.key, field:'price:' + c.tier.id, name:c.name, sub:c.tier.description, w:100, num:true, kind:'tier', program:c.program, tier:c.tier }));
+  const tierCols = ourTierCols();
+  tierCols.forEach(c => cols.push({ k:c.key, field:'price:' + c.tier.id, name:c.name, sub:c.tier.description, w:100, num:true, kind:'tier', program:c.program, tier:c.tier }));
+  /* Each Price section: every price converted to a per-each price (price \u00f7 Eaches / Case) */
+  const anyStd = !state.our.rows.length || state.our.rows.some(r => { const p = programById(r.program); return !(p && (p.tiers || []).length); });
+  if (anyStd) cols.push({ k:'each:std', name:'Standard Each', sub:'per each', w:104, num:true, kind:'each', std:true });
+  tierCols.forEach(c => cols.push({ k:'each:' + c.program.id + ':' + c.tier.id, name:c.name + ' Each', sub:'per each', w:104, num:true, kind:'each', program:c.program, tier:c.tier }));
   cols.push({ k:'crossedBy', name:'Crossed By', w:170, kind:'ro' });
   cols.push({ k:'source', name:'Source', w:200, kind:'ro' });
   const W = state.ui.ourColWidths || {};
@@ -8621,6 +8628,29 @@ function ourCell(row, col, cb){
       o.title = tierLabel(col.tier) + (col.tier.contract ? ' \u00b7 contract ' + col.tier.contract : '');
     } else { o.text = '\u00b7'; o.cls = ' na'; o.title = 'Not part of this item\u2019s pricing program'; }
     o.cls += ' tier';
+  } else if (col.kind === 'each') {
+    const applies = col.std ? !tiered : p === col.program;
+    if (!applies) {
+      o.text = '\u00b7'; o.cls = ' na';
+      o.title = col.std ? 'Tiered item \u2014 see the tier Each columns.' : 'Not part of this item\u2019s pricing program';
+    } else {
+      const src = col.std ? row.stdPrice : (row.prices || {})[col.tier.id];
+      const label = col.std ? 'Standard price' : col.tier.name + ' price';
+      const unit = String(row.priceUnit || (p && p.priceUnit) || 'CS').trim().toUpperCase();
+      const ip = calcInnerPack(row.packagingDetails, row.factorQty);
+      const epc = okNum(ip.v) && ip.v > 0 ? ip.v : null;
+      const n = priceNum(src);
+      if (n === null) { o.text = dash; o.cls = ' dim'; o.title = 'No ' + label + '.'; }
+      else if (isNaN(n)) { o.text = '#VALUE!'; o.cls = ' bad'; o.title = label + ' is not a number.'; }
+      else if (!isCaseUnit(unit)) { o.raw = String(n); o.text = fmtPrice(n); o.title = label + ' is already per ' + unit + '.'; }
+      else if (!epc) { o.text = 'No pack'; o.cls = ' need'; o.title = 'Packaging Details has no pack size, so the each price cannot be calculated.'; }
+      else {
+        const v = n / epc;
+        o.raw = String(v); o.text = fmtPrice(v);
+        o.title = label + ' ' + fmtMoney(n) + '/' + unit + ' \u00f7 ' + fmtQty(epc) + ' eaches per case = ' + fmtPrice(v) + ' each';
+      }
+    }
+    o.cls += ' calc';
   } else if (col.k === 'crossedBy') {
     const e = cb && cb.get(ourKey(row.itemNumber));
     o.raw = o.text = e ? e.n + ' \u00b7 ' + [...e.tiers.entries()].map(([k, n]) => k + (n > 1 ? ' \u00d7' + n : '')).join(', ') : '';
@@ -8719,7 +8749,7 @@ function renderOur(){
   const sth = el('th', 'st fz'); sth.style.left = lefts[1] + 'px'; htr.appendChild(sth);
   const gth = el('th', 'gut fz', '#'); gth.style.left = lefts[2] + 'px'; htr.appendChild(gth);
   cols.forEach((c, i) => {
-    const h = el('th', (c.num ? 'num' : '') + (c.k === 'itemNumber' ? ' key fz fzEdge' : '') + (c.kind === 'tier' ? ' tierH' : '') + (c.kind === 'calc' ? ' z-computed' : ''));
+    const h = el('th', (c.num ? 'num' : '') + (c.k === 'itemNumber' ? ' key fz fzEdge' : '') + (c.kind === 'tier' ? ' tierH' : '') + (c.kind === 'each' ? ' eachH' : '') + (c.kind === 'calc' ? ' z-computed' : ''));
     if (c.k === 'itemNumber') h.style.left = lefts[3] + 'px';
     const hd = el('div', 'oh');
     const L = el('span', 'lref', c.L); L.title = 'Select column ' + c.L;
@@ -8736,6 +8766,7 @@ function renderOur(){
     if (c.sub) h.appendChild(el('small', null, c.sub));
     h.title = c.kind === 'tier' ? tierLabel(c.tier) + (c.tier.contract ? '\nContract ' + c.tier.contract : '') + '\n' + c.program.name + ' \u00b7 ' + (c.program.priceBasis || '')
       : c.kind === 'calc' ? 'Read from Packaging Details \u00d7 Factor QTY \u2014 converts a case price to an each price. Calculated.'
+      : c.kind === 'each' ? (c.std ? 'Standard Price' : c.name.replace(/ Each$/, '') + ' price') + ' \u00f7 Eaches / Case. Calculated, read-only.'
       : c.kind === 'ro' ? c.name + ' \u2014 read-only.'
       : c.k === 'itemNumber' ? 'Master key \u2014 Facility/Vendor Crossed To references this.'
       : c.k === 'program' ? 'Type or pick a pricing program (blank = standard pricing).'
@@ -8968,6 +8999,7 @@ function ourBeginEdit(seed){
   const x = ourCell(row, col);
   if (!x.editable) {
     if (col.kind === 'calc') toast('Eaches / Case is calculated from Packaging Details and Factor QTY.');
+    else if (col.kind === 'each') toast('Each prices are calculated: the price \u00f7 Eaches / Case. Edit the price or Packaging Details instead.');
     else if (col.kind === 'tier') toast('This tier belongs to ' + progLabel(col.program) + ' \u2014 set the item\u2019s Pricing Program to it first.');
     else if (col.kind === 'ro') toast(col.name + ' is read-only' + (col.k === 'source' && (row.aggregatedFrom || []).length ? ' \u2014 double-click to see the merged records.' : '.'));
     else if (col.k === 'stdPrice' || col.k === 'contract') toast('This item is tiered \u2014 its prices and contracts come from the tiers.');
@@ -9067,7 +9099,7 @@ function ourPasteMatrix(matrix){
     for (let j = 0; j < needC; j++) {
       const col = oView.cols[rg.c1 + j]; if (!col) { skippedCells++; continue; }
       const v = matrix[i % R][j % C]; if (v === undefined) continue;
-      if (!ourCell(row, col).editable) { if (String(v).trim() !== '' && col.kind !== 'calc' && col.kind !== 'ro') skippedCells++; continue; }
+      if (!ourCell(row, col).editable) { if (String(v).trim() !== '' && col.kind !== 'calc' && col.kind !== 'each' && col.kind !== 'ro') skippedCells++; continue; }
       ourPut(row, col.field, normalizeOurInput(col.k, v), changes);
     }
   });
