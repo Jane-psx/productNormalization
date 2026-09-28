@@ -4996,6 +4996,9 @@ function srcEditTable(g){
     pasteText(text);
   });
   wrap.addEventListener('focus', () => { if (!has() && nRows) { /* selection appears on first click / key */ } });
+  /* used by the cross-window shortcuts (Ctrl+Q / Ctrl+M) */
+  wrap._gridSelect = (r, c) => { if (!nRows) return; r = clamp(r, 0, nRows - 1); c = clamp(c, 0, NC - 1); select(r, c, r, c, true); wrap.focus({ preventScroll:true }); };
+  wrap._gridCur = () => has() ? { r:srcSel.ar, c:srcSel.ac } : null;
 
   box.appendChild(wrap);
   box.appendChild(stat);
@@ -7222,6 +7225,11 @@ function showShortcuts(){
       ['Click a row number', 'Select the whole row'],
       ['Ctrl/Cmd + A', 'Select everything'],
       ['Ctrl/Cmd + C / X', 'Copy / cut the selection'],
+    ]],
+    ['Cross window (Cross Analysis)', [
+      ['Ctrl + U', 'Jump to \u201cSet every line\u2019s Ordered UM\u201d'],
+      ['Ctrl + Q', 'Jump to Ordered QTY of the first line'],
+      ['Ctrl + M', 'Jump to Ordered UM of the current line (first line if none)']
     ]],
     ['Editing', [
       ['Type on a selected cell', 'Start editing, replacing its value'],
@@ -10080,6 +10088,26 @@ function crossLinesFor(key, rp){
 
 /* ------------------------------------------------ cross editor (double-click) */
 let crossModalKey = null;
+document.addEventListener('keydown', e => {
+  if (!crossModalKey || !$('#scrim').classList.contains('on')) return;
+  if (!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey) return;
+  const k = String(e.key || '').toLowerCase();
+  if (k !== 'u' && k !== 'q' && k !== 'm') return;
+  e.preventDefault(); e.stopPropagation();
+  const mb = $('#modalBody');
+  if (k === 'u') {
+    const i = mb.querySelector('input[data-umall]');
+    if (i) { i.focus(); i.select(); } else toast('No lines to set a UM on.');
+    return;
+  }
+  /* close an open cell edit first (it commits and may redraw the window), then find the grid again */
+  const ae = document.activeElement;
+  if (ae && ae.tagName === 'INPUT' && mb.contains(ae) && ae.blur) ae.blur();
+  const wrap = mb.querySelector('.srcTableWrap');
+  if (!wrap || !wrap._gridSelect) { toast('No Facility/Vendor lines in this cross.'); return; }
+  if (k === 'q') wrap._gridSelect(0, 0);
+  else { const cur = wrap._gridCur(); wrap._gridSelect(cur ? cur.r : 0, 1); }
+}, true);
 let xsPicked = null;   // the Cross Analysis row last picked (clicked / opened), highlighted
 function markPicked(){
   document.querySelectorAll('#paneCrosses tr.xuRow').forEach(t => t.classList.toggle('picked', t.dataset.pid === xsPicked));
@@ -10268,7 +10296,8 @@ function buildCrossPanel(key){
   if (lines.length) {
     const bar = el('div', 'umBar');
     bar.appendChild(el('span', null, 'Set every line\u2019s Ordered UM to'));
-    const umAll = el('input'); umAll.setAttribute('list', 'umList'); umAll.placeholder = ourUM;
+    const umAll = el('input'); umAll.setAttribute('list', 'umList'); umAll.placeholder = ourUM; umAll.dataset.umall = '1';
+    umAll.title = 'Ctrl+U jumps here';
     const umBtn = el('button', 'btn sm', 'Apply to all ' + lines.length + ' line' + (lines.length === 1 ? '' : 's'));
     umBtn.addEventListener('click', () => setUMAll(pg, umAll.value.trim().toUpperCase()));
     umAll.addEventListener('keydown', ev => { ev.stopPropagation(); if (ev.key === 'Enter') { ev.preventDefault(); umBtn.click(); } });
@@ -10279,7 +10308,7 @@ function buildCrossPanel(key){
     cv.title = 'Re-expresses each line\u2019s Ordered QTY in this UM using the line\u2019s own Packaging Details, so eaches and Each Price stay the same. Blank = the Our Pricing Ordered UM.';
     cv.addEventListener('click', () => convertLinesToUM(lines, umAll.value.trim().toUpperCase() || ourUM));
     bar.appendChild(cv);
-    bar.appendChild(el('span', 'hint', 'Click a line to highlight it \u00b7 drag to select \u00b7 Ctrl+C / Ctrl+V \u00b7 Delete clears \u00b7 Ctrl+D fills down \u00b7 F2 or double-click edits. Our Qty shows each line in the Our Pricing Ordered UM.'));
+    bar.appendChild(el('span', 'hint', 'Ctrl+U UM box \u00b7 Ctrl+Q first Ordered QTY \u00b7 Ctrl+M Ordered UM of the current line \u00b7 Click a line to highlight it \u00b7 drag to select \u00b7 Ctrl+C / Ctrl+V \u00b7 Delete clears \u00b7 Ctrl+D fills down \u00b7 F2 or double-click edits. Our Qty shows each line in the Our Pricing Ordered UM.'));
     ss.appendChild(bar);
     ss.appendChild(srcEditTable(pg));
   } else ss.appendChild(el('p', 'hint', 'No Facility/Vendor line has this Crossed To value.'));
