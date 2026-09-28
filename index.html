@@ -8119,6 +8119,7 @@ const OUR_TEXT_FIELDS = [
   { k:'itemNumber',       name:'Item #',           w:110 },
   { k:'productCode',      name:'Product Code',     w:120 },
   { k:'description',      name:'Description',      w:220 },
+  { k:'vendor',           name:'Vendor',           w:150 },
   { k:'packagingDetails', name:'Packaging Details',w:140 },
   { k:'factorQty',        name:'Factor QTY',       w:70, num:true },
   { k:'priceUnit',        name:'Price Unit',       w:70 },
@@ -8686,7 +8687,10 @@ function ourCell(row, col, cb){
       const n = priceNum(v);
       if (n === null) { o.text = 'Not Available'; o.cls = ' need'; } else if (isNaN(n)) o.cls = ' bad';
       o.title = tierLabel(col.tier) + (col.tier.contract ? ' \u00b7 contract ' + col.tier.contract : '');
-    } else { o.text = '\u00b7'; o.cls = ' na'; o.title = 'Not part of this item\u2019s pricing program'; }
+    } else if (!p && isBlank(row.program)) {
+      o.text = '\u00b7'; o.cls = ' na'; o.editable = true;
+      o.title = 'Standard item \u2014 type or paste a price here and the item is put on ' + progLabel(col.program) + ' (' + col.tier.name + ').';
+    } else { o.text = '\u00b7'; o.cls = ' na'; o.title = 'Not part of this item\u2019s pricing program (' + (p ? progLabel(p) : String(row.program)) + ')'; }
     o.cls += ' tier';
   } else if (col.kind === 'each') {
     const applies = col.std ? !tiered : p === col.program;
@@ -8853,7 +8857,7 @@ function renderOur(){
   /* Records are listed in the order they were entered or pasted — no automatic grouping by Item #.
      The same Item # may appear more than once (e.g. different contracts). */
   const gRows = state.our.rows.filter(r => {
-    if (q && ![r.itemNumber, r.productCode, r.description, r.packagingDetails, r.contract].some(v => String(v || '').toLowerCase().includes(q))) return false;
+    if (q && ![r.itemNumber, r.productCode, r.description, r.vendor, r.packagingDetails, r.contract].some(v => String(v || '').toLowerCase().includes(q))) return false;
     if (issuesOnly && ourIssueLevel(r) === 'ok') return false;
     if (filt.length && !filt.every(f => f.set.has(ourFilterText(r, f.col, cb)))) return false;
     return true;
@@ -9062,7 +9066,7 @@ function ourBeginEdit(seed){
   if (!x.editable) {
     if (col.kind === 'calc') toast('Eaches / Case is calculated from Packaging Details and Factor QTY.');
     else if (col.kind === 'each') toast('Each prices are calculated: the price \u00f7 Eaches / Case. Edit the price or Packaging Details instead.');
-    else if (col.kind === 'tier') toast('This tier belongs to ' + progLabel(col.program) + ' \u2014 set the item\u2019s Pricing Program to it first.');
+    else if (col.kind === 'tier') toast('This tier belongs to ' + progLabel(col.program) + ', but the item is on ' + (programById(row.program) ? progLabel(programById(row.program)) : '\u201c' + row.program + '\u201d') + '. Change or clear its Pricing Program first.');
     else if (col.kind === 'ro') toast(col.name + ' is read-only' + (col.k === 'source' && (row.aggregatedFrom || []).length ? ' \u2014 double-click to see the merged records.' : '.'));
     else if (col.k === 'stdPrice' || col.k === 'contract') toast('This item is tiered \u2014 its prices and contracts come from the tiers.');
     return;
@@ -9097,9 +9101,20 @@ function ourCommitEdit(){
   const v = e.inp.value;
   if (e.inp.parentNode) e.inp.parentNode.removeChild(e.inp);
   if (!setOurField(e.rowId, e.field, normalizeOurInput(e.k, v))) return false;
+  { const col = oView.cols.find(c => c.k === e.k), row = state.our.rows.find(r => r.id === e.rowId);
+    if (col && col.kind === 'tier' && row && isBlank(row.program) && String(v).trim() !== '') {
+      row.program = col.program.id;
+      logEvent('Our Pricing edited', 'Our Item ' + (row.itemNumber || row.id), 'Pricing Program set to ' + col.program.name + ' (tier price entered)');
+      toast('Item ' + (row.itemNumber || '') + ' is now on ' + progLabel(col.program) + ' \u2014 its Standard Price is no longer used.');
+    } }
   oAnchor = { id:e.rowId, k:e.k, sel:null };
   refresh();
   return true;
+}
+/** Paste / fill setter: a tier price on a standard item (blank Pricing Program) puts the item on that tier's program. */
+function ourPutCell(row, col, v, changes){
+  if (col.kind === 'tier' && String(v).trim() !== '' && isBlank(row.program)) ourPut(row, 'program', col.program.id, changes);
+  ourPut(row, col.field, v, changes);
 }
 /** Raw setter used by paste / clear / fill (one undo step for the whole operation). */
 function ourPut(row, field, v, changes){
@@ -9163,7 +9178,7 @@ function ourPasteMatrix(matrix){
       const col = oView.cols[rg.c1 + j]; if (!col) { skippedCells++; continue; }
       const v = matrix[i % R][j % C]; if (v === undefined) continue;
       if (!ourCell(row, col).editable) { if (String(v).trim() !== '' && col.kind !== 'calc' && col.kind !== 'each' && col.kind !== 'ro') skippedCells++; continue; }
-      ourPut(row, col.field, normalizeOurInput(col.k, v), changes);
+      ourPutCell(row, col, normalizeOurInput(col.k, v), changes);
     }
   });
   oCopy = null;
@@ -9175,6 +9190,8 @@ function ourPasteMatrix(matrix){
   const notes = [];
   if (created) notes.push(created + ' record' + (created === 1 ? '' : 's') + ' added');
   if (skippedRows) notes.push(skippedRows + ' row' + (skippedRows === 1 ? '' : 's') + ' past the last listed row skipped (clear the search/filters to add rows)');
+  { const put = new Map(); changes.filter(c => c.field === 'program').forEach(c => put.set(c.v, (put.get(c.v) || 0) + 1));
+    put.forEach((n, pid) => notes.push(n + ' standard record' + (n === 1 ? '' : 's') + ' put on ' + progLabel(programById(pid)))); }
   if (tierPrograms().some(p => !tierShown(p)) && rg.c1 + needC - 1 >= oView.cols.findIndex(c => c.kind === 'calc'))
     notes.push('tier columns are hidden \u2014 show them (Tiers menu) to paste tier prices');
   if (skippedCells) notes.push(skippedCells + ' cell' + (skippedCells === 1 ? '' : 's') + ' skipped (read-only, or a tier outside the item\u2019s program)');
@@ -9190,12 +9207,12 @@ function ourFill(dir){
     if (!src) { toast('Nothing above to fill down from.'); return; }
     const targets = rows.length > 1 ? rows.slice(1) : rows;
     pushUndo();
-    targets.forEach(row => { for (let c = rg.c1; c <= rg.c2; c++) { const col = ourEditableAt(row, c); if (col && ourCell(src, col).editable) ourPut(row, col.field, normalizeOurInput(col.k, raw(src, c)), changes); } });
+    targets.forEach(row => { for (let c = rg.c1; c <= rg.c2; c++) { const col = ourEditableAt(row, c); if (col && ourCell(src, col).editable) ourPutCell(row, col, normalizeOurInput(col.k, raw(src, c)), changes); } });
   } else {
     const srcC = rg.c2 > rg.c1 ? rg.c1 : rg.c1 - 1;
     if (srcC < 0) { toast('Nothing to the left to fill right from.'); return; }
     pushUndo();
-    rows.forEach(row => { const v = raw(row, srcC); for (let c = srcC + 1; c <= rg.c2; c++) { const col = ourEditableAt(row, c); if (col) ourPut(row, col.field, normalizeOurInput(col.k, v), changes); } });
+    rows.forEach(row => { const v = raw(row, srcC); for (let c = srcC + 1; c <= rg.c2; c++) { const col = ourEditableAt(row, c); if (col) ourPutCell(row, col, normalizeOurInput(col.k, v), changes); } });
   }
   if (!changes.length) { undoStack.pop(); toast('Nothing changed \u2014 the cells already match.'); return; }
   ourLogChanges('filled ' + dir, changes);
@@ -9431,7 +9448,7 @@ function ourAggregatePreview(rows){
     blocking.push({ label:'Item #', detail:'the ticked records carry different or blank Item #s (' + [...new Set(rows.map(r => r.itemNumber || '(blank)'))].join(', ') +
       '). Aggregation only combines records of the same product; change the Item # first if they really are one product.' });
   ourPricingDiffs(rows).forEach(d => blocking.push({ label:d.label, detail:d.values.map(v => '\u201c' + v.v + '\u201d \u00d7' + v.n).join(', ') }));
-  ['productCode', 'description', 'packagingDetails', 'factorQty', 'status'].forEach(k => {
+  ['productCode', 'description', 'vendor', 'packagingDetails', 'factorQty', 'status'].forEach(k => {
     const d = distinctVals(rows, k);
     if (d.length > 1) watch.push({ label:OUR_FIELD_NAME[k], values:d, resolved:d[0].v });
   });
@@ -9469,7 +9486,7 @@ function ourAggregate(rows){
   const now = new Date().toISOString();
   const snap = r => { const s = clone(r); delete s.aggregatedFrom; s.capturedAt = now; return s; };
   const merged = clone(rows[0]);
-  ['productCode', 'description', 'packagingDetails', 'factorQty', 'status'].forEach(k => merged[k] = commonVal(rows, k));
+  ['productCode', 'description', 'vendor', 'packagingDetails', 'factorQty', 'status'].forEach(k => merged[k] = commonVal(rows, k));
   merged.aggregatedFrom = [];
   rows.forEach(r => { merged.aggregatedFrom.push(snap(r)); (r.aggregatedFrom || []).forEach(x => merged.aggregatedFrom.push(x)); });
   merged.source = 'Aggregated ' + now.slice(0, 10);
@@ -9532,6 +9549,7 @@ $('#chkOurIssues').addEventListener('change', e => { state.ui.ourIssuesOnly = e.
 
 /* ------------------------------------------------ import / paste mapping */
 const OUR_HEADER_RULES = [
+  ['vendor', /^(vendor|supplier|distributor)(\s*name)?$/i],
   ['itemNumber', /^(our\s*)?item\s*(#|no\.?|num(ber)?)?$|material\s*(#|no\.?|num(ber)?)?$|^sku(\s*#)?$|^(\S+\s*)?(item|product)\s*(#|no\.?)$/i],
   ['productCode', /product\s*(code|#|no\.?|num)|prod\.?\s*code|mfg|catalog|^ndc|^upc|gtin|material\s*code|item\s*code/i],
   ['description', /desc|product\s*name|item\s*name|^name$|^product$/i],
@@ -10303,7 +10321,7 @@ function buildCrossPanel(key){
   } else {
     const t = el('table', 'aggPreviewTable');
     const hr = el('tr');
-    ['Item #', 'Product Code', 'Description', 'Packaging Details', 'Factor QTY', 'Ordered UM', 'Eaches / Ordered UM', 'Eaches / Case', 'Program', 'Contract', 'Prices (case \u00b7 each)']
+    ['Item #', 'Product Code', 'Description', 'Vendor', 'Packaging Details', 'Factor QTY', 'Ordered UM', 'Eaches / Ordered UM', 'Eaches / Case', 'Program', 'Contract', 'Prices (case \u00b7 each)']
       .forEach(h => hr.appendChild(el('th', null, h)));
     t.appendChild(hr);
     og.rows.forEach(rec => {
@@ -10311,6 +10329,7 @@ function buildCrossPanel(key){
       tr.appendChild(el('td', null, rec.itemNumber || dash));
       tr.appendChild(el('td', null, rec.productCode || dash));
       tr.appendChild(el('td', null, rec.description || dash));
+      tr.appendChild(el('td', null, rec.vendor || dash));
       ['packagingDetails', 'factorQty', 'orderedUM'].forEach(k => {
         const td = el('td'), inp = el('input', 'aggIn');
         const orig = rec[k] == null ? '' : String(rec[k]);
