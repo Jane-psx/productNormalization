@@ -5286,12 +5286,14 @@ function buildEditorPanel(g){
   const umAll = el('input');
   umAll.setAttribute('list', 'umList');
   umAll.placeholder = 'EA';
+  umAll.dataset.umall = '1';
+  umAll.title = 'Ctrl+U jumps here';
   umAll.value = g.umConflict ? '' : String(g.resolved.orderedUM.value || '');
   const umBtn = el('button', 'btn sm', 'Apply to all ' + g.rows.length + ' row' + (g.rows.length === 1 ? '' : 's'));
   umBtn.addEventListener('click', () => setUMAll(g, umAll.value.trim().toUpperCase()));
   umAll.addEventListener('keydown', ev => { ev.stopPropagation(); if (ev.key === 'Enter') { ev.preventDefault(); umBtn.click(); } });
   bar.appendChild(umAll); bar.appendChild(umBtn);
-  bar.appendChild(el('span', 'hint', 'Drag to select \u00b7 Ctrl+C / Ctrl+V copy & paste ranges \u00b7 Delete clears \u00b7 Ctrl+D fills down \u00b7 F2 or double-click edits.'));
+  bar.appendChild(el('span', 'hint', 'Ctrl+U UM box \u00b7 Ctrl+Q first Ordered QTY \u00b7 Ctrl+M Ordered UM of the current line \u00b7 Drag to select \u00b7 Ctrl+C / Ctrl+V copy & paste ranges \u00b7 Delete clears \u00b7 Ctrl+D fills down \u00b7 F2 or double-click edits.'));
   secSrc.appendChild(bar);
   secSrc.appendChild(combined ? combinedLineItemsTable(g) : srcEditTable(g));
   p.appendChild(secSrc);
@@ -7226,10 +7228,20 @@ function showShortcuts(){
       ['Ctrl/Cmd + A', 'Select everything'],
       ['Ctrl/Cmd + C / X', 'Copy / cut the selection'],
     ]],
-    ['Cross window (Cross Analysis)', [
+    ['Item and cross windows, Summary editors', [
       ['Ctrl + U', 'Jump to \u201cSet every line\u2019s Ordered UM\u201d'],
       ['Ctrl + Q', 'Jump to Ordered QTY of the first line'],
       ['Ctrl + M', 'Jump to Ordered UM of the current line (first line if none)']
+    ]],
+    ['Facility/Vendor sheet', [
+      ['Ctrl + U', 'Edit Ordered UM of the current row, with the UM list (bulk bar UM box when rows are ticked)'],
+      ['Ctrl + Q', 'Jump to Ordered QTY of the first row'],
+      ['Ctrl + M', 'Jump to Ordered UM of the current row']
+    ]],
+    ['Our Pricing', [
+      ['Ctrl + U', 'Edit Ordered UM of the current record, with the UM list'],
+      ['Ctrl + Q', 'Jump to the first record'],
+      ['Ctrl + M', 'Jump to Ordered UM of the current record']
     ]],
     ['Editing', [
       ['Type on a selected cell', 'Start editing, replacing its value'],
@@ -8546,6 +8558,7 @@ function listIdFor(key, eff){
   if (key === 'tierToApply') { fillTierList(eff && eff.crossedTo); return 'tierList'; }
   if (key === 'contractToApply') { fillContractList(eff && eff.crossedTo); return 'contractList'; }
   if (key === 'purchaseChannel') return 'channelList';
+  if (key === 'orderedUM') { refreshUmList(); return 'umList'; }
   return null;
 }
 /** Tidy a typed relationship value: Crossed To keeps just the Item #, tiers become the program's tier name. */
@@ -9049,6 +9062,7 @@ function ourBeginEdit(seed){
   inp.value = seed !== undefined ? seed : x.raw;
   if (col.k === 'program') { refreshProgramList(); inp.setAttribute('list', PROGRAM_LIST_ID); inp.style.minWidth = '220px'; }
   if (col.k === 'status') inp.setAttribute('list', ourStatusList());
+  if (col.k === 'orderedUM' || col.k === 'priceUnit') { refreshUmList(); inp.setAttribute('list', 'umList'); inp.style.minWidth = '110px'; }
   td.appendChild(inp);
   inp.focus();
   if (seed === undefined) inp.select(); else inp.setSelectionRange(inp.value.length, inp.value.length);
@@ -10088,25 +10102,73 @@ function crossLinesFor(key, rp){
 
 /* ------------------------------------------------ cross editor (double-click) */
 let crossModalKey = null;
-document.addEventListener('keydown', e => {
-  if (!crossModalKey || !$('#scrim').classList.contains('on')) return;
-  if (!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey) return;
-  const k = String(e.key || '').toLowerCase();
-  if (k !== 'u' && k !== 'q' && k !== 'm') return;
-  e.preventDefault(); e.stopPropagation();
-  const mb = $('#modalBody');
+/* Ctrl+U / Ctrl+Q / Ctrl+M \u2014 the same three jumps in every section:
+   cross window, Facility/Vendor item window, Summary editors, Facility/Vendor sheet, Our Pricing. */
+function shortcutScope(){
+  if ($('#scrim').classList.contains('on')) return (crossModalKey || overrideModalKey) ? { kind:'panel', root:$('#modalBody') } : null;
+  if (state.ui.tab === 'aggregated') {
+    const ae = document.activeElement;
+    const pnl = (ae && ae.closest && ae.closest('#paneAgg .edPanel')) || $('#paneAgg .edPanel');
+    return pnl ? { kind:'panel', root:pnl } : null;
+  }
+  if (state.ui.tab === 'normalization') return { kind:'sheet' };
+  if (state.ui.tab === 'our') return { kind:'our' };
+  return null;
+}
+function panelShortcut(k){
+  let sc = shortcutScope();
+  const ae = document.activeElement;   /* commit an open edit first \u2014 it may redraw the panel */
+  if (ae && ae.tagName === 'INPUT' && sc.root.contains(ae) && ae.blur) ae.blur();
+  sc = shortcutScope(); if (!sc || sc.kind !== 'panel') return;
+  const root = sc.root;
   if (k === 'u') {
-    const i = mb.querySelector('input[data-umall]');
+    const i = root.querySelector('input[data-umall]');
     if (i) { i.focus(); i.select(); } else toast('No lines to set a UM on.');
     return;
   }
-  /* close an open cell edit first (it commits and may redraw the window), then find the grid again */
-  const ae = document.activeElement;
-  if (ae && ae.tagName === 'INPUT' && mb.contains(ae) && ae.blur) ae.blur();
-  const wrap = mb.querySelector('.srcTableWrap');
-  if (!wrap || !wrap._gridSelect) { toast('No Facility/Vendor lines in this cross.'); return; }
+  const wraps = [...root.querySelectorAll('.srcTableWrap')];
+  const wrap = wraps.find(x => x.contains(document.activeElement)) || wraps.find(x => srcSel && x.dataset.gkey === srcSel.gkey) || wraps[0];
+  if (!wrap || !wrap._gridSelect) { toast('No line items to jump to here.'); return; }
   if (k === 'q') wrap._gridSelect(0, 0);
   else { const cur = wrap._gridCur(); wrap._gridSelect(cur ? cur.r : 0, 1); }
+}
+function sheetShortcut(k){
+  if (editor) commitEdit();
+  const vis = derived.visible;
+  const first = vis.findIndex(it => it.type === 'row');
+  if (first < 0) { toast(vis.length ? 'Expand an item first \u2014 the jump goes to its line rows.' : 'No rows yet.'); return; }
+  const cQty = COL_BY_KEY.orderedQty.idx, cUM = COL_BY_KEY.orderedUM.idx;
+  let r = first;
+  if (k !== 'q' && cur) { const n = vis.findIndex((it, i) => i >= cur.r && it.type === 'row'); if (n >= 0) r = n; }
+  if (k === 'u' && $('#bulkBar').classList.contains('on')) {
+    $('#bulkField').value = 'orderedUM'; refreshBulkValList();
+    const bv = $('#bulkValue'); bv.focus(); bv.select(); return;
+  }
+  setCur(r, k === 'q' ? cQty : cUM);
+  scroll.focus({ preventScroll:true });
+  if (k === 'u') beginEdit();
+}
+function ourShortcut(k){
+  if (oEditor) ourCommitEdit();
+  if (!oView.rows.length) { toast('No Our Pricing records yet.'); return; }
+  const pane = $('#paneOur');
+  if (k === 'q') { ourSetCur(0, 0); pane.focus({ preventScroll:true }); return; }
+  const cUM = oView.cols.findIndex(c => c.k === 'orderedUM');
+  if (cUM < 0) return;
+  ourSetCur(oCur ? oCur.r : 0, cUM);
+  pane.focus({ preventScroll:true });
+  if (k === 'u') ourBeginEdit();
+}
+document.addEventListener('keydown', e => {
+  if (!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey) return;
+  const k = String(e.key || '').toLowerCase();
+  if (k !== 'u' && k !== 'q' && k !== 'm') return;
+  const sc = shortcutScope();
+  if (!sc) return;
+  e.preventDefault(); e.stopPropagation();
+  if (sc.kind === 'panel') panelShortcut(k);
+  else if (sc.kind === 'sheet') sheetShortcut(k);
+  else ourShortcut(k);
 }, true);
 let xsPicked = null;   // the Cross Analysis row last picked (clicked / opened), highlighted
 function markPicked(){
