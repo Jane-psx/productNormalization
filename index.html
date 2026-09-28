@@ -355,6 +355,9 @@ table.grid td.z-xto{background:#f6f2fc}
 }
 .moreDropdown.on{display:flex}
 .moreDropdown .chk{white-space:nowrap}
+.moreDropdown .tierNote{font-size:11px;color:var(--ink-3);max-width:240px;white-space:normal;line-height:1.4}
+.moreDropdown hr{border:0;border-top:1px solid var(--line-soft);margin:2px 0;width:100%}
+#btnOurTiers.on{border-color:var(--accent);color:var(--accent)}
 
 /* ---------- column filter panel (shown inside the modal) ---------- */
 .filterPanel{display:flex;flex-direction:column;gap:9px;max-height:60vh}
@@ -1194,6 +1197,7 @@ table.ourTable td.srcCell .pill{margin-left:6px;cursor:pointer}
       <span class="note" style="margin-left:0">+ Contract</span>
       <span class="sep"></span>
       <button class="btn" id="btnPrograms" title="Tier definitions, contracts, effective dates and order-level rules">Pricing programs&hellip;</button>
+      <div class="moreMenu"><button class="btn" id="btnOurTiers" title="Show or hide tier price columns, per pricing program. View only — prices, crosses and exports are not affected.">Tiers &#9662;</button><div class="moreDropdown" id="ourTierDropdown"></div></div>
       <span class="sep"></span>
       <div class="search">
         <span class="ico">&#8981;</span>
@@ -6680,7 +6684,7 @@ const VIEW_UI_KEYS = ['tab','mode','search','colFilters','freeze','issuesOnly','
   'modeB','searchB','sortKeyB','sortDirB','freezeB','issuesOnlyB','aggSearchB','aggAttnB','aggSelectedOnlyB','lastSubA','lastSubB',
   'lineItemCols','lineItemColWidths','lineItemView','lineItemCombineStat',
   'hideNoCross','xuShowNoCross','xsView','xsSearch','xuBase','xuSides','xuColWidths','xsRelColWidths',
-  'xsMode','xsGapX','xsGapExcl','xsGapOnly','ourSearch','ourIssuesOnly','ourMode','ourColWidths','ourColFilters','ocFac','ocVen','ocColWidths'];
+  'xsMode','ourHideTiers','xsGapX','xsGapExcl','xsGapOnly','ourSearch','ourIssuesOnly','ourMode','ourColWidths','ourColFilters','ocFac','ocVen','ocColWidths'];
 const VIEW_KEY_SET = new Set(VIEW_UI_KEYS);
 const clone = o => JSON.parse(JSON.stringify(o === undefined ? null : o));
 const pickView = ui => { const o = {}; VIEW_UI_KEYS.forEach(k => { if (ui[k] !== undefined) o[k] = ui[k]; }); return o; };
@@ -8630,11 +8634,11 @@ let oCur = null, oSel = null, oCopy = null, oEditor = null, oAnchor = null, oPen
 let oView = { cols:[], rows:[], items:[], trs:[], tds:[], idx:new Map(), total:0 };
 let oPainted = [];
 const oColLetter = i => { let s = ''; i++; while (i > 0) { const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); } return s; };
-function ourColumns(){
+function ourColumns(includeHidden){
   const cols = [];
   OUR_TEXT_FIELDS.forEach(f => cols.push({ k:f.k, field:f.k, name:f.name, w:Math.max(f.w, Math.round(52 + f.name.length * 7)), num:!!f.num, kind:'field' }));
   cols.push({ k:'epc', name:'Eaches / Case', w:90, num:true, kind:'calc' });
-  const tierCols = ourTierCols();
+  const tierCols = ourTierCols().filter(c => includeHidden || tierShown(c.program));
   tierCols.forEach(c => cols.push({ k:c.key, field:'price:' + c.tier.id, name:c.name, sub:c.tier.description, w:100, num:true, kind:'tier', program:c.program, tier:c.tier }));
   /* Each Price section: every price converted to a per-each price (price \u00f7 Eaches / Case) */
   const anyStd = !state.our.rows.length || state.our.rows.some(r => { const p = programById(r.program); return !(p && (p.tiers || []).length); });
@@ -8655,7 +8659,10 @@ function ourCell(row, col, cb){
     o.raw = o.text = v; o.editable = true;
     if (col.k === 'program') {
       o.raw = p ? p.name : v;
-      if (p) o.text = progLabel(p);
+      if (p) {
+        o.text = progLabel(p);
+        if ((p.tiers || []).length && !tierShown(p)) { o.text += ' \u00b7 tiers hidden'; o.title = 'This program\u2019s tier columns are hidden (Tiers menu). The prices are kept and still used everywhere.'; }
+      }
       else if (isBlank(v)) { o.text = 'Standard'; o.cls = ' dim'; }
       else { o.text = v + ' (not defined)'; o.cls = ' bad'; o.title = 'No pricing program with this name \u2014 add it in Pricing programs\u2026 or pick another.'; }
     } else if ((col.k === 'stdPrice' || col.k === 'contract') && tiered) {
@@ -8719,6 +8726,7 @@ function ourFilterText(row, col, cb){ const x = ourCell(row, col, cb); return x.
 function ourActiveFilters(){ const f = state.ui.ourColFilters || {}; return Object.keys(f).filter(k => f[k] && f[k].length); }
 
 function renderOur(){
+  renderTierMenu();
   const pane = $('#paneOur'), top = $('#ourTop');
   const keepTop = pane.scrollTop, keepLeft = pane.scrollLeft;
   if (oEditor) { const e = oEditor; oEditor = null; if (e.inp.parentNode) e.inp.parentNode.removeChild(e.inp); }
@@ -8758,7 +8766,8 @@ function renderOur(){
   const note = $('#ourNote'); note.innerHTML = '';
   if (rows.length) note.appendChild(document.createTextNode(rows.length + ' record' + (rows.length === 1 ? '' : 's') + ' \u00b7 ' + ourD.groups.length + ' Item #' +
     (dupN ? ' \u00b7 ' + dupN + ' repeated ' + OUR_GROUP_FIELDS[ourGroupField()] + ' + Contract' : '') + (errN ? ' \u00b7 ' + errN + ' with errors' : '')));
-  if (nf) { const a = el('a', 'lnk', ' \u00b7 ' + nf + ' column filter' + (nf === 1 ? '' : 's') + ' \u2014 clear'); a.href = '#';
+  const nfHid = ourActiveFilters().filter(k => !ourColumns().some(c => c.k === k)).length;
+  if (nf) { const a = el('a', 'lnk', ' \u00b7 ' + nf + ' column filter' + (nf === 1 ? '' : 's') + (nfHid ? ' (' + nfHid + ' on hidden tier column' + (nfHid === 1 ? '' : 's') + ')' : '') + ' \u2014 clear'); a.href = '#';
     a.addEventListener('click', e => { e.preventDefault(); state.ui.ourColFilters = {}; renderOur(); }); note.appendChild(a); }
 
   const cols = ourColumns();
@@ -8782,7 +8791,8 @@ function renderOur(){
   const cb = crossedByIndex();
   const q = String(state.ui.ourSearch || '').trim().toLowerCase();
   const issuesOnly = !!state.ui.ourIssuesOnly;
-  const filt = ourActiveFilters().map(k => ({ col:cols.find(c => c.k === k), set:new Set(state.ui.ourColFilters[k]) })).filter(f => f.col);
+  const allCols = ourColumns(true);
+  const filt = ourActiveFilters().map(k => ({ col:allCols.find(c => c.k === k), set:new Set(state.ui.ourColFilters[k]) })).filter(f => f.col);
   const recNo = new Map(); rows.forEach((r, i) => recNo.set(r.id, i + 1));
 
   const frozen = [OUR_CK_W, OUR_ST_W, OUR_GUT_W];
@@ -9165,6 +9175,8 @@ function ourPasteMatrix(matrix){
   const notes = [];
   if (created) notes.push(created + ' record' + (created === 1 ? '' : 's') + ' added');
   if (skippedRows) notes.push(skippedRows + ' row' + (skippedRows === 1 ? '' : 's') + ' past the last listed row skipped (clear the search/filters to add rows)');
+  if (tierPrograms().some(p => !tierShown(p)) && rg.c1 + needC - 1 >= oView.cols.findIndex(c => c.kind === 'calc'))
+    notes.push('tier columns are hidden \u2014 show them (Tiers menu) to paste tier prices');
   if (skippedCells) notes.push(skippedCells + ' cell' + (skippedCells === 1 ? '' : 's') + ' skipped (read-only, or a tier outside the item\u2019s program)');
   toast('Pasted ' + R + ' \u00d7 ' + C + (rRep * cRep > 1 ? ' block, repeated to fill the selection' : '') + (notes.length ? ' \u2014 ' + notes.join(', ') : '') + '.', !!(skippedRows || skippedCells));
 }
@@ -9250,6 +9262,12 @@ function renderOurStatus(){
     if (col.k === 'source' && (row.aggregatedFrom || []).length) { const b = el('button', 'btn sm', 'Show merged records'); b.addEventListener('click', () => showOurSources(row)); s.appendChild(b); }
     if (col.kind === 'tier' && row.program && programById(row.program) === col.program) add(esc(tierLabel(col.tier) + (col.tier.contract ? ' \u00b7 contract ' + col.tier.contract : '')));
   }
+  { const rp = programById(row.program);
+    if (rp && (rp.tiers || []).length && !tierShown(rp)) {
+      const b = el('button', 'btn sm', 'Show ' + progLabel(rp) + ' tiers');
+      b.addEventListener('click', () => { const h = ourHide(); h.__all = false; delete h[rp.id]; applyTierView(); });
+      s.appendChild(b);
+    } }
   const all = ourD.rowIssues[row.id] || [], iss = all.filter(i => i.level !== 'info'), info = all.filter(i => i.level === 'info');
   s.appendChild(el('span', 'spacer'));
   if (iss.length) add('<span class="dot ' + (iss.some(i => i.level === 'error') ? 'err' : 'warn') + '"></span>' + esc(iss[0].text) + (iss.length > 1 ? ' (+' + (iss.length - 1) + ' more)' : ''));
@@ -9868,6 +9886,34 @@ function openPrograms(addNew){
   ], { wide:true });
 }
 $('#btnPrograms').addEventListener('click', openPrograms);
+
+/* ------------------------------------------------ tier column visibility
+   View-only: hides tier price / tier Each columns on Our Pricing, all at once
+   or per pricing program. Stored per browser with the rest of the view. */
+const tierPrograms = () => state.programs.filter(p => (p.tiers || []).length);
+function ourHide(){ if (!state.ui.ourHideTiers || typeof state.ui.ourHideTiers !== 'object') state.ui.ourHideTiers = {}; return state.ui.ourHideTiers; }
+function tierShown(p){ const h = state.ui.ourHideTiers || {}; return !h.__all && !h[p.id]; }
+function applyTierView(){ saveViewPrefs(); renderOur(); }
+function renderTierMenu(){
+  const btn = $('#btnOurTiers'), dd = $('#ourTierDropdown');
+  if (!btn || !dd) return;
+  const progs = tierPrograms(), shown = progs.filter(tierShown).length, h = ourHide();
+  btn.innerHTML = 'Tiers: ' + (!progs.length ? 'none' : shown === progs.length ? 'shown' : !shown ? 'hidden' : shown + ' of ' + progs.length) + ' &#9662;';
+  btn.classList.toggle('on', progs.length > 0 && shown < progs.length);
+  dd.innerHTML = '';
+  if (!progs.length) { dd.appendChild(el('div', 'tierNote', 'No tiered pricing programs yet.')); return; }
+  const mk = (label, checked, disabled, fn) => {
+    const l = el('label', 'chk'), b = el('input'); b.type = 'checkbox'; b.checked = checked; b.disabled = disabled;
+    b.addEventListener('change', () => { fn(b.checked); applyTierView(); });
+    l.appendChild(b); l.appendChild(document.createTextNode(' ' + label)); return l;
+  };
+  dd.appendChild(mk('Show tier columns', !h.__all, false, on => { h.__all = !on; }));
+  dd.appendChild(el('hr'));
+  progs.forEach(p => dd.appendChild(mk(progLabel(p) + ' (' + p.tiers.length + ' tier' + (p.tiers.length === 1 ? '' : 's') + ')', !h[p.id], !!h.__all,
+    on => { if (on) delete h[p.id]; else h[p.id] = true; })));
+  dd.appendChild(el('div', 'tierNote', 'Only changes this view. Tier prices are kept and still used for crosses, the Audit Log and exports.'));
+}
+wireMoreMenu('btnOurTiers', 'ourTierDropdown');
 
 /* -------------------------------------------------------- test scenarios */
 function loadTestScenarios(){
