@@ -1031,6 +1031,88 @@ table.ourTable th.tierH small{display:block;font-weight:400;font-size:10px;max-w
 .xcOtherToggle.off{color:var(--ink-3);cursor:default}
 .xcOtherToggle .count{color:var(--ink-3)}
 .xcNoSel{font-size:12px;color:var(--ink-3);padding:6px 0 10px}
+
+/* ---- each-price pills (Our Pricing = amber, Facility/Vendor = blue; same layout everywhere) ---- */
+.pricePill{display:inline-flex;align-items:stretch;border-radius:999px;overflow:hidden;font-size:11.5px;line-height:1;white-space:nowrap;border:1px solid;vertical-align:middle;margin:1px 4px 1px 0}
+.pricePill .pl{padding:4px 8px;font-size:9.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;display:flex;align-items:center}
+.pricePill .pv{padding:4px 10px;font-family:var(--mono);font-weight:700;font-variant-numeric:tabular-nums;display:flex;align-items:center}
+.pricePill .ps{padding:4px 9px 4px 0;font-family:var(--mono);font-size:10.5px;opacity:.75;display:flex;align-items:center}
+.pricePill.our{border-color:#d4a72c;background:#fff8c5;color:#5c4400}
+.pricePill.our .pl{background:#d4a72c;color:#fff}
+.pricePill.fac{border-color:#1b3d78;background:#e8f0fe;color:#002060}
+.pricePill.fac .pl{background:#1b3d78;color:#fff}
+.pricePill.none{border-color:var(--line);background:#f6f8fa;color:var(--ink-3)}
+.pricePill.none .pl{background:#9aa8b6;color:#fff}
+.pricePill.win{box-shadow:0 0 0 2px #1a7f4b inset}
+.pricePill.diffGood{border-color:#1a7f4b;background:#e8f5ee;color:#1a7f4b}.pricePill.diffGood .pl{background:#1a7f4b;color:#fff}
+.pricePill.diffBad{border-color:#b3261e;background:#fdecea;color:#b3261e}.pricePill.diffBad .pl{background:#b3261e;color:#fff}
+.pillStrip{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:0 0 12px;padding:8px 10px;border:1px solid var(--line);border-radius:4px;background:#fbfcfd}
+.pillStrip .lbl{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3);margin-right:2px}
+.pillStrip .pricePill{font-size:13px;margin:0}
+.srcTable td.pillCell{padding:3px 6px}
+.xcOur .prices .pricePill{display:flex;width:max-content;margin:2px 0}
+
+/* ---- selected row = yellow (Our Pricing, Facility/Vendor Pricing, cross window lines) ---- */
+.r.rowSel .c,.r.rowSel.alt .c,.r.rowSel .c.z-analysed,.r.rowSel .c.z-computed,.r.rowSel .c.z-orig,.r.rowSel .c.z-ours,.r.rowSel .c.z-xto{background:#fff3b0!important}
+.r.rowSel .c.cur{background:#ffe97a!important}
+.r.rowSel .c.sel{background:#ffe97a!important}
+table.ourTable tr.rowSel td,table.ourTable tr.rowSel td.oc,table.ourTable tr.rowSel td.fz{background:#fff3b0!important}
+table.ourTable tr.rowSel td.cur{background:#ffe97a!important}
+.srcTable tr.actRow td{background:#fff3b0}
+.srcTable tr.rowSel td{background:#fff3b0}
+.srcTable tr.rowSel td.sel,.srcTable tr.actRow td.sel{background:#ffe97a}
+
+/* ---- right side panel: row details ---- */
+.rowSide{position:fixed;top:0;right:0;bottom:0;width:390px;max-width:94vw;background:#fff;border-left:1px solid var(--line);box-shadow:-8px 0 28px rgba(16,32,50,.22);z-index:420;display:none;flex-direction:column}
+.rowSide.on{display:flex}
+.rowSide .rsHead{display:flex;align-items:flex-start;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line);background:#fff8c5;border-top:4px solid #d4a72c}
+.rowSide .rsHead .t{flex:1;min-width:0}
+.rowSide .rsHead .kind{font-size:10px;text-transform:uppercase;letter-spacing:.09em;color:#6b4e00;font-weight:700}
+.rowSide .rsHead h3{margin:2px 0 0;font-size:14px;font-family:var(--mono);overflow-wrap:anywhere}
+.rowSide .rsHead .sub{font-size:11.5px;color:var(--ink-2);margin-top:2px;overflow-wrap:anywhere}
+.rowSide .rsHead .x{border:0;background:transparent;font-size:20px;line-height:1;cursor:pointer;color:var(--ink-3);padding:0 4px}
+.rowSide .rsHead .x:hover{color:var(--ink)}
+.rowSide .rsBody{flex:1;overflow:auto;padding:6px 14px 18px}
+.rowSide .rsSec{font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;color:var(--ink-3);margin:14px 0 6px;padding-bottom:4px;border-bottom:1px solid var(--line-soft)}
+.rowSide .rsField{display:grid;grid-template-columns:118px 1fr;gap:8px;align-items:center;padding:3px 0}
+.rowSide .rsField label{font-size:11.5px;color:var(--ink-2);line-height:1.25}
+.rowSide .rsField label small{display:block;font-size:10px;color:var(--ink-3)}
+.rowSide .rsField input{height:28px;padding:0 8px;border:1px solid var(--line);border-radius:3px;width:100%;min-width:0;background:#fff}
+.rowSide .rsField input:focus{border-color:var(--accent);outline:0;box-shadow:0 0 0 2px rgba(31,111,235,.15)}
+.rowSide .rsField input.chg{background:#fffbe0;border-color:#d4a72c}
+.rowSide .rsField .ro{font-family:var(--mono);font-size:12px;padding:5px 8px;background:#f6f8fa;border-radius:3px;min-height:28px;overflow-wrap:anywhere;color:var(--ink-2)}
+.rowSide .rsField .ro.bad{color:var(--err)}
+.rowSide .rsFoot{display:flex;gap:8px;padding:10px 14px;border-top:1px solid var(--line);background:#f6f8fa;flex-wrap:wrap}
+.rowSide .rsList button{display:block;width:100%;text-align:left;margin:0 0 5px}
+.rowSide .rsHint{font-size:11px;color:var(--ink-3);line-height:1.5;margin:8px 0}
+
+/* ---- flag popover ---- */
+.flagPop{position:fixed;z-index:520;display:none;width:340px;max-width:94vw;background:#fff;border:1px solid #d4a72c;border-radius:6px;box-shadow:0 12px 34px rgba(16,32,50,.35);padding:12px 14px}
+.flagPop.on{display:block}
+.flagPop h4{margin:0 0 4px;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#6b4e00}
+.flagPop .what{font-size:12px;color:var(--ink-2);margin:0 0 8px;overflow-wrap:anywhere}
+.flagPop label{display:block;font-size:11px;color:var(--ink-3);margin:8px 0 3px}
+.flagPop select,.flagPop textarea{width:100%;border:1px solid var(--line);border-radius:3px;padding:6px 8px;font:inherit;background:#fff}
+.flagPop textarea{min-height:76px;resize:vertical}
+.flagPop .act{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}
+.flagBtn{border:1px solid var(--line);background:#fff;border-radius:3px;cursor:pointer;font-size:12px;padding:1px 6px;color:var(--ink-3);line-height:1.5}
+.flagBtn:hover{border-color:#d4a72c;color:#8a6500;background:#fff8c5}
+.flagBtn.on{border-color:#d4a72c;background:#fff3b0;color:#8a6500;font-weight:700}
+
+/* ---- clarification report ---- */
+#paneClarify{padding:12px}
+table.clTable{width:100%;border-collapse:collapse;font-size:12.5px;background:#fff}
+table.clTable th{position:sticky;top:0;z-index:2;background:#eaeff5;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3);padding:7px 9px;border-bottom:1px solid var(--line);white-space:nowrap}
+table.clTable td{padding:6px 9px;border-bottom:1px solid var(--line-soft);vertical-align:top}
+table.clTable td.num{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+table.clTable td.nowrap{white-space:nowrap}
+table.clTable textarea{width:100%;min-width:230px;min-height:58px;border:1px solid var(--line);border-radius:3px;padding:6px 8px;font:inherit;resize:vertical;background:#fffef5}
+table.clTable textarea.resp{background:#fff}
+table.clTable select{height:26px;border:1px solid var(--line);border-radius:3px;background:#fff}
+table.clTable tr.closed td{opacity:.55}
+table.clTable .clOur{font-family:var(--mono)}
+table.clTable .clGrp td{background:#fff8c5;font-weight:700;color:#6b4e00;border-top:2px solid #d4a72c}
+.clEmpty{padding:34px;text-align:center;color:var(--ink-3);font-size:13px;line-height:1.7}
 .srcTable td.xcBad{color:var(--err);font-weight:600}
 .srcTable td.xcGood{color:var(--ok);font-weight:600}
 table.ourTable th.eachH{background:var(--zone-computed-h);color:var(--navy-2);text-align:right}
@@ -1296,6 +1378,10 @@ table.ourTable td.srcCell .pill{margin-left:6px;cursor:pointer}
       <span class="ico">&#8981;</span>
       <input id="xsSearch" type="search" placeholder="Item # &middot; description &middot; facility &middot; vendor" autocomplete="off">
     </div>
+    <div class="seg" id="segXsGran" title="Aggregated: one row per Our Pricing item. Per item: one row per Facility/Vendor line, row by row.">
+      <button data-gran="agg" class="on">Aggregated</button>
+      <button data-gran="item">Per item &middot; row by row</button>
+    </div>
     <button class="btn" id="btnXsWidths" title="Put every column in this table back to its automatic width">Reset widths</button>
     <label class="chk" title="Also list items that could not be priced: no match on the other side, not crossed, tier required, invalid tier or no price."><input type="checkbox" id="chkXuNoCross"> Show unresolved <span class="count" id="cntXuNoCross"></span></label>
     <button class="btn" id="btnXuCopy" title="Copy the comparison table (product rows and totals) to paste into Excel">Copy table</button>
@@ -1306,7 +1392,28 @@ table.ourTable td.srcCell .pill{margin-left:6px;cursor:pointer}
   <div class="xsTop"><div id="xsSetup"></div><div class="cards" id="xsCards"></div></div>
   <div class="pane" id="paneCrosses"></div>
 </section>
+  <!-- ============ CLARIFICATION REPORT ============ -->
+  <section class="view" id="view-clarify">
+    <div class="paneToolbar">
+      <div class="seg" id="segClarifyTo" title="Who the clarification goes to">
+        <button data-to="all" class="on">All</button><button data-to="Vendor">Vendor contact</button><button data-to="Facility">Facility contact</button>
+      </div>
+      <select id="clarifyStatus" title="Filter by status">
+        <option value="">Any status</option><option>Open</option><option>Sent</option><option>Answered</option><option>Closed</option>
+      </select>
+      <div class="search"><span class="ico">&#8981;</span><input id="clarifySearch" type="search" placeholder="Item # &middot; description &middot; facility &middot; vendor &middot; note" autocomplete="off"></div>
+      <span class="sep"></span>
+      <button class="btn primary" id="btnClarifyXlsx" title="One workbook: the full report plus a sheet per contact, ready to send">Download Excel report</button>
+      <button class="btn danger" id="btnClarifyClosed" title="Remove every item whose status is Closed">Remove closed</button>
+      <span class="note" id="clarifyNote">Flag a line from the Cross window, the Crosses table or a row&rsquo;s side panel, add what needs clarifying, then export this report for the vendor or facility contact.</span>
+    </div>
+    <div class="pane" id="paneClarify"></div>
+  </section>
 </main>
+
+<!-- ============ ROW SIDE PANEL (triple-click a row on Our Pricing / Facility-Vendor Pricing) ============ -->
+<aside class="rowSide" id="rowSide" aria-label="Row details"></aside>
+<div class="flagPop" id="flagPop"></div>
 
 <!-- ============ MODAL ============ -->
 <div class="scrim" id="scrim">
@@ -1996,6 +2103,8 @@ const state = {
      pair. */
   cross: { vendorA:null, vendorASig:null, vendorASavedAt:null,
            vendorB:null, vendorBSig:null, vendorBSavedAt:null, remarks:{} },
+  /* Clarification report: lines flagged by the analyst, each with a note for the vendor / facility contact */
+  clarify: { items:[] },
   ui: { mode:'grouped', tab:'normalization', search:'', colFilters:{}, groupField:'itemNumber',
         lineItemCols:['packagingDetails','factorQty','facility','vendorName','description'],
         lineItemColWidths:{},
@@ -2051,7 +2160,7 @@ const keyLabel  = key => isNoGroup(key) ? '(no ' + groupFieldCol().name + ')' : 
 
 function snapshot(){
   return JSON.stringify({ rows:state.rows, overrides:state.overrides, expanded:state.expanded,
-                          alt:state.alt, cross:state.cross, our:state.our, programs:state.programs });
+                          alt:state.alt, cross:state.cross, our:state.our, programs:state.programs, clarify:state.clarify });
 }
 let dirty = false;
 function markDirty(){
@@ -2077,12 +2186,17 @@ function restore(json){
   state.cross = adoptCross(s.cross);
   if (s.our) { state.our = adoptOur(s.our); bumpOurSeq(state.our.rows); }
   if (s.programs) state.programs = adoptPrograms(s.programs);
+  state.clarify = adoptClarify(s.clarify);
   bumpSeq(state.rows); bumpSeq(state.alt.rows);
 }
 /* snapshots and sessions written before the Cross feature simply have no alt/cross block */
 function adoptAlt(a){
   a = a || {};
   return { rows:a.rows || [], overrides:a.overrides || {}, expanded:a.expanded || {} };
+}
+function adoptClarify(c){
+  c = c || {};
+  return { items:Array.isArray(c.items) ? c.items : [] };
 }
 function adoptCross(c){
   c = c || {};
@@ -3299,7 +3413,7 @@ function buildRowEl(item, vIdx, lefts, fz){
   const g = isGroup ? item.group : null;
   const r = el('div', 'r' + (isGroup ? ' grp' : ' child') + (!isGroup && vIdx % 2 ? ' alt' : '') +
                 (isGroup && (g.issueLevel === 'warn' || g.issueLevel === 'error') ? ' warn' : '') +
-                (isGroup && g.hasOverride && g.issueLevel === 'ok' ? ' ovr' : ''));
+                (isGroup && g.hasOverride && g.issueLevel === 'ok' ? ' ovr' : '') + (cur && cur.r === vIdx ? ' rowSel' : ''));
   r.style.top = (vIdx * ROW_H) + 'px';
   r.style.width = totalWidth() + 'px';
   r.dataset.v = vIdx;
@@ -3444,13 +3558,14 @@ function renderRows(force){
   body.appendChild(frag);
 }
 
-const viewDirty = { aggregated:true, output:true, crosses:true, our:true };
+const viewDirty = { aggregated:true, output:true, crosses:true, our:true, clarify:true };
 function renderActiveView(){
   const tab = state.ui.tab;
   if (tab === 'our'        && viewDirty.our)        { renderOur();        viewDirty.our = false; }
   if (tab === 'aggregated' && viewDirty.aggregated) { renderAggregated(); viewDirty.aggregated = false; }
   if (tab === 'output'     && viewDirty.output)     { renderOutput();     viewDirty.output = false; }
   if (tab === 'crosses'    && viewDirty.crosses)    { renderCrosses();    viewDirty.crosses = false; }
+  if (tab === 'clarify'    && viewDirty.clarify)    { renderClarify();    viewDirty.clarify = false; }
 }
 function refresh(){
   rebuild();
@@ -3462,9 +3577,10 @@ function refresh(){
   renderGroupFieldUI();
   renderBulkBar();
   renderRail();
-  viewDirty.aggregated = viewDirty.output = viewDirty.crosses = viewDirty.our = true;
+  viewDirty.aggregated = viewDirty.output = viewDirty.crosses = viewDirty.our = viewDirty.clarify = true;
   renderActiveView();
   refreshOverrideModal();
+  if (rowSideCtx) syncRowSide();
   saveSoon();
 }
 /** Keeps the override modal (opened via double-click on the main sheet)
@@ -3501,6 +3617,7 @@ function paintSelection(){
   const SRg = rangeNorm(sel), CRg = copyRange;
   body.querySelectorAll('.r').forEach(rEl => {
     const r = +rEl.dataset.v;
+    rEl.classList.toggle('rowSel', !!cur && cur.r === r);
     rEl.querySelectorAll('.c').forEach(cEl => {
       if (cEl.classList.contains('gutter')) return;
       const c = +cEl.dataset.c;
@@ -4863,7 +4980,8 @@ function srcEditTable(g){
   g.detail.forEach((d, r) => {
     const row = d.row;
     const side = xuSideOfRow(row);
-    const tr = el('tr', side ? 'xhl xhl' + side : null);
+    const tr = el('tr', (side ? 'xhl xhl' + side : '') + (rowSideCtx && rowSideCtx.type === 'fac' && rowSideCtx.id === row.id ? ' rowSel' : '') || null);
+    tr.dataset.rowid = row.id;
     const idx = el('td', 'idxCell', String(state.rows.indexOf(row) + 1));
     if (side) idx.appendChild(xuTag(side));
     idx.title = 'Click to select this row\u2019s Ordered QTY and UM';
@@ -4928,7 +5046,11 @@ function srcEditTable(g){
     });
 
     tr.appendChild(el('td', 'n', resText(d.calc.orderedQtyNorm, 'qty')));
-    tr.appendChild(el('td', 'n', resText(d.calc.eachPrice, 'price')));
+    if (g.pillEach) {
+      const ep = el('td', 'n pillCell'), et = resText(d.calc.eachPrice, 'price');
+      ep.appendChild(pricePill(et && et !== dash ? 'fac' : 'none', 'Facility each', et && et !== dash ? et : 'n/a'));
+      tr.appendChild(ep);
+    } else tr.appendChild(el('td', 'n', resText(d.calc.eachPrice, 'price')));
     (g.tailCols || []).forEach(cd => tr.appendChild(cd.td(d)));
     tb.appendChild(tr);
   });
@@ -6516,6 +6638,11 @@ function renderRail(){
     !state.rows.length ? 'Not started' : xOk + ' priced' + (xBad ? ' \u00b7 ' + xBad + ' unresolved' : '') ,
     !state.rows.length ? '' : xBad ? 'warn' : xOk ? 'ok' : '', () => switchTab('crosses')));
 
+  // Clarification report
+  rail.appendChild(el('span', 'railDivider'));
+  const cOpen = state.clarify.items.filter(i => i.status !== 'Closed').length;
+  rail.appendChild(railStage('Clarification Report', 'clarify', state.clarify.items.length ? cOpen + ' open \u00b7 ' + state.clarify.items.length + ' flagged' : 'Nothing flagged', cOpen ? 'warn' : '', () => switchTab('clarify')));
+
   // Audit Log
   rail.appendChild(el('span', 'railDivider'));
   rail.appendChild(railStage('Audit Log', 'output', state.auditEvents.length ? state.auditEvents.length + ' change' + (state.auditEvents.length === 1 ? '' : 's') + ' logged' : '', '', () => switchTab('output')));
@@ -6634,6 +6761,8 @@ function hideModal(){
   overrideModalKey = null;
   crossModalKey = null;
   xuHighlight = null;
+  xcPreselect = null;
+  if (typeof closeRowSide === 'function' && rowSideCtx && rowSideCtx.fromModal) closeRowSide();
   const pk = state.ui.tab === 'crosses' && document.querySelector('#paneCrosses tr.xuRow.picked');
   if (pk && pk.scrollIntoView) pk.scrollIntoView({ block:'nearest' });
 }
@@ -6697,7 +6826,7 @@ const VIEW_UI_KEYS = ['tab','mode','search','colFilters','freeze','issuesOnly','
   'modeB','searchB','sortKeyB','sortDirB','freezeB','issuesOnlyB','aggSearchB','aggAttnB','aggSelectedOnlyB','lastSubA','lastSubB',
   'lineItemCols','lineItemColWidths','lineItemView','lineItemCombineStat',
   'hideNoCross','xuShowNoCross','xsView','xsSearch','xuBase','xuSides','xuColWidths','xsRelColWidths',
-  'xsMode','ourHideTiers','xsGapX','xsGapExcl','xsGapOnly','ourSearch','ourIssuesOnly','ourMode','ourColWidths','ourColFilters','ocFac','ocVen','ocColWidths'];
+  'xsMode','ourHideTiers','xsGapX','xsGapExcl','xsGapOnly','ourSearch','ourIssuesOnly','ourMode','ourColWidths','ourColFilters','ocFac','ocVen','ocColWidths','xsGran','clarifyTo','clarifyStatus','clarifySearch'];
 const VIEW_KEY_SET = new Set(VIEW_UI_KEYS);
 const clone = o => JSON.parse(JSON.stringify(o === undefined ? null : o));
 const pickView = ui => { const o = {}; VIEW_UI_KEYS.forEach(k => { if (ui[k] !== undefined) o[k] = ui[k]; }); return o; };
@@ -6738,7 +6867,7 @@ function sessionPayload(){
   return { v:1, at:Date.now(), rows:state.rows, overrides:state.overrides,
            expanded:state.expanded, ui:sharedUi(),
            alt:state.alt, cross:state.cross,
-           our:state.our, programs:state.programs, auditEvents:state.auditEvents };
+           our:state.our, programs:state.programs, auditEvents:state.auditEvents, clarify:state.clarify };
 }
 let localFullWarned = false;
 function saveSession(){
@@ -6771,6 +6900,7 @@ function loadSession(silent){
     state.auditEvents = Array.isArray(s.auditEvents) ? s.auditEvents : [];
     state.alt   = adoptAlt(s.alt);
     state.cross = adoptCross(s.cross);
+    state.clarify = adoptClarify(s.clarify);
     /* only the shared settings come from the case; the view stays this browser's own */
     if (s.ui) Object.keys(s.ui).forEach(k => { if (!VIEW_KEY_SET.has(k)) state.ui[k] = s.ui[k]; });
     if (!sameCase) state.ui.tab = 'normalization';
@@ -6786,6 +6916,7 @@ function blankWorkingState(){
   state.cross = { vendorA:null, vendorASig:null, vendorASavedAt:null,
                    vendorB:null, vendorBSig:null, vendorBSavedAt:null, remarks:{} };
   state.ui.colFilters = {};
+  state.clarify = { items:[] };
 }
 /** Switch which named session is active. Saves whatever's current first,
  *  under its OWN name \u2014 nothing is lost, it just stops being on screen. */
@@ -7610,6 +7741,8 @@ function renderCrosses(){
   const mode = state.ui.xsMode || 'ours';
   [...$('#segXsMode').children].forEach(x => x.classList.toggle('on', x.dataset.xs === mode));
   $('#btnXsSetup').style.display = mode === 'fac' ? '' : 'none';
+  $('#segXsGran').style.display = mode === 'fac' ? 'none' : '';
+  [...$('#segXsGran').children].forEach(x => x.classList.toggle('on', x.dataset.gran === (state.ui.xsGran === 'item' ? 'item' : 'agg')));
   $('#xsNote').innerHTML = mode === 'fac'
     ? 'Facility A&rsquo;s usage priced at Facility B&rsquo;s item with the same Crossed To. Lowest each price in green; <b style="color:var(--err)">NO CROSS</b> in red.'
     : 'Facility/Vendor usage priced at the crossed Our Pricing item and tier. Lowest each price in green; unresolved crosses in red.';
@@ -8038,6 +8171,10 @@ $('#btnXuCopy').addEventListener('click', () => (state.ui.xsMode || 'ours') === 
 $('#segXsMode').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
   state.ui.xsMode = b.dataset.xs; saveViewPrefs(); renderCrosses();
+});
+$('#segXsGran').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  state.ui.xsGran = b.dataset.gran; saveViewPrefs(); renderCrosses();
 });
 $('#chkXuNoCross').addEventListener('change', e => { state.ui.xuShowNoCross = e.target.checked; saveViewPrefs(); renderCrosses(); });
 $('#btnXsWidths').addEventListener('click', () => {
@@ -8646,7 +8783,7 @@ function setOurField(id, k, val){
 const OUR_GUT_W = 44, OUR_CK_W = 26, OUR_ST_W = 18, OUR_ROW_CAP = 3000;
 let oCur = null, oSel = null, oCopy = null, oEditor = null, oAnchor = null, oPendingEdit = false;
 let oView = { cols:[], rows:[], items:[], trs:[], tds:[], idx:new Map(), total:0 };
-let oPainted = [];
+let oPainted = [], oRowSelEl = null;
 const oColLetter = i => { let s = ''; i++; while (i > 0) { const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); } return s; };
 function ourColumns(includeHidden){
   const cols = [];
@@ -9010,6 +9147,9 @@ function ourPaint(){
     }
   }
   if (oCur && oView.tds[oCur.r] && oView.tds[oCur.r][oCur.c]) { const td = oView.tds[oCur.r][oCur.c]; td.classList.add('cur'); oPainted.push(td); }
+  if (oRowSelEl) oRowSelEl.classList.remove('rowSel');
+  oRowSelEl = oCur ? (oView.trs[oCur.r] || null) : null;
+  if (oRowSelEl) oRowSelEl.classList.add('rowSel');
 }
 function ourSetCur(r, c, extend){
   const n = oView.rows.length; if (!n) return;
@@ -10137,6 +10277,33 @@ function lineMessage(r){
   return r.message || XSTATE[r.state].label;
 }
 /** One cross per Crossed To value (case-insensitive), whatever the sheet is grouped by. */
+function finishCross(c){
+  const L = c.lines;
+  c.net = L.reduce((s, r) => s + r.observedTotal, 0);
+  c.eaches = L.reduce((s, r) => s + (r.eaches || 0), 0);
+  c.bad = L.filter(r => !lineOk(r));
+  c.ok = !c.bad.length;
+  c.expected = c.ok ? L.reduce((s, r) => s + r.expectedTotal, 0) : null;
+  c.observedEach = c.eaches > 0 ? c.net / c.eaches : null;
+  c.contractEach = c.ok && c.eaches > 0 ? c.expected / c.eaches : null;
+  c.diff = c.ok ? c.net - c.expected : null;
+  c.savePct = c.diff != null && c.net > 0 ? c.diff / c.net * 100 : null;
+  c.gap = c.ok ? gapOf(c.observedEach, c.contractEach) : null;
+  c.flag = c.gap != null && c.gap >= xsGapX();
+  c.our = L.find(r => r.group) || null;
+  c.status = c.ok ? 'Resolved' : lineStatus(c.bad[0]) + (L.length > 1 ? ' (' + c.bad.length + ' of ' + L.length + ' lines)' : '');
+  c.messages = ocUniq(c.bad.map(lineMessage));
+  c.search = [c.label, c.our ? c.our.description : '', ...L.map(r => [r.facility, r.vendor, r.row.itemNumber, r.d.eff.description].join(' '))].join(' ').toLowerCase();
+}
+/** Per-item view: one pseudo-cross per Facility/Vendor line, keeping the parent cross for grouping. */
+function crossItemRows(list){
+  const out = [];
+  list.forEach(c => c.lines.forEach(r => {
+    const x = { key:c.key, pid:r.row.id, label:c.label, lines:[r], parent:c, itemRow:true };
+    finishCross(x); out.push(x);
+  }));
+  return out;
+}
 function buildCrosses(){
   const rp = crossRowPricing();
   const F = state.ui.ocFac || XC_ALL, V = state.ui.ocVen || XC_ALL;
@@ -10149,24 +10316,7 @@ function buildCrosses(){
     if (!c) { c = { key:k, label:r.ourItemNumber, lines:[] }; m.set(k, c); list.push(c); }
     c.lines.push(r);
   });
-  list.forEach(c => {
-    const L = c.lines;
-    c.net = L.reduce((s, r) => s + r.observedTotal, 0);
-    c.eaches = L.reduce((s, r) => s + (r.eaches || 0), 0);
-    c.bad = L.filter(r => !lineOk(r));
-    c.ok = !c.bad.length;
-    c.expected = c.ok ? L.reduce((s, r) => s + r.expectedTotal, 0) : null;
-    c.observedEach = c.eaches > 0 ? c.net / c.eaches : null;
-    c.contractEach = c.ok && c.eaches > 0 ? c.expected / c.eaches : null;
-    c.diff = c.ok ? c.net - c.expected : null;
-    c.savePct = c.diff != null && c.net > 0 ? c.diff / c.net * 100 : null;
-    c.gap = c.ok ? gapOf(c.observedEach, c.contractEach) : null;
-    c.flag = c.gap != null && c.gap >= xsGapX();
-    c.our = L.find(r => r.group) || null;
-    c.status = c.ok ? 'Resolved' : lineStatus(c.bad[0]) + (L.length > 1 ? ' (' + c.bad.length + ' of ' + L.length + ' lines)' : '');
-    c.messages = ocUniq(c.bad.map(lineMessage));
-    c.search = [c.label, c.our ? c.our.description : '', ...L.map(r => [r.facility, r.vendor, r.row.itemNumber, r.d.eff.description].join(' '))].join(' ').toLowerCase();
-  });
+  list.forEach(finishCross);
   return { list, notCrossed, rp };
 }
 function crossLinesFor(key, rp){
@@ -10288,8 +10438,10 @@ let xcShowOther = false;   /* \u201cShow other normalized Facility/Vendor items\
 /** Which of this cross's lines belong to the Facility/Vendor being worked with:
  *  the Facility A side when opened from Cross Analysis, else the Facility / Vendor
  *  filter of the Crosses table. With no filter every line counts as selected. */
+let xcPreselect = null;   /* { key, ids } \u2014 set when the cross window is opened from a per-item row */
 function crossSelection(lines){
   const ids = f => new Set(lines.filter(f).map(r => r.row.id));
+  if (xcPreselect && lines.length && xcPreselect.key === normIdent(lines[0].ourItemNumber) && xcPreselect.ids.size) return { ids:new Set([...xcPreselect.ids].filter(id => lines.some(r => r.row.id === id))), filtered:true };
   if (xuHighlight && xuHighlight.A) {
     const s = ids(r => xuHighlight.A.ids.has(r.row.id));
     if (s.size) return { ids:s, filtered:true };
@@ -10344,6 +10496,7 @@ function buildCrossPanel(key){
   hd.appendChild(el('span', 'edDesc' + (og ? '' : ' none'), og ? (og.rep.description || '(no description)') : 'Not in Our Pricing'));
   hd.appendChild(el('span', 'meta', shown.length + ' Facility/Vendor line' + (shown.length === 1 ? '' : 's') + (!showOther && othLines.length ? ' (+' + othLines.length + ' other normalized hidden)' : '') + ' \u00b7 ' +
     facs.length + ' facilit' + (facs.length === 1 ? 'y' : 'ies') + ' \u00b7 ' + fmtMoney(net) + ' \u00b7 ' + fmtQty(Math.round(eaches * 1e4) / 1e4) + ' eaches'));
+  hd.appendChild(flagButton(() => flagCrossData({ key:key, label:label, lines:shown, net:net, observedEach:eaches > 0 ? net / eaches : null, contractEach:null }), { label:'\u2691 Flag this product for clarification' }));
   p.appendChild(hd);
 
   /* ---- Our Pricing side ---- */
@@ -10361,7 +10514,8 @@ function buildCrossPanel(key){
       .forEach(h => hr.appendChild(el('th', null, h)));
     t.appendChild(hr);
     og.rows.forEach(rec => {
-      const tr = el('tr');
+      const tr = el('tr', rowSideCtx && rowSideCtx.type === 'our' && rowSideCtx.id === rec.id ? 'rowSel' : null);
+      tr.dataset.ourid = rec.id;
       tr.appendChild(el('td', null, rec.itemNumber || dash));
       tr.appendChild(el('td', null, rec.productCode || dash));
       tr.appendChild(el('td', null, rec.description || dash));
@@ -10389,11 +10543,12 @@ function buildCrossPanel(key){
       const pg = programById(rec.program), tiered = !!(pg && (pg.tiers || []).length);
       tr.appendChild(el('td', null, pg ? progLabel(pg) : 'Standard'));
       tr.appendChild(el('td', null, tiered ? ocJoin(pg.tiers.map(t2 => t2.contract || ''), 6) || dash : (rec.contract || dash)));
-      const pr = (name, v) => { const n = priceNum(v); if (n === null) return name + ' n/a'; if (isNaN(n)) return name + ' ?' + v;
-        return name + ' ' + fmtMoney(n) + (epc ? ' \u00b7 ' + fmtPrice(n / epc) + ' ea' : ''); };
+      const prPill = (name, v) => { const n = priceNum(v);
+        if (n === null) return pricePill('none', name, 'n/a');
+        if (isNaN(n)) return pricePill('none', name, '?' + v);
+        return epc ? pricePill('our', name + ' each', fmtPrice(n / epc), fmtMoney(n) + '/case') : pricePill('our', name, fmtMoney(n) + '/case', 'no pack'); };
       const pt = el('td', 'prices');
-      pt.textContent = tiered ? pg.tiers.map(t2 => pr(t2.name, (rec.prices || {})[t2.id])).join('\n') : pr('Standard', rec.stdPrice);
-      pt.style.whiteSpace = 'pre-line';
+      (tiered ? pg.tiers.map(t2 => prPill(t2.name, (rec.prices || {})[t2.id])) : [prPill('Standard', rec.stdPrice)]).forEach(x => pt.appendChild(x));
       tr.appendChild(pt);
       t.appendChild(tr);
     });
@@ -10413,6 +10568,21 @@ function buildCrossPanel(key){
   put('Contract each', exp != null && eaches > 0 ? fmtPrice(exp / eaches) : dash);
   put('Difference', exp == null ? dash : signedMoney(net - exp) + (net - exp >= 0 ? ' (Our Pricing lower)' : ' (Our Pricing higher)'));
   p.appendChild(sum);
+  {
+    const oEach = eaches > 0 ? net / eaches : null, cEach = exp != null && eaches > 0 ? exp / eaches : null;
+    const strip = el('div', 'pillStrip');
+    strip.appendChild(el('span', 'lbl', 'Each price'));
+    const lowOur = oEach != null && cEach != null && cEach < oEach - 1e-9, lowFac = oEach != null && cEach != null && oEach < cEach - 1e-9;
+    const pf = pricePill(oEach == null ? 'none' : 'fac', 'Facility each', oEach == null ? 'n/a' : fmtPrice(oEach)); if (lowFac) pf.classList.add('win');
+    const po = pricePill(cEach == null ? 'none' : 'our', 'Our each', cEach == null ? 'n/a' : fmtPrice(cEach)); if (lowOur) po.classList.add('win');
+    strip.appendChild(pf); strip.appendChild(po);
+    if (oEach != null && cEach != null) {
+      const d = oEach - cEach;
+      strip.appendChild(pricePill(d > 1e-9 ? 'diffGood' : d < -1e-9 ? 'diffBad' : 'none', d > 1e-9 ? 'Our pricing lower' : d < -1e-9 ? 'Our pricing higher' : 'Same', (d > 1e-9 ? '\u2212' : d < -1e-9 ? '+' : '') + fmtPrice(Math.abs(d)) + ' ea'));
+    }
+    strip.appendChild(el('span', 'lbl', showOther ? 'all lines shown' : (selInfo.filtered ? 'selected Facility/Vendor' : 'all lines')));
+    p.appendChild(strip);
+  }
   const bg = exp != null && eaches > 0 ? gapOf(net / eaches, exp / eaches) : null;
   if (bg != null && bg >= xsGapX()) p.appendChild(Object.assign(el('div', 'msg err'), { innerHTML:'<b>\u26a0 Price gap ' + esc(fmtGap(bg)) +
     '.</b> Observed ' + esc(fmtPrice(net / eaches)) + ' each vs contract ' + esc(fmtPrice(exp / eaches)) + ' each. ' + esc(GAP_HINT.replace(/ \(double-click.*\)\.$/, '.')) }));
@@ -10429,7 +10599,7 @@ function buildCrossPanel(key){
   const cell = (txt, cls, title) => { const x = el('td', cls || null, txt == null || txt === '' ? dash : txt); if (title) x.title = title; return x; };
   const fvLabel = r => xlBlankLbl(r.facility) + ' \u00b7 ' + xlBlankLbl(r.vendor);
   const mkPg = (subset, suffix) => ({
-    key:'xto:' + key + suffix, detail:subset.map(r => r.d), rows:subset.map(r => r.row),
+    key:'xto:' + key + suffix, detail:subset.map(r => r.d), rows:subset.map(r => r.row), pillEach:true,
     leadCols:[
       { key:'xc_item', label:'Item #', w:110, td:d => cell(String(d.row.itemNumber || '')) },
       { key:'xc_fv', label:'Facility \u00b7 Vendor', w:190, td:d => cell(fvLabel(R(d))) }
@@ -10441,14 +10611,15 @@ function buildCrossPanel(key){
       { key:'xc_ourqty', label:'Our Qty (' + ourUM + ')', w:100, numeric:true, td:d => { const r = R(d);
           if (r.eaches == null || !ourPer) return cell('', 'n', ourPer ? '' : ourUM + ' is not in the Our Pricing Packaging Details');
           return cell(fmtQty(Math.round(r.eaches / ourPer * 1e4) / 1e4) + ' ' + ourUM, 'n', 'Normalized eaches \u00f7 ' + fmtQty(ourPer) + ' eaches per ' + ourUM + ' (Our Pricing)'); } },
-      { key:'xc_ceach', label:'Contract Each', w:96, numeric:true, td:d => { const r = R(d); return cell(r.contractEach == null ? '' : fmtPrice(r.contractEach), 'n'); } },
+      { key:'xc_ceach', label:'Our Each', w:150, td:d => { const r = R(d); const x = el('td', 'pillCell'); x.appendChild(r.contractEach == null ? pricePill('none', 'Our each', 'n/a') : pricePill('our', 'Our each', fmtPrice(r.contractEach))); return x; } },
       { key:'xc_exp', label:'Expected', w:96, numeric:true, td:d => { const r = R(d); return cell(r.expectedTotal == null ? '' : fmtMoney(r.expectedTotal), 'n'); } },
       { key:'xc_diff', label:'Difference', w:96, numeric:true, td:d => { const r = R(d);
           const v = r.expectedTotal == null ? null : r.observedTotal - r.expectedTotal;
           return cell(v == null ? '' : signedMoney(v), 'n' + (v > 0.005 ? ' xcGood' : v < -0.005 ? ' xcBad' : '')); } },
       { key:'xc_status', label:'Status', w:140, td:d => { const r = R(d);
           if (lineOk(r) && r.gap != null && r.gap >= xsGapX()) return cell('\u26a0 ' + fmtGap(r.gap) + ' price gap', 'xcBad', GAP_HINT);
-          return cell(lineStatus(r), lineOk(r) ? null : 'xcBad', lineMessage(r) || provenanceText(r)); } }
+          return cell(lineStatus(r), lineOk(r) ? null : 'xcBad', lineMessage(r) || provenanceText(r)); } },
+      { key:'xc_flag', label:'Flag', w:60, td:d => { const x = el('td'); x.appendChild(flagButton(() => flagLineData(R(d)))); return x; } }
     ]
   });
   const pg = mkPg(selLines, ':sel');
@@ -10583,16 +10754,22 @@ function renderOurCompare(pane, cards){
   $('#chkXuNoCross').checked = showNC;
   $('#cntXuNoCross').textContent = T.attn ? String(T.attn) : '';
   const q = String(state.ui.xsSearch || '').trim().toLowerCase();
-  let rows = all.filter(c => showNC || c.ok);
+  const perItem = state.ui.xsGran === 'item';
+  let rows = (perItem ? crossItemRows(all) : all).filter(c => showNC || c.ok);
   if (state.ui.xsGapOnly) rows = rows.filter(c => c.flag);
   if (q) rows = rows.filter(c => c.search.indexOf(q) >= 0);
-  rows.sort((a, b) => (b.ok - a.ok) || b.net - a.net);
+  if (perItem) {
+    const cmp = (a, b) => String(a).localeCompare(String(b), undefined, { numeric:true });
+    rows.sort((a, b) => (b.parent.ok - a.parent.ok) || (b.parent.net - a.parent.net) || cmp(a.key, b.key) ||
+      cmp(xlBlankLbl(a.lines[0].facility), xlBlankLbl(b.lines[0].facility)) || cmp(xlBlankLbl(a.lines[0].vendor), xlBlankLbl(b.lines[0].vendor)) ||
+      cmp(a.lines[0].row.itemNumber || '', b.lines[0].row.itemNumber || ''));
+  } else rows.sort((a, b) => (b.ok - a.ok) || b.net - a.net);
   ocLast = rows;
 
   const t = el('table', 'grid xuTable ocTable');
   const thead = el('thead'), h1 = el('tr'), h2 = el('tr', 'xuH2');
   const grp = (txt, span, cls) => { const x = el('th', 'side ' + (cls || ''), txt); x.colSpan = span; h1.appendChild(x); };
-  grp('Comparison', 4, 'xuCmpH'); grp('Facility/Vendor Pricing \u2014 observed (all lines with this Crossed To)', 10, 'xuAH'); grp('Our Pricing \u2014 resolved from Crossed To + Tier to Apply', 12, 'xuBH');
+  grp('Comparison', 4, 'xuCmpH'); grp(perItem ? 'Facility/Vendor Pricing \u2014 observed (one line per row)' : 'Facility/Vendor Pricing \u2014 observed (all lines with this Crossed To)', 10, 'xuAH'); grp('Our Pricing \u2014 resolved from Crossed To + Tier to Apply', 12, 'xuBH');
   const heads = [['Observed Each', 'num'], ['Contract Each', 'num'], ['Best Priced', ''], ['Difference', 'num'],
     ['Lines', 'num sideStart'], ['Order Qty', 'num'], ['UOM', ''], ['Facility', ''], ['Vendor', ''], ['Item #', ''], ['Description', ''], ['Channel', ''], ['Each Price', 'num'], ['Total Net Sales', 'num'],
     ['Crossed To', 'sideStart'], ['Our Description', ''], ['Program \u00b7 Tier', ''], ['Contract', ''], ['Base Price', 'num'], ['Adjustment', ''], ['Override', 'num'],
@@ -10608,16 +10785,26 @@ function renderOurCompare(pane, cards){
   xuNavRows = [];
   rows.forEach(c => {
     const L = c.lines, o = c.our;
-    const tr = el('tr', 'xuRow' + (c.ok ? '' : ' nocross') + (c.flag ? ' gapFlag' : ''));
+    const pid = c.pid || c.key;
+    const firstOfCross = c.itemRow && (rows[rows.indexOf(c) - 1] || {}).key !== c.key;
+    const tr = el('tr', 'xuRow' + (c.ok ? '' : ' nocross') + (c.flag ? ' gapFlag' : '') + (c.itemRow ? ' itemRow' + (firstOfCross ? ' xgTop' : '') : ''));
     tr.tabIndex = 0;
-    tr.title = 'Double-click (or Enter) to open this cross with its Our Pricing item and normalize the lines together' + (c.messages.length ? '\n\n' + c.messages.join('\n') : '');
-    tr.dataset.pid = c.key;
-    if (c.key === xsPicked) tr.classList.add('picked');
-    tr.addEventListener('click', e => { if (!e.target.closest('.xsGrip, button')) pickCrossRow(c.key); });
-    const open = () => { pickCrossRow(c.key); xuHighlight = null; openCrossEditor(c.key, crossNav(c.key)); };
+    tr.title = (c.itemRow ? 'Double-click (or Enter) to open this line\u2019s cross \u2014 this Facility/Vendor is shown first, the other normalized ones are one tick away' : 'Double-click (or Enter) to open this cross with its Our Pricing item and normalize the lines together') + (c.messages.length ? '\n\n' + c.messages.join('\n') : '');
+    tr.dataset.pid = pid;
+    if (pid === xsPicked) tr.classList.add('picked');
+    tr.addEventListener('click', e => { if (!e.target.closest('.xsGrip, button')) pickCrossRow(pid); });
+    const open = c.itemRow
+      ? () => {
+          pickCrossRow(pid);
+          const ln = c.lines[0], fv = xlBlankLbl(ln.facility) + '\u0001' + xlBlankLbl(ln.vendor);
+          xuHighlight = null;
+          xcPreselect = { key:c.key, ids:new Set(c.parent.lines.filter(r => xlBlankLbl(r.facility) + '\u0001' + xlBlankLbl(r.vendor) === fv).map(r => r.row.id)) };
+          openCrossEditor(c.key, { ids:() => xuNavRows.map(x => x.id), cur:pid, noun:'line', go:id2 => { const x = xuNavRows.find(n => n.id === id2); if (x) x.open(); } });
+        }
+      : () => { pickCrossRow(c.key); xuHighlight = null; xcPreselect = null; openCrossEditor(c.key, crossNav(c.key)); };
     tr.addEventListener('dblclick', e => { if (e.target.closest('.xsGrip') || document.body.classList.contains('xsResizing')) return; open(); });
     tr.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); open(); } });
-    xuNavRows.push({ id:c.key, open });
+    xuNavRows.push({ id:pid, open });
     const best = c.ok && c.observedEach != null && c.contractEach != null
       ? (c.contractEach < c.observedEach - 1e-9 ? 'our' : c.observedEach < c.contractEach - 1e-9 ? 'fac' : 'same') : null;
     td(tr, c.observedEach == null ? '' : fmtPrice(c.observedEach), 'num' + (best === 'fac' ? ' best' : ''));
@@ -10639,6 +10826,7 @@ function renderOurCompare(pane, cards){
     const dsc = td(tr, descs.length ? descs[0] + (descs.length > 1 ? ' (+' + (descs.length - 1) + ')' : '') : '', 'desc', descs.join('\n'));
     const first = L[0];
     dsc.insertBefore(itemCopyBtn({ item:first.row.itemNumber, mfg:first.d.eff.mfgCatalog, desc:first.d.eff.description, vendor:first.vendor }), dsc.firstChild);
+    dsc.insertBefore(c.itemRow ? flagButton(() => flagLineData(first)) : flagButton(() => flagCrossData(c)), dsc.firstChild);
     td(tr, ocJoin(L.map(r => r.channel)));
     td(tr, c.observedEach == null ? '' : fmtPrice(c.observedEach), 'num');
     td(tr, fmtMoney(c.net), 'num');
@@ -10676,6 +10864,7 @@ function renderOurCompare(pane, cards){
   pane.appendChild(t);
   makeColsResizable(t, [...h2.children], 'ocColWidths');
   pane.appendChild(el('div', 'xuFoot',
+    (perItem ? 'Per item view: one row per Facility/Vendor line, grouped under its cross. Cards and totals above still count each cross once. ' : '') +
     'Crossing uses only the Crossed To column: every Facility/Vendor line with the same Crossed To value is one cross, whatever the Facility/Vendor sheet is grouped by. ' +
     'Each line is priced at the Our Pricing item named in Crossed To and at its own Tier to Apply; order-level rules are added per order (same facility, vendor, channel and Order Ref). ' +
     'Double-click a row to open the cross: the Our Pricing item and all its Facility/Vendor lines together, where Ordered QTY / UM and the Our Pricing pack size can be normalized side by side. ' +
@@ -10844,6 +11033,524 @@ function addAuditSheets(wb){
   op.columns.forEach((c, i) => { c.width = Math.min(44, Math.max(10, String(hdr[i] || '').length + 2)); });
 }
 
+/* ==================================================================== EACH-PRICE PILLS
+   Same pill layout for Our Pricing (amber) and Facility/Vendor (blue) each prices. */
+function pricePill(kind, label, value, sub, title){
+  const s = el('span', 'pricePill ' + kind);
+  if (title) s.title = title;
+  s.appendChild(el('span', 'pl', label));
+  s.appendChild(el('span', 'pv', value));
+  if (sub) s.appendChild(el('span', 'ps', sub));
+  return s;
+}
+
+/* ============================================================ CLARIFICATION REPORT
+   Analysts flag a line (or a whole cross / Our Pricing item), say what the vendor or
+   facility contact needs to clarify, and the report collects them for an Excel export. */
+const CL_STATUSES = ['Open', 'Sent', 'Answered', 'Closed'];
+const clFind = (refType, refId) => state.clarify.items.find(i => i.refType === refType && i.refId === refId);
+const clContact = it => it.to === 'Facility' ? (it.facility || '(no facility)') : (it.vendor || '(no vendor)');
+function flagLineData(r){
+  const e = r.d.eff, og = ourD.byKey.get(ourKey(r.ourItemNumber));
+  return { refType:'line', refId:r.row.id, kind:'Facility/Vendor line',
+    facility:xlBlankLbl(r.facility), vendor:xlBlankLbl(r.vendor), itemNumber:String(r.row.itemNumber || '').trim(),
+    mfg:String(e.mfgCatalog || ''), description:String(e.description || ''),
+    ourItem:String(r.ourItemNumber || ''), ourDesc:og ? String(og.rep.description || '') : '',
+    qty:r.eaches, net:r.observedTotal, observedEach:r.eaches > 0 ? r.observedTotal / r.eaches : null,
+    contractEach:r.contractEach == null ? null : r.contractEach, issue:lineOk(r) ? '' : (lineMessage(r) || '') };
+}
+function flagCrossData(c){
+  const L = c.lines || [], og = ourD.byKey.get(ourKey(c.label));
+  const net = L.reduce((s, r) => s + r.observedTotal, 0), eaches = L.reduce((s, r) => s + (r.eaches || 0), 0);
+  const bad = L.filter(r => !lineOk(r)), ok = L.length > 0 && !bad.length;
+  const exp = ok ? L.reduce((s, r) => s + r.expectedTotal, 0) : null;
+  return { refType:'cross', refId:normIdent(c.key || c.label), kind:'Cross (product)',
+    facility:ocUniq(L.map(r => xlBlankLbl(r.facility))).join(', '), vendor:ocUniq(L.map(r => xlBlankLbl(r.vendor))).join(', '),
+    itemNumber:ocUniq(L.map(r => String(r.row.itemNumber || '').trim())).join(', '), mfg:'',
+    description:L[0] ? String(L[0].d.eff.description || '') : '', ourItem:String(c.label || ''), ourDesc:og ? String(og.rep.description || '') : '',
+    qty:eaches, net, observedEach:eaches > 0 ? net / eaches : null, contractEach:ok && eaches > 0 ? exp / eaches : null,
+    issue:ocUniq(bad.map(lineMessage)).join('; ') };
+}
+function flagOurData(rec){
+  return { refType:'our', refId:rec.id, kind:'Our Pricing item', facility:'', vendor:String(rec.vendor || ''), itemNumber:String(rec.itemNumber || ''),
+    mfg:String(rec.productCode || ''), description:String(rec.description || ''), ourItem:String(rec.itemNumber || ''), ourDesc:String(rec.description || ''),
+    qty:null, net:null, observedEach:null, contractEach:null, issue:'' };
+}
+function flagFacRowData(row){
+  const r = crossRowPricing().get(row.id);
+  if (r) return flagLineData(r);
+  return { refType:'line', refId:row.id, kind:'Facility/Vendor line', facility:xlBlankLbl(row.facility), vendor:xlBlankLbl(row.vendorName),
+    itemNumber:String(row.itemNumber || '').trim(), mfg:String(row.mfgCatalog || ''), description:String(row.description || ''),
+    ourItem:String(row.crossedTo || ''), ourDesc:'', qty:null, net:numOrZero(row.netSales), observedEach:null, contractEach:null, issue:'' };
+}
+function afterClarifyChange(){
+  viewDirty.clarify = true; renderRail();
+  if (state.ui.tab === 'clarify') renderClarify();
+  markDirty(); saveSoon();
+}
+function clarifyAdd(data, to, note){
+  pushUndo();
+  const it = Object.assign({ id:'cl_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), at:new Date().toISOString(),
+    to, note, status:'Open', response:'' }, data);
+  state.clarify.items.push(it);
+  logEvent('Flagged for clarification', (data.ourItem || data.itemNumber || data.refId), 'Send to ' + to + ' contact (' + clContact(it) + '): ' + note);
+  afterClarifyChange();
+  return it;
+}
+let flagPopAnchor = null;
+function closeFlagPop(){ $('#flagPop').classList.remove('on'); flagPopAnchor = null; }
+function openFlagPop(anchor, data, after){
+  const pop = $('#flagPop'); pop.innerHTML = '';
+  const ex = clFind(data.refType, data.refId);
+  pop.appendChild(el('h4', null, ex ? '\u2691 Flagged \u2014 edit the note' : '\u2691 Flag for clarification'));
+  pop.appendChild(el('div', 'what', data.kind + ': ' + [data.itemNumber || data.ourItem, data.description].filter(Boolean).join(' \u2014 ') +
+    (data.facility || data.vendor ? '\n' + [data.facility, data.vendor].filter(Boolean).join(' \u00b7 ') : '')));
+  pop.querySelector('.what').style.whiteSpace = 'pre-line';
+  pop.appendChild(el('label', null, 'Send to'));
+  const sel = el('select');
+  [['Vendor', 'Vendor contact' + (data.vendor ? ' \u2014 ' + data.vendor : '')], ['Facility', 'Facility contact' + (data.facility ? ' \u2014 ' + data.facility : '')]].forEach(([v, t]) => {
+    const o = el('option', null, t); o.value = v; sel.appendChild(o); });
+  sel.value = ex ? ex.to : 'Vendor';
+  pop.appendChild(sel);
+  pop.appendChild(el('label', null, 'What needs to be clarified?'));
+  const ta = el('textarea'); ta.placeholder = 'e.g. Confirm pack size (12/CS or 24/CS) and the price unit on this invoice line.';
+  ta.value = ex ? ex.note : '';
+  pop.appendChild(ta);
+  const act = el('div', 'act');
+  const cancel = el('button', 'btn sm', 'Cancel'); cancel.addEventListener('click', closeFlagPop);
+  act.appendChild(cancel);
+  if (ex) {
+    const rm = el('button', 'btn sm danger', 'Remove flag');
+    rm.addEventListener('click', () => {
+      pushUndo(); state.clarify.items = state.clarify.items.filter(i => i !== ex); afterClarifyChange();
+      closeFlagPop(); if (after) after(); toast('Removed from the Clarification Report.');
+    });
+    act.appendChild(rm);
+  }
+  const go = el('button', 'btn sm primary', ex ? 'Save note' : 'Send to report');
+  const submit = () => {
+    const note = ta.value.trim();
+    if (!note) { ta.focus(); ta.style.borderColor = 'var(--err)'; toast('Add a note on what the contact should clarify.', true); return; }
+    if (ex) { pushUndo(); ex.to = sel.value; ex.note = note; afterClarifyChange(); toast('Note updated in the Clarification Report.'); }
+    else { clarifyAdd(data, sel.value, note); toast('Sent to the Clarification Report (' + sel.value + ' contact).'); }
+    closeFlagPop(); if (after) after();
+  };
+  go.addEventListener('click', submit);
+  ta.addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); submit(); } });
+  act.appendChild(go);
+  pop.appendChild(act);
+  pop.classList.add('on');
+  flagPopAnchor = anchor;
+  const rc = anchor.getBoundingClientRect(), pw = pop.offsetWidth, ph = pop.offsetHeight;
+  let left = Math.min(Math.max(8, rc.right - pw), window.innerWidth - pw - 8);
+  let top = rc.bottom + 6; if (top + ph > window.innerHeight - 8) top = Math.max(8, rc.top - ph - 6);
+  pop.style.left = left + 'px'; pop.style.top = top + 'px';
+  ta.focus();
+}
+document.addEventListener('mousedown', e => {
+  if (!flagPopAnchor) return;
+  if (e.target.closest('#flagPop') || (flagPopAnchor.contains && flagPopAnchor.contains(e.target))) return;
+  closeFlagPop();
+}, true);
+document.addEventListener('keydown', e => { if (flagPopAnchor && e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeFlagPop(); } }, true);
+function flagButton(getData, opts){
+  opts = opts || {};
+  const b = el('button', 'flagBtn'); b.type = 'button';
+  const sync = () => {
+    let d = null; try { d = getData(); } catch (err) {}
+    const on = !!(d && clFind(d.refType, d.refId));
+    b.classList.toggle('on', on);
+    b.textContent = opts.label ? (on ? '\u2691 Flagged \u2014 edit note' : opts.label) : '\u2691';
+    b.title = on ? 'Flagged for clarification \u2014 click to edit the note' : 'Flag for clarification and send to the report';
+  };
+  sync();
+  ['mousedown', 'dblclick'].forEach(t => b.addEventListener(t, e => e.stopPropagation()));
+  b.addEventListener('click', e => {
+    e.stopPropagation(); e.preventDefault();
+    let d = null; try { d = getData(); } catch (err) {}
+    if (d) openFlagPop(b, d, sync);
+  });
+  return b;
+}
+
+/* ---- the report view ---- */
+function clarifyFiltered(){
+  const to = state.ui.clarifyTo || 'all', st = state.ui.clarifyStatus || '', q = String(state.ui.clarifySearch || '').trim().toLowerCase();
+  const cmp = (a, b) => String(a).localeCompare(String(b), undefined, { numeric:true });
+  return state.clarify.items.filter(i => (to === 'all' || i.to === to) && (!st || i.status === st) &&
+      (!q || [i.itemNumber, i.description, i.facility, i.vendor, i.ourItem, i.note, i.response].join(' ').toLowerCase().indexOf(q) >= 0))
+    .sort((a, b) => cmp(a.to, b.to) * -1 || cmp(clContact(a), clContact(b)) || cmp(a.facility, b.facility) || cmp(a.itemNumber, b.itemNumber) || cmp(a.at, b.at));
+}
+function clarifyGo(it){
+  if (it.refType === 'our') {
+    switchTab('our');
+    const ri = oView.idx.get(it.refId); if (ri != null) ourSetCur(ri, 0);
+    return;
+  }
+  if (it.refType === 'line') { const key = normIdent(it.ourItem); xuHighlight = null; xcPreselect = key ? { key, ids:new Set([it.refId]) } : null; }
+  else xcPreselect = null;
+  if (!normIdent(it.ourItem)) { toast('This line is not crossed to an Our Pricing item yet.', true); return; }
+  openCrossEditor(it.ourItem, null);
+}
+function renderClarify(){
+  const pane = $('#paneClarify'); pane.innerHTML = '';
+  const to = state.ui.clarifyTo || 'all';
+  [...$('#segClarifyTo').children].forEach(x => x.classList.toggle('on', x.dataset.to === to));
+  $('#clarifyStatus').value = state.ui.clarifyStatus || '';
+  if (document.activeElement !== $('#clarifySearch')) $('#clarifySearch').value = state.ui.clarifySearch || '';
+  const all = state.clarify.items, items = clarifyFiltered();
+  $('#btnClarifyXlsx').disabled = !items.length;
+  $('#btnClarifyClosed').disabled = !all.some(i => i.status === 'Closed');
+  if (!all.length) {
+    pane.appendChild(el('div', 'clEmpty', 'Nothing has been flagged yet.\nOpen a cross, click \u2691 on a line (or use the \u2691 in the Crosses table, or triple-click a row on Our Pricing / Facility/Vendor Pricing and use the side panel), write what the contact should clarify, and it lands here.'));
+    pane.firstChild.style.whiteSpace = 'pre-line'; return;
+  }
+  if (!items.length) { pane.appendChild(el('div', 'clEmpty', 'No flagged item matches these filters.')); return; }
+  const t = el('table', 'clTable');
+  const hr = el('tr');
+  ['#', 'Flagged', 'Send to', 'Facility', 'Vendor', 'Item #', 'Description', 'Our Item #', 'Observed each', 'Our each', 'Difference', 'Analyst note \u2014 what to clarify', 'Contact response', 'Status', ''].forEach(h => hr.appendChild(el('th', null, h)));
+  const th = el('thead'); th.appendChild(hr); t.appendChild(th);
+  const tb = el('tbody');
+  let lastGrp = null, n = 0;
+  const persist = () => { markDirty(); saveSoon(); };
+  items.forEach(it => {
+    const grp = it.to + '|' + clContact(it);
+    if (grp !== lastGrp) {
+      lastGrp = grp;
+      const cnt = items.filter(x => x.to + '|' + clContact(x) === grp).length;
+      const g = el('tr', 'clGrp'), td = el('td', null, (it.to === 'Facility' ? 'Facility contact' : 'Vendor contact') + ' \u2014 ' + clContact(it) + '  \u00b7  ' + cnt + ' item' + (cnt === 1 ? '' : 's'));
+      td.colSpan = 15; g.appendChild(td); tb.appendChild(g);
+    }
+    const tr = el('tr', it.status === 'Closed' ? 'closed' : null);
+    const c = (txt, cls, title) => { const x = el('td', cls || null, txt == null || txt === '' ? dash : txt); if (title) x.title = title; tr.appendChild(x); return x; };
+    c(String(++n), 'nowrap');
+    c(new Date(it.at).toLocaleDateString(), 'nowrap');
+    const tdTo = el('td'); const selTo = el('select');
+    [['Vendor', 'Vendor'], ['Facility', 'Facility']].forEach(([v, tx]) => { const o = el('option', null, tx); o.value = v; selTo.appendChild(o); });
+    selTo.value = it.to; selTo.addEventListener('change', () => { it.to = selTo.value; persist(); renderClarify(); });
+    tdTo.appendChild(selTo); tr.appendChild(tdTo);
+    c(it.facility); c(it.vendor);
+    c(it.itemNumber, 'clOur', it.kind);
+    c(it.description);
+    c(it.ourItem, 'clOur', it.ourDesc);
+    c(it.observedEach == null ? '' : fmtPrice(it.observedEach), 'num');
+    c(it.contractEach == null ? '' : fmtPrice(it.contractEach), 'num');
+    const df = it.observedEach != null && it.contractEach != null ? it.observedEach - it.contractEach : null;
+    c(df == null ? '' : (df > 0 ? '+' : df < 0 ? '\u2212' : '') + fmtPrice(Math.abs(df)), 'num', 'Observed each \u2212 Our each');
+    const tdN = el('td'); const ta = el('textarea'); ta.value = it.note; ta.placeholder = 'What should the contact clarify?';
+    ta.addEventListener('input', () => { it.note = ta.value; persist(); });
+    ta.addEventListener('keydown', e => e.stopPropagation());
+    tdN.appendChild(ta); if (it.issue) tdN.appendChild(el('div', 'hint', 'System flag: ' + it.issue)); tr.appendChild(tdN);
+    const tdR = el('td'); const tr2 = el('textarea', 'resp'); tr2.value = it.response || ''; tr2.placeholder = 'Contact\u2019s answer';
+    tr2.addEventListener('input', () => { it.response = tr2.value; persist(); });
+    tr2.addEventListener('keydown', e => e.stopPropagation());
+    tdR.appendChild(tr2); tr.appendChild(tdR);
+    const tdS = el('td'); const selS = el('select');
+    CL_STATUSES.forEach(v => { const o = el('option', null, v); o.value = v; selS.appendChild(o); });
+    selS.value = it.status; selS.addEventListener('change', () => { it.status = selS.value; persist(); renderClarify(); renderRail(); });
+    tdS.appendChild(selS); tr.appendChild(tdS);
+    const tdA = el('td', 'nowrap');
+    const go = el('button', 'btn sm', 'Open'); go.title = 'Jump to this item'; go.addEventListener('click', () => clarifyGo(it));
+    const rm = el('button', 'btn sm', '\u2715'); rm.title = 'Remove from the report';
+    rm.addEventListener('click', () => { pushUndo(); state.clarify.items = state.clarify.items.filter(x => x !== it); afterClarifyChange(); });
+    tdA.appendChild(go); tdA.appendChild(document.createTextNode(' ')); tdA.appendChild(rm); tr.appendChild(tdA);
+    tb.appendChild(tr);
+  });
+  t.appendChild(tb); pane.appendChild(t);
+  const cnt = state.clarify.items.filter(i => i.status !== 'Closed').length;
+  $('#clarifyNote').textContent = items.length + ' shown \u00b7 ' + cnt + ' open of ' + all.length + ' flagged. The Excel report exports what is shown \u2014 filter to one contact type to send that part.';
+}
+$('#segClarifyTo').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; state.ui.clarifyTo = b.dataset.to; saveViewPrefs(); renderClarify(); });
+$('#clarifyStatus').addEventListener('change', e => { state.ui.clarifyStatus = e.target.value; saveViewPrefs(); renderClarify(); });
+let clarifySearchT = null;
+$('#clarifySearch').addEventListener('input', e => { clearTimeout(clarifySearchT); const v = e.target.value; clarifySearchT = setTimeout(() => { state.ui.clarifySearch = v; renderClarify(); }, 160); });
+$('#btnClarifyClosed').addEventListener('click', () => {
+  const n = state.clarify.items.filter(i => i.status === 'Closed').length; if (!n) return;
+  pushUndo(); state.clarify.items = state.clarify.items.filter(i => i.status !== 'Closed'); afterClarifyChange(); toast(n + ' closed item' + (n === 1 ? '' : 's') + ' removed.');
+});
+$('#btnClarifyXlsx').addEventListener('click', async () => {
+  const b = $('#btnClarifyXlsx'); if (b.disabled) return;
+  b.disabled = true; const t0 = b.textContent; b.textContent = 'Building\u2026';
+  try { await exportClarifyExcel(); }
+  catch (err) { console.error(err); toast('The Excel export failed: ' + (err && err.message || err), true); }
+  finally { b.textContent = t0; renderClarify(); }
+});
+async function exportClarifyExcel(){
+  const items = clarifyFiltered();
+  if (!items.length) { toast('Nothing to export \u2014 flag an item first.', true); return; }
+  let ExcelJS;
+  try { ExcelJS = await loadExcelJS(); }
+  catch (e) { toast('Could not load the Excel library (needs an internet connection).', true); return; }
+  const caseName = currentSessionName(), now = new Date();
+  const when = now.toLocaleString(undefined, { year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+  const to = state.ui.clarifyTo || 'all';
+  const scope = (to === 'all' ? 'All contacts' : to + ' contact') + (state.ui.clarifyStatus ? ' \u00b7 status ' + state.ui.clarifyStatus : '');
+  const wb = new ExcelJS.Workbook(); wb.creator = 'Product Normalization'; wb.created = now; wb.modified = now; wb.title = 'Clarification report \u2014 ' + caseName;
+  const NOTE = 'FFFFF8C5', HEAD = XL.navy;
+  const hdrRow = (ws, r, heads) => heads.forEach((h, i) => {
+    const cell = ws.getCell(r, i + 1); cell.value = h; cell.font = xlFont({ bold:true, color:{ argb:'FFFFFFFF' } }); cell.fill = xlFill(HEAD);
+    cell.alignment = { horizontal:h.num ? 'right' : 'left', vertical:'middle', wrapText:true, indent:1 }; cell.border = { top:xlThin(HEAD), bottom:xlThin(HEAD) };
+  });
+  const title = (ws, text, n) => {
+    ws.getCell(1, 1).value = text; ws.getCell(1, 1).font = xlFont({ size:14, bold:true, color:{ argb:XL.navy } }); ws.getRow(1).height = 22;
+    ws.getCell(2, 1).value = 'Case: ' + caseName + '   |   Exported ' + when + '   |   ' + scope + '   |   ' + items.length + ' item' + (items.length === 1 ? '' : 's');
+    ws.getCell(2, 1).font = xlFont({ size:9, color:{ argb:XL.ink2 } });
+  };
+  const EACH = '"$"#,##0.0000', MONEY = '"$"#,##0.00';
+  /* ---- sheet 1: the full report ---- */
+  const ws = wb.addWorksheet('Clarification Report', { properties:{ tabColor:{ argb:'FFD4A72C' } } });
+  const heads = ['#', 'Send to', 'Contact', 'Facility', 'Vendor', 'Vendor Item #', 'MFG Catalog #', 'Description', 'Our Item #', 'Our Description', 'Qty (eaches)', 'Net Sales',
+                 'Observed Each', 'Our Each', 'Difference (each)', 'Analyst note \u2014 what to clarify', 'Contact response', 'Status', 'Flagged on'];
+  title(ws, 'Clarification report \u2014 ' + caseName, heads.length);
+  hdrRow(ws, 4, heads); ws.getRow(4).height = 30;
+  items.forEach((it, i) => {
+    const r = 5 + i, df = it.observedEach != null && it.contractEach != null ? it.observedEach - it.contractEach : null;
+    const vals = [i + 1, it.to + ' contact', clContact(it), it.facility, it.vendor, it.itemNumber, it.mfg, it.description, it.ourItem, it.ourDesc,
+                  it.qty == null ? null : Math.round(it.qty * 1e4) / 1e4, it.net == null ? null : it.net, it.observedEach, it.contractEach, df, it.note, it.response || '', it.status, new Date(it.at)];
+    vals.forEach((v, k) => {
+      const cell = ws.getCell(r, k + 1);
+      cell.value = v === '' || v == null ? null : typeof v === 'string' ? xlClean(v) : v;
+      cell.font = xlFont(); cell.alignment = { vertical:'top', wrapText:k === 7 || k === 9 || k === 15 || k === 16, horizontal:(k >= 10 && k <= 14) ? 'right' : 'left', indent:1 };
+      cell.border = { bottom:xlThin('FFE6EBF0') };
+      if (k === 10) cell.numFmt = '#,##0.####';
+      if (k === 11) cell.numFmt = MONEY;
+      if (k >= 12 && k <= 14) cell.numFmt = EACH;
+      if (k === 18) cell.numFmt = 'yyyy-mm-dd';
+      if (k === 15) cell.fill = xlFill(NOTE);
+      if (i % 2 === 1 && k !== 15) cell.fill = xlFill(XL.band);
+    });
+  });
+  const widths = [5, 15, 24, 20, 20, 16, 16, 34, 14, 30, 12, 13, 14, 14, 15, 46, 36, 11, 12];
+  widths.forEach((w, i) => { ws.getColumn(i + 1).width = w; });
+  ws.views = [{ state:'frozen', ySplit:4, xSplit:0 }];
+  ws.autoFilter = { from:{ row:4, column:1 }, to:{ row:4 + items.length, column:heads.length } };
+  /* ---- sheet 2: grouped by contact, ready to send ---- */
+  const wc = wb.addWorksheet('By Contact', { properties:{ tabColor:{ argb:'FF1F6FEB' } } });
+  const h2 = ['Vendor Item #', 'Description', 'Facility', 'Vendor', 'Our Item #', 'Observed Each', 'Our Each', 'Analyst note \u2014 what to clarify', 'Contact response'];
+  title(wc, 'Clarification requests by contact \u2014 ' + caseName, h2.length);
+  let r = 4, lastGrp = null;
+  items.forEach(it => {
+    const grp = it.to + '|' + clContact(it);
+    if (grp !== lastGrp) {
+      if (lastGrp !== null) r++;
+      lastGrp = grp;
+      const cnt = items.filter(x => x.to + '|' + clContact(x) === grp).length;
+      const g = wc.getCell(r, 1); g.value = (it.to === 'Facility' ? 'Facility contact' : 'Vendor contact') + ' \u2014 ' + clContact(it) + '  (' + cnt + ' item' + (cnt === 1 ? '' : 's') + ')';
+      for (let k = 1; k <= h2.length; k++) { const c = wc.getCell(r, k); c.fill = xlFill('FFD4A72C'); c.font = xlFont({ bold:true, size:11, color:{ argb:'FF3D2C00' } }); }
+      r++; hdrRow(wc, r, h2); r++;
+    }
+    const vals = [it.itemNumber, it.description, it.facility, it.vendor, it.ourItem, it.observedEach, it.contractEach, it.note, it.response || ''];
+    vals.forEach((v, k) => {
+      const cell = wc.getCell(r, k + 1); cell.value = v === '' || v == null ? null : typeof v === 'string' ? xlClean(v) : v;
+      cell.font = xlFont(); cell.alignment = { vertical:'top', wrapText:k === 1 || k === 7 || k === 8, horizontal:(k === 5 || k === 6) ? 'right' : 'left', indent:1 };
+      cell.border = { bottom:xlThin('FFE6EBF0') };
+      if (k === 5 || k === 6) cell.numFmt = EACH;
+      if (k === 7) cell.fill = xlFill(NOTE);
+    });
+    r++;
+  });
+  [16, 34, 20, 20, 14, 14, 14, 50, 38].forEach((w, i) => { wc.getColumn(i + 1).width = w; });
+  wb.views = [{ activeTab:0, firstSheet:0 }];
+  const buf = await wb.xlsx.writeBuffer();
+  const name = xlSafeSheetFile(caseName) + ' - clarification report ' + stamp() + '.xlsx';
+  const blob = new Blob([buf], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const a = el('a'); a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 800);
+  toast('Clarification report downloaded: ' + name + ' (' + items.length + ' item' + (items.length === 1 ? '' : 's') + ')');
+}
+
+/* ============================================================ ROW SIDE PANEL
+   Triple-click a row on Our Pricing or Facility/Vendor Pricing (or a line in the cross window)
+   to edit every field of that row here instead of scrolling across the columns. */
+let rowSideCtx = null, rowSideFields = [], rowSideSig = '';
+const rsDetailOf = id => { for (const g of derived.groups) for (const d of g.detail) if (d.row.id === id) return d; return null; };
+function closeRowSide(){
+  rowSideCtx = null; rowSideFields = [];
+  $('#rowSide').classList.remove('on'); $('#rowSide').innerHTML = '';
+  document.querySelectorAll('tr.rowSel[data-ourid], tr.rowSel[data-rowid]').forEach(t => t.classList.remove('rowSel'));
+}
+function openRowSide(ctx){
+  if (typeof commitEdit === 'function') { try { commitEdit(); } catch (e) {} }
+  if (typeof ourCommitEdit === 'function') { try { ourCommitEdit(); } catch (e) {} }
+  rowSideCtx = ctx;
+  document.querySelectorAll('tr.rowSel[data-ourid], tr.rowSel[data-rowid]').forEach(t => t.classList.remove('rowSel'));
+  document.querySelectorAll('#modalBody tr[data-ourid], #modalBody tr[data-rowid]').forEach(t => {
+    if ((ctx.type === 'our' && t.dataset.ourid === ctx.id) || (ctx.type === 'fac' && t.dataset.rowid === ctx.id)) t.classList.add('rowSel');
+  });
+  renderRowSide();
+  const sel = window.getSelection && window.getSelection(); if (sel) sel.removeAllRanges();
+}
+function rsField(body, label, sub, mk){
+  const f = el('div', 'rsField'); const l = el('label'); l.appendChild(document.createTextNode(label));
+  if (sub) l.appendChild(el('small', null, sub));
+  f.appendChild(l); f.appendChild(mk()); body.appendChild(f);
+}
+function rsInput(get, set, opts){
+  opts = opts || {};
+  const inp = el('input'); inp.type = 'text'; inp.value = get();
+  if (opts.list) inp.setAttribute('list', opts.list);
+  if (opts.upper) inp.style.textTransform = 'uppercase';
+  inp.addEventListener('keydown', e => {
+    e.stopPropagation();
+    if (e.key === 'Enter') { e.preventDefault(); inp.blur(); }
+    else if (e.key === 'Escape') { e.preventDefault(); inp.value = get(); inp.blur(); }
+  });
+  inp.addEventListener('change', () => { set(inp.value); });
+  rowSideFields.push({ inp, get });
+  return inp;
+}
+function rsRead(get, bad){
+  const d = el('div', 'ro' + (bad ? ' bad' : ''), get() || dash);
+  rowSideFields.push({ ro:d, get:() => get() || dash });
+  return d;
+}
+function setFacField(row, k, val){
+  if (REL_KEYS.includes(k)) val = normalizeRelInput(k, val, row);
+  const was = row[k] == null ? '' : String(row[k]);
+  if (was === val) return false;
+  pushUndo(); row[k] = val;
+  if (REL_KEYS.includes(k)) logEvent(fieldLabel(k) + ' changed', 'Facility/Vendor ' + (row.itemNumber || row.id) + ' (' + row.id + ')', '\u201c' + was + '\u201d \u2192 \u201c' + val + '\u201d');
+  refresh();
+  return true;
+}
+function renderRowSide(){
+  const side = $('#rowSide'); const ctx = rowSideCtx;
+  if (!ctx) { side.classList.remove('on'); return; }
+  const keepTop = side.querySelector('.rsBody') ? side.querySelector('.rsBody').scrollTop : 0;
+  side.innerHTML = ''; rowSideFields = [];
+  const head = el('div', 'rsHead'), ht = el('div', 't');
+  const x = el('button', 'x', '\u00d7'); x.title = 'Close (Esc)'; x.addEventListener('click', closeRowSide);
+  const body = el('div', 'rsBody'), foot = el('div', 'rsFoot');
+  const secTitle = t => body.appendChild(el('div', 'rsSec', t));
+
+  if (ctx.type === 'facgrp') {
+    const g = derived.byKey[ctx.key]; if (!g) { closeRowSide(); return; }
+    ht.appendChild(el('div', 'kind', 'Facility/Vendor Pricing \u2014 item group'));
+    ht.appendChild(el('h3', null, keyLabel(g.key)));
+    ht.appendChild(el('div', 'sub', g.rows.length + ' source row' + (g.rows.length === 1 ? '' : 's') + ' \u2014 pick one to edit its fields'));
+    const list = el('div', 'rsList');
+    g.detail.forEach((d, i) => {
+      const b = el('button', 'btn', (i + 1) + '.  ' + [d.row.itemNumber, d.row.orderedQty && (d.row.orderedQty + ' ' + (d.row.orderedUM || '')), d.row.netSales && fmtMoney(numOrZero(d.row.netSales))].filter(Boolean).join('  \u00b7  '));
+      b.addEventListener('click', () => { rowSideCtx = { type:'fac', id:d.row.id, fromModal:ctx.fromModal }; renderRowSide(); });
+      list.appendChild(b);
+    });
+    body.appendChild(list);
+    body.appendChild(el('div', 'rsHint', 'Group rows are a view over their source rows, so each source row is edited on its own.'));
+    head.appendChild(ht); head.appendChild(x); side.appendChild(head); side.appendChild(body);
+    side.classList.add('on'); return;
+  }
+
+  if (ctx.type === 'fac') {
+    const row = state.rows.find(r => r.id === ctx.id), d = rsDetailOf(ctx.id);
+    if (!row || !d) { closeRowSide(); return; }
+    const item = { type:'row', row, detail:d, n:0 };
+    ht.appendChild(el('div', 'kind', 'Facility/Vendor Pricing \u2014 row'));
+    ht.appendChild(el('h3', null, String(row.itemNumber || '(no Item #)')));
+    ht.appendChild(el('div', 'sub', [d.eff.description, xlBlankLbl(d.eff.facility) + ' \u00b7 ' + xlBlankLbl(d.eff.vendorName)].filter(Boolean).join(' \u2014 ')));
+    const ZN = { vendor:'Vendor data', ours:'Our Pricing \u00b7 resolved (read-only)', analysed:'Analysed data', computed:'Computed values (read-only)', xto:'Also crossed to it (read-only)', orig:'Original data' };
+    let lastZone = null;
+    COLS.forEach(col => {
+      if (col.zone !== lastZone) { lastZone = col.zone; secTitle(ZN[col.zone] || col.zone); }
+      const editable = !col.calc && !col.meta;
+      const shown = () => { try { return String(cellDisplay(item, col) == null ? '' : cellDisplay(item, col)); } catch (e) { return ''; } };
+      rsField(body, col.name, col.L, () => editable
+        ? rsInput(() => row[col.k] == null ? '' : String(row[col.k]), v => setFacField(row, col.k, v), { list:listIdFor(col.k, d.eff), upper:col.k === 'orderedUM' || col.k === 'factorUM' })
+        : rsRead(() => col.meta ? String(row[col.k] || '') : shown(), /^#(VALUE|DIV\/0|REF|NUM|NAME)/.test(shown())));
+    });
+    const fb = flagButton(() => flagFacRowData(row), { label:'\u2691 Flag for clarification' }); fb.classList.add('btn', 'sm'); foot.appendChild(fb);
+    if (normIdent(row.crossedTo)) {
+      const ob = el('button', 'btn sm', 'Open cross window');
+      ob.addEventListener('click', () => { xuHighlight = null; xcPreselect = { key:normIdent(row.crossedTo), ids:new Set([row.id]) }; openCrossEditor(row.crossedTo, null); });
+      foot.appendChild(ob);
+    }
+  } else {
+    const rec = state.our.rows.find(r => r.id === ctx.id);
+    if (!rec) { closeRowSide(); return; }
+    refreshProgramList();
+    const cb = crossedByIndex(), cols = ourColumns(true);
+    ht.appendChild(el('div', 'kind', 'Our Pricing \u2014 record'));
+    ht.appendChild(el('h3', null, String(rec.itemNumber || '(no Item #)')));
+    ht.appendChild(el('div', 'sub', [rec.description, rec.vendor].filter(Boolean).join(' \u2014 ')));
+    const commit = (col, v) => {
+      const val = normalizeOurInput(col.field || col.k, v);
+      if (!setOurField(rec.id, col.field || col.k, val)) return;
+      if (col.kind === 'tier' && isBlank(rec.program) && String(val).trim() !== '') {
+        rec.program = col.program.id;
+        logEvent('Our Pricing edited', 'Our Item ' + (rec.itemNumber || rec.id), 'Pricing Program set to ' + col.program.name + ' (tier price entered)');
+        toast('Item ' + (rec.itemNumber || '') + ' is now on ' + progLabel(col.program) + '.');
+      }
+      refresh();
+    };
+    const SEC = { field:'Item, packaging and pricing setup', tier:'Tier prices', calc:'Calculated (read-only)', each:'Each prices (read-only)', ro:'Read-only' };
+    ['field', 'tier', 'each', 'calc', 'ro'].forEach(kind => {
+      const list = cols.filter(c => c.kind === kind).filter(c => {
+        const xc = ourCell(rec, c, cb);
+        if (kind === 'tier') return xc.editable || !!(programById(rec.program) && programById(rec.program) === c.program);
+        if (kind === 'each') return xc.text !== '\u00b7';
+        return true;
+      });
+      if (!list.length) return;
+      secTitle(SEC[kind]);
+      list.forEach(c => {
+        rsField(body, c.name, kind === 'tier' && c.program ? c.program.name : (c.sub || ''), () => {
+          const xc = ourCell(rec, c, cb);
+          if (xc.editable) return rsInput(() => { const q = ourCell(rec, c, cb); return q.raw == null ? '' : String(q.raw); }, v => commit(c, v),
+            { list:c.k === 'program' ? PROGRAM_LIST_ID : c.k === 'orderedUM' ? 'umList' : null, upper:c.k === 'orderedUM' || c.k === 'priceUnit' });
+          return rsRead(() => { const q = ourCell(rec, c, cb); return q.text; }, ourCell(rec, c, cb).cls.indexOf('bad') >= 0);
+        });
+      });
+    });
+    const fb = flagButton(() => flagOurData(rec), { label:'\u2691 Flag for clarification' }); fb.classList.add('btn', 'sm'); foot.appendChild(fb);
+    rowSideSig = String(rec.program || '');
+  }
+  head.appendChild(ht); head.appendChild(x);
+  side.appendChild(head); side.appendChild(body); side.appendChild(foot);
+  side.classList.add('on');
+  body.scrollTop = keepTop;
+}
+/** Called after every refresh: keep the panel current without stealing focus from the field being typed in. */
+function syncRowSide(){
+  const ctx = rowSideCtx; if (!ctx) return;
+  if (ctx.type === 'fac' && !(state.rows.some(r => r.id === ctx.id) && rsDetailOf(ctx.id))) { closeRowSide(); return; }
+  if (ctx.type === 'our') {
+    const rec = state.our.rows.find(r => r.id === ctx.id);
+    if (!rec) { closeRowSide(); return; }
+    if (String(rec.program || '') !== rowSideSig) { renderRowSide(); return; }
+  }
+  if (ctx.type === 'facgrp') { if (!derived.byKey[ctx.key]) closeRowSide(); return; }
+  rowSideFields.forEach(f => {
+    if (f.inp) { if (document.activeElement !== f.inp) f.inp.value = f.get(); }
+    else if (f.ro) f.ro.textContent = f.get();
+  });
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && rowSideCtx && !flagPopAnchor && $('#rowSide').contains(document.activeElement)) { e.preventDefault(); closeRowSide(); } });
+/* triple-click a row -> side panel */
+document.addEventListener('click', e => {
+  if (e.detail !== 3) return;
+  const t = e.target;
+  if (!t.closest || t.closest('#rowSide, #flagPop') || t.closest('.flagBtn')) return;
+  let ctx = null;
+  const sheetRow = t.closest('#body .r');
+  if (sheetRow) {
+    const cell = t.closest('.c');
+    if (cell && (cell.classList.contains('chkcell'))) return;
+    const item = derived.visible[+sheetRow.dataset.v];
+    if (item) ctx = item.type === 'group' ? { type:'facgrp', key:item.group.key } : { type:'fac', id:item.row.id };
+  } else {
+    const ourRow = t.closest('#paneOur tr.oRow');
+    if (ourRow) { const rec = oView.rows[+ourRow.dataset.r]; if (rec) ctx = { type:'our', id:rec.id }; }
+    else {
+      const mFac = t.closest('#modalBody tr[data-rowid]'), mOur = t.closest('#modalBody tr[data-ourid]');
+      if (mFac) ctx = { type:'fac', id:mFac.dataset.rowid, fromModal:true };
+      else if (mOur) ctx = { type:'our', id:mOur.dataset.ourid, fromModal:true };
+    }
+  }
+  if (!ctx) return;
+  e.preventDefault(); e.stopPropagation();
+  openRowSide(ctx);
+}, true);
+
 /* ================================================================== INIT */
 /** Put the toolbar controls in line with this browser's view of the case. */
 function syncViewControls(){
@@ -10863,7 +11570,7 @@ function syncViewControls(){
 }
 function init(){
   loadSession(true);
-  if (!['our','normalization','aggregated','output','crosses'].includes(state.ui.tab)) state.ui.tab = 'normalization';
+  if (!['our','normalization','aggregated','output','crosses','clarify'].includes(state.ui.tab)) state.ui.tab = 'normalization';
   updateCaseHeader();
   syncViewControls();
   initBulkFieldSelect();
