@@ -780,6 +780,19 @@ table.xuTable th.xuCmpH{background:#e9eef5}
 table.xuTable th.xuAH{background:var(--zone-vendor-h)}
 table.xuTable th.xuBH{background:#ebe3f7}
 table.xuTable .bestTag.same{background:#eef2f7;color:var(--ink-2)}
+/* Cross Analysis - item list: Our Pricing item (yellow) then its Facility/Vendor lines */
+table.xuTable tr.ocOur > td{background:#fff3a3;color:var(--ink);font-weight:600;border-top:2px solid #e0a52a}
+table.xuTable tr.ocOur:hover > td:not(.best):not(.nc){background:#ffec80}
+table.xuTable tr.ocOur > td.best{background:var(--ok-bg);color:var(--ok)}
+table.xuTable tr.ocOur > td.nc{background:#f9d6d2;color:var(--err)}
+table.xuTable tr.ocOur > td.gapCell{color:var(--err)}
+table.xuTable tr.ocLine{cursor:pointer}
+table.xuTable tr.ocLine:hover > td:not(.best):not(.nc){background:#eef4fc}
+table.xuTable tr.ocLine > td:first-child{padding-left:22px}
+table.xuTable tr.ocOther > td{background:#f3f3f3;color:var(--ink-3);font-style:italic}
+table.xuTable tr.ocOther > td.best,table.xuTable tr.ocOther > td.nc{font-style:normal}
+table.xuTable .ourTag{display:inline-block;padding:1px 6px;border-radius:3px;background:#e0a52a;color:#3d2a00;font-size:10.5px;font-weight:700;letter-spacing:.03em;white-space:nowrap}
+table.xuTable .othTag{display:inline-block;padding:1px 6px;border-radius:3px;background:#e4e4e4;color:var(--ink-3);font-size:10.5px;font-weight:600;white-space:nowrap;font-style:normal}
 table.xsFixed{table-layout:fixed;min-width:0}
 table.xsFixed td,table.xsFixed th{max-width:none;overflow:hidden;text-overflow:ellipsis}
 table.xsFixed th.xsRz{position:sticky}
@@ -6684,7 +6697,7 @@ const VIEW_UI_KEYS = ['tab','mode','search','colFilters','freeze','issuesOnly','
   'modeB','searchB','sortKeyB','sortDirB','freezeB','issuesOnlyB','aggSearchB','aggAttnB','aggSelectedOnlyB','lastSubA','lastSubB',
   'lineItemCols','lineItemColWidths','lineItemView','lineItemCombineStat',
   'hideNoCross','xuShowNoCross','xsView','xsSearch','xuBase','xuSides','xuColWidths','xsRelColWidths',
-  'xsMode','ourHideTiers','xsGapX','xsGapExcl','xsGapOnly','ourSearch','ourIssuesOnly','ourMode','ourColWidths','ourColFilters','ocFac','ocVen','ocColWidths'];
+  'xsMode','ourHideTiers','xsGapX','xsGapExcl','xsGapOnly','ourSearch','ourIssuesOnly','ourMode','ourColWidths','ourColFilters','ocFac','ocVen','ocColWidths','ocView','ocOthers','ocItemColWidths'];
 const VIEW_KEY_SET = new Set(VIEW_UI_KEYS);
 const clone = o => JSON.parse(JSON.stringify(o === undefined ? null : o));
 const pickView = ui => { const o = {}; VIEW_UI_KEYS.forEach(k => { if (ui[k] !== undefined) o[k] = ui[k]; }); return o; };
@@ -10127,17 +10140,24 @@ function lineMessage(r){
 function buildCrosses(){
   const rp = crossRowPricing();
   const F = state.ui.ocFac || XC_ALL, V = state.ui.ocVen || XC_ALL;
-  const m = new Map(), list = [], notCrossed = { lines:0, net:0 };
+  const m = new Map(), list = [], notCrossed = { lines:0, net:0 }, oth = new Map();
   rp.forEach(r => {
-    if ((F !== XC_ALL && xlBlankLbl(r.facility) !== F) || (V !== XC_ALL && xlBlankLbl(r.vendor) !== V)) return;
+    if ((F !== XC_ALL && xlBlankLbl(r.facility) !== F) || (V !== XC_ALL && xlBlankLbl(r.vendor) !== V)) {
+      /* not the selected facility/vendor: remembered only so the item list can show it on request */
+      const ko = normIdent(r.ourItemNumber);
+      if (ko) (oth.get(ko) || oth.set(ko, []).get(ko)).push(r);
+      return;
+    }
     const k = normIdent(r.ourItemNumber);
     if (!k) { notCrossed.lines++; notCrossed.net += r.observedTotal; return; }
     let c = m.get(k);
     if (!c) { c = { key:k, label:r.ourItemNumber, lines:[] }; m.set(k, c); list.push(c); }
     c.lines.push(r);
   });
+  const cmpO = (a, b) => String(a).localeCompare(String(b), undefined, { numeric:true });
   list.forEach(c => {
     const L = c.lines;
+    c.others = (oth.get(c.key) || []).slice().sort((a, b) => cmpO(xlBlankLbl(a.facility), xlBlankLbl(b.facility)) || cmpO(xlBlankLbl(a.vendor), xlBlankLbl(b.vendor)) || cmpO(a.row.itemNumber || '', b.row.itemNumber || ''));
     c.net = L.reduce((s, r) => s + r.observedTotal, 0);
     c.eaches = L.reduce((s, r) => s + (r.eaches || 0), 0);
     c.bad = L.filter(r => !lineOk(r));
@@ -10478,6 +10498,24 @@ function renderOurCompare(pane, cards){
   l3.appendChild(mkChk('Leave flagged out of totals', xsGapExcl(), v => state.ui.xsGapExcl = v, 'Flagged crosses are usually a unit mismatch; leaving them out keeps the cards and totals honest until they are fixed'));
   l3.appendChild(mkChk('Flagged only', !!state.ui.xsGapOnly, v => state.ui.xsGapOnly = v));
   box.appendChild(l3);
+  /* what the table lists */
+  const l4 = el('div', 'xuMatch');
+  l4.appendChild(el('span', null, 'Show'));
+  const sg = el('div', 'seg');
+  [['items', 'Our Pricing item + its lines'], ['cross', 'One row per cross']].forEach(([k, lab]) => {
+    const b = el('button', (state.ui.ocView || 'items') === k ? 'on' : null, lab); b.type = 'button';
+    b.addEventListener('click', () => { state.ui.ocView = k; saveViewPrefs(); renderCrosses(); });
+    sg.appendChild(b);
+  });
+  l4.appendChild(sg);
+  if ((state.ui.ocView || 'items') === 'items') {
+    const scopedNow = ocScoped();
+    const oc = mkChk('Also show other facilities\u2019 items', !!state.ui.ocOthers, v => state.ui.ocOthers = v,
+      scopedNow ? 'Adds the other normalized facilities/vendors crossed to the same Our Pricing items, in grey. They are left out of every total.' : 'Pick a facility or vendor above first \u2014 with All/All every item is already shown.');
+    oc.querySelector('input').disabled = !scopedNow;
+    l4.appendChild(oc);
+  }
+  box.appendChild(l4);
   $('#xsSetup').appendChild(box);
 
   const X = buildCrosses(), all = X.list;
@@ -10518,6 +10556,7 @@ function renderOurCompare(pane, cards){
   if (q) rows = rows.filter(c => c.search.indexOf(q) >= 0);
   rows.sort((a, b) => (b.ok - a.ok) || b.net - a.net);
   ocLast = rows;
+  if ((state.ui.ocView || 'items') === 'items') { renderOurItems(pane, rows, T, excl, all.length); pane.scrollTop = keep; return; }
 
   const t = el('table', 'grid xuTable ocTable');
   const thead = el('thead'), h1 = el('tr'), h2 = el('tr', 'xuH2');
@@ -10613,8 +10652,135 @@ function renderOurCompare(pane, cards){
     'A cross with any unresolved line is left out of the totals and listed under \u201cShow unresolved\u201d.'));
   pane.scrollTop = keep;
 }
+const ocScoped = () => (state.ui.ocFac || XC_ALL) !== XC_ALL || (state.ui.ocVen || XC_ALL) !== XC_ALL;
+const OC_IT_HEADS = [['Source', ''], ['Item #', ''], ['Description', ''], ['Facility', ''], ['Vendor', ''], ['Channel', ''], ['Program \u00b7 Tier', ''], ['Contract', ''],
+  ['Price', 'num'], ['Eaches/Case', 'num'], ['Order Qty', 'num'], ['UOM', ''], ['Observed Each', 'num'], ['Total Net Sales', 'num'], ['Contract Each', 'num'],
+  ['Expected Net Sales', 'num'], ['Difference', 'num'], ['Best Priced', ''], ['Status', '']];
+/** The 19 cells of one row of the item list: kind is 'our' (the Our Pricing item, yellow), 'line' (selected facility/vendor line) or 'other'. */
+function ocItemCells(kind, c, r){
+  const C = (v, cls, title, extra) => Object.assign({ v:v == null ? '' : String(v), cls:cls || null, title:title || '' }, extra || {});
+  const bestOf = (oe, ce, ok) => ok && oe != null && ce != null ? (ce < oe - 1e-9 ? 'our' : oe < ce - 1e-9 ? 'fac' : 'same') : null;
+  const bestCell = (b, ok) => b ? C(b === 'our' ? 'Our Pricing' : b === 'fac' ? 'Facility' : 'Same', null, '', { tag:b }) : C(ok ? 'No price' : 'Unresolved', ok ? 'dim' : 'nc');
+  if (kind === 'our') {
+    const L = c.lines, o = c.our, og = ourD.byKey.get(ourKey(c.label));
+    const b = bestOf(c.observedEach, c.contractEach, c.ok);
+    const adjDiff = c.flag ? C('\u26a0 ' + signedMoney(c.diff), 'num gapCell', 'Price gap ' + fmtGap(c.gap) + ' \u2014 ' + GAP_HINT)
+      : C(c.diff == null ? '' : signedMoney(c.diff), 'num' + (c.diff > 0.005 ? ' better' : c.diff < -0.005 ? ' worse' : ''),
+          c.diff == null ? '' : (c.diff >= 0 ? 'Our Pricing saves ' : 'Our Pricing costs ') + fmtMoney(Math.abs(c.diff)) + (c.savePct != null ? ' (' + c.savePct.toFixed(1) + '%)' : ''));
+    return [
+      C('OUR PRICING', null, 'The Our Pricing item every line below is crossed to', { tag:'ourTag' }),
+      C(c.label, o ? null : 'nc'),
+      C(o ? o.description : 'Not in Our Pricing', o ? 'desc' : 'desc nc', o ? o.description : ''),
+      C(''), C(og ? og.rep.vendor || '' : ''), C(''),
+      C(ocJoin(L.map(x => x.group ? pricingLabel(x) : ''), 4)),
+      C(ocJoin(L.map(x => x.contract || ''))),
+      C(ocJoin(L.map(x => x.state === 'ok' ? fmtMoney(x.effectivePrice) + '/' + x.priceUnit : '')), 'num'),
+      C(ocJoin(L.map(x => x.epc ? fmtQty(x.epc) : '')), 'num'),
+      C(fmtQty(Math.round(c.eaches * 1e4) / 1e4), 'num', 'Normalized eaches of the selected facility/vendor lines'),
+      C(ocJoin(L.map(x => String(x.d.eff.factorUM || '').trim().toUpperCase() || 'EA'))),
+      C(c.observedEach == null ? '' : fmtPrice(c.observedEach), 'num' + (b === 'fac' ? ' best' : '')),
+      C(fmtMoney(c.net), 'num'),
+      C(c.ok ? (c.contractEach == null ? '' : fmtPrice(c.contractEach)) : lineStatus(c.bad[0]), c.ok ? 'num' + (b === 'our' ? ' best' : '') : 'nc'),
+      C(c.expected == null ? '' : fmtMoney(c.expected), 'num'),
+      adjDiff,
+      bestCell(b, c.ok),
+      c.flag ? C('\u26a0 Check \u2014 ' + fmtGap(c.gap) + ' gap', 'gapCell', GAP_HINT) : C(c.status, c.ok ? 'dim' : 'nc', c.messages.join('\n'))
+    ];
+  }
+  const ok = lineOk(r), b = bestOf(r.observedEach, r.contractEach, ok);
+  const v = r.expectedTotal == null ? null : r.observedTotal - r.expectedTotal;
+  return [
+    kind === 'other' ? C('Other facility', null, 'Not the selected facility/vendor \u2014 shown for reference and left out of every total', { tag:'othTag' }) : C('Facility/Vendor'),
+    C(String(r.row.itemNumber || '').trim()),
+    C(String(r.d.eff.description || '').trim(), 'desc', String(r.d.eff.description || '').trim(), { copy:true }),
+    C(xlBlankLbl(r.facility)), C(xlBlankLbl(r.vendor)), C(r.channel || ''),
+    C(r.group ? pricingLabel(r) : '', r.state === 'tierRequired' || r.state === 'tierInvalid' ? 'nc' : null),
+    C(r.contract || ''),
+    C(r.state === 'ok' ? fmtMoney(r.effectivePrice) + '/' + r.priceUnit : '', 'num'),
+    C(r.epc ? fmtQty(r.epc) : '', 'num', r.epcSource === 'vendor' ? 'Uses the line\u2019s own pack size \u2014 Our Pricing has no packaging' : ''),
+    C(r.eaches == null ? '' : fmtQty(Math.round(r.eaches * 1e4) / 1e4), 'num'),
+    C(String(r.d.eff.factorUM || '').trim().toUpperCase() || 'EA'),
+    C(r.observedEach == null ? '' : fmtPrice(r.observedEach), 'num' + (b === 'fac' ? ' best' : '')),
+    C(fmtMoney(r.observedTotal), 'num'),
+    C(r.contractEach == null ? '' : fmtPrice(r.contractEach), 'num' + (b === 'our' ? ' best' : '')),
+    C(r.expectedTotal == null ? '' : fmtMoney(r.expectedTotal), 'num'),
+    C(v == null ? '' : signedMoney(v), 'num' + (v > 0.005 ? ' better' : v < -0.005 ? ' worse' : '')),
+    bestCell(b, ok),
+    ok && r.gap != null && r.gap >= xsGapX() ? C('\u26a0 ' + fmtGap(r.gap) + ' price gap', 'gapCell', GAP_HINT) : C(lineStatus(r), ok ? 'dim' : 'nc', lineMessage(r) || '')
+  ];
+}
+/** Our Pricing item first, then the selected facility/vendor lines, then (optionally) the other facilities' lines. */
+function ocItemEntries(c, showOthers){
+  const out = [{ kind:'our', c:c }];
+  c.lines.slice().sort((a, b) => String(a.row.itemNumber || '').localeCompare(String(b.row.itemNumber || ''), undefined, { numeric:true }))
+    .forEach(r => out.push({ kind:'line', c:c, r:r }));
+  if (showOthers) c.others.forEach(r => out.push({ kind:'other', c:c, r:r }));
+  return out;
+}
+function renderOurItems(pane, rows, T, excl, nAll){
+  const scoped = ocScoped(), showOthers = scoped && !!state.ui.ocOthers;
+  const t = el('table', 'grid xuTable ocTable ocItems');
+  const thead = el('thead'), h = el('tr');
+  OC_IT_HEADS.forEach(([n, cls]) => h.appendChild(el('th', cls || null, n)));
+  thead.appendChild(h); t.appendChild(thead);
+  const tb = el('tbody');
+  xuNavRows = [];
+  let nLine = 0, nOth = 0;
+  if (!rows.length) {
+    const tr = el('tr'), x = el('td', null, nAll ? 'No fully priced cross matches. Tick \u201cShow unresolved\u201d to list crosses that still need a cross, a tier or a price.' : 'No Facility/Vendor line has a Crossed To value for this facility and vendor.');
+    x.colSpan = OC_IT_HEADS.length; x.style.cssText = 'padding:12px;color:var(--ink-3)'; tr.appendChild(x); tb.appendChild(tr);
+  }
+  rows.forEach(c => {
+    const open = () => { pickCrossRow(c.key); xuHighlight = null; openCrossEditor(c.key, crossNav(c.key)); };
+    ocItemEntries(c, showOthers).forEach(en => {
+      const tr = el('tr', en.kind === 'our' ? 'xuRow ocOur' : en.kind === 'other' ? 'ocLine ocOther' : 'ocLine');
+      tr.dataset.pid = c.key;
+      tr.title = 'Double-click (or Enter) to open this cross with its Our Pricing item and normalize the lines together' + (en.kind === 'our' && c.messages.length ? '\n\n' + c.messages.join('\n') : '');
+      if (en.kind === 'our') {
+        tr.tabIndex = 0;
+        if (c.key === xsPicked) tr.classList.add('picked');
+        tr.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); open(); } });
+        xuNavRows.push({ id:c.key, open });
+      } else if (en.kind === 'other') nOth++; else nLine++;
+      tr.addEventListener('click', e => { if (!e.target.closest('.xsGrip, button')) pickCrossRow(c.key); });
+      tr.addEventListener('dblclick', e => { if (e.target.closest('.xsGrip, button') || document.body.classList.contains('xsResizing')) return; open(); });
+      ocItemCells(en.kind, c, en.r).forEach((cell, i) => {
+        const x = el('td', cell.cls, cell.tag ? null : cell.v);
+        if (cell.tag === 'ourTag' || cell.tag === 'othTag') x.appendChild(el('span', cell.tag, cell.v));
+        else if (cell.tag) x.appendChild(el('span', 'bestTag' + (cell.tag === 'fac' ? ' cur' : cell.tag === 'same' ? ' same' : ''), cell.v));
+        if (cell.title) x.title = cell.title;
+        if (cell.copy && en.r) x.insertBefore(itemCopyBtn({ item:en.r.row.itemNumber, mfg:en.r.d.eff.mfgCatalog, desc:en.r.d.eff.description, vendor:en.r.vendor }), x.firstChild);
+        tr.appendChild(x);
+      });
+      tb.appendChild(tr);
+    });
+  });
+  const shown = rows.filter(c => c.ok && !(c.flag && excl));
+  const sObs = shown.reduce((s, c) => s + c.net, 0), sExp = shown.reduce((s, c) => s + c.expected, 0);
+  const tt = el('tr', 'xuTot');
+  const cells = new Array(OC_IT_HEADS.length).fill('');
+  cells[0] = 'Total'; cells[13] = fmtMoney(sObs); cells[15] = fmtMoney(sExp); cells[16] = signedMoney(sObs - sExp);
+  cells[17] = T.ourWin + ' Our \u00b7 ' + T.facWin + ' Fac'; cells[18] = shown.length + ' priced';
+  cells.forEach((v, i) => { const x = el('td', [13, 15, 16].indexOf(i) >= 0 ? 'num' + (i === 15 ? (sExp < sObs - 0.005 ? ' better' : sExp > sObs + 0.005 ? ' worse' : '') : '') : null, v); tt.appendChild(x); });
+  tb.appendChild(tt);
+  t.appendChild(tb);
+  pane.appendChild(t);
+  makeColsResizable(t, [...h.children], 'ocItemColWidths');
+  pane.appendChild(el('div', 'xuFoot',
+    rows.length + ' Our Pricing item' + (rows.length === 1 ? '' : 's') + ' (yellow) \u00b7 ' + nLine + ' line' + (nLine === 1 ? '' : 's') + (scoped ? ' from the selected facility/vendor' : '') +
+    (showOthers ? ' \u00b7 ' + nOth + ' line' + (nOth === 1 ? '' : 's') + ' from other facilities (grey, not in totals)' : '') + '. ' +
+    'Each yellow row is the Our Pricing item the lines beneath are crossed to; its figures are the selected lines added together. ' +
+    'Other facilities\u2019 items are only listed when \u201cAlso show other facilities\u2019 items\u201d is ticked, and never change the cards or totals. ' +
+    'Double-click any row to open the cross and normalize the Our Pricing item and its lines side by side.'));
+}
 function ocCopyTable(){
   if (!ocLast) { toast('Nothing to copy yet.', true); return; }
+  if ((state.ui.ocView || 'items') === 'items') {
+    const showO = ocScoped() && !!state.ui.ocOthers, out2 = [OC_IT_HEADS.map(x => x[0]).join('\t')];
+    ocLast.forEach(c => ocItemEntries(c, showO).forEach(en => out2.push(ocItemCells(en.kind, c, en.r).map(x => String(x.v == null ? '' : x.v).replace(/[\t\r\n]+/g, ' ')).join('\t'))));
+    copyText(out2.join('\n'), 'Copied ' + (out2.length - 1) + ' rows');
+    return;
+  }
   const head = ['Crossed To', 'Our Description', 'Lines', 'Order Qty (eaches)', 'Facilities', 'Vendors', 'Item #s', 'Descriptions', 'Channels', 'Total Net Sales', 'Observed Each',
     'Program \u00b7 Tier', 'Contracts', 'Base Prices', 'Overrides', 'Effective Prices', 'Eaches/Case', 'Contract Each', 'Expected Net Sales', 'Difference', 'Status'];
   const n = v => v == null ? '' : String(Math.round(v * 10000) / 10000);
