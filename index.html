@@ -1112,6 +1112,8 @@ table.clTable select{height:26px;border:1px solid var(--line);border-radius:3px;
 table.clTable tr.closed td{opacity:.55}
 table.clTable .clOur{font-family:var(--mono)}
 table.clTable .clGrp td{background:#fff8c5;font-weight:700;color:#6b4e00;border-top:2px solid #d4a72c}
+.ocTable tr.ncBanner td{background:#eef1f5;color:var(--ink-2);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.07em;padding:7px 10px;border-top:2px solid var(--ink-3)}
+.ocTable tr.ncLine td{background:#fbf7f7;color:var(--ink-2)}
 .clEmpty{padding:34px;text-align:center;color:var(--ink-3);font-size:13px;line-height:1.7}
 .srcTable td.xcBad{color:var(--err);font-weight:600}
 .srcTable td.xcGood{color:var(--ok);font-weight:600}
@@ -1219,6 +1221,7 @@ table.ourTable td.srcCell .pill{margin-left:6px;cursor:pointer}
   <button class="btn" id="btnAggRows" title="Aggregate the ticked rows: Ordered QTY and Net Sales are summed only when every ticked row has the same Ordered UM. The replaced rows are recorded in Original Data (column P).">Aggregate ticked</button>
   <button class="btn" id="btnFindDupA" title="Find and tick the next multi-row item with no packaging/UM conflict — a safe, ready-to-merge candidate.">Find duplicates</button>
   <button class="btn danger" id="btnDelRow">Delete rows</button>
+  <button class="btn" id="btnFlagRows" title="Send every ticked row to the Clarification Report as one group, with a single note">&#9873; Flag ticked</button>
   <span class="sep"></span>
   <div class="seg" id="segMode">
     <button data-mode="grouped" class="on">Grouped</button>
@@ -1258,6 +1261,7 @@ table.ourTable td.srcCell .pill{margin-left:6px;cursor:pointer}
   <button class="btn primary sm" id="btnBulkApply">Apply to ticked rows</button>
   <span class="hint">Old values are kept in Original Data (column P)</span>
   <span class="spacer"></span>
+  <button class="btn sm" id="btnBulkFlag" title="Send the ticked rows to the Clarification Report as one group">&#9873; Flag ticked as group</button>
   <button class="btn sm" id="btnBulkClear">Clear selection</button>
 </div>
 
@@ -1280,6 +1284,7 @@ table.ourTable td.srcCell .pill{margin-left:6px;cursor:pointer}
       <button class="btn" id="btnOurAgg" title="Combine the ticked records of the same Item #. Conflicting pricing blocks the merge; the originals are kept for the audit.">Aggregate ticked</button>
       <button class="btn" id="btnOurDup">Find duplicates</button>
       <button class="btn danger" id="btnOurDel">Delete ticked</button>
+      <button class="btn" id="btnOurFlag" title="Send every ticked record to the Clarification Report as one group, with a single note">&#9873; Flag ticked</button>
       <span class="sep"></span>
       <div class="seg" id="segOurMode">
         <button data-mode="flat" class="on">Flat</button>
@@ -1378,12 +1383,13 @@ table.ourTable td.srcCell .pill{margin-left:6px;cursor:pointer}
       <span class="ico">&#8981;</span>
       <input id="xsSearch" type="search" placeholder="Item # &middot; description &middot; facility &middot; vendor" autocomplete="off">
     </div>
-    <div class="seg" id="segXsGran" title="Aggregated: one row per Our Pricing item. Per item: one row per Facility/Vendor line, row by row.">
+    <div class="seg" id="segXsGran" title="Aggregated: one row per Our Pricing item. Per item: one row per Facility/Vendor line, in the same order as the Facility/Vendor Pricing sheet.">
       <button data-gran="agg" class="on">Aggregated</button>
       <button data-gran="item">Per item &middot; row by row</button>
     </div>
     <button class="btn" id="btnXsWidths" title="Put every column in this table back to its automatic width">Reset widths</button>
     <label class="chk" title="Also list items that could not be priced: no match on the other side, not crossed, tier required, invalid tier or no price."><input type="checkbox" id="chkXuNoCross"> Show unresolved <span class="count" id="cntXuNoCross"></span></label>
+    <label class="chk" id="lblXsNoCrossLines" title="Also list the Facility/Vendor lines whose Crossed To is blank. They belong to no cross, so they are otherwise only counted in the first card."><input type="checkbox" id="chkXsNoCrossLines"> Show no-cross lines <span class="count" id="cntXsNoCrossLines"></span></label>
     <button class="btn" id="btnXuCopy" title="Copy the comparison table (product rows and totals) to paste into Excel">Copy table</button>
     <span class="sep"></span>
     <button class="btn" id="btnXsSetup" title="Open the Facility + Vendor cross setup used by the Excel workbook">Cross product comparison&hellip;</button>
@@ -1411,7 +1417,7 @@ table.ourTable td.srcCell .pill{margin-left:6px;cursor:pointer}
   </section>
 </main>
 
-<!-- ============ ROW SIDE PANEL (triple-click a row on Our Pricing / Facility-Vendor Pricing) ============ -->
+<!-- ============ ROW SIDE PANEL (double right-click a row on Our Pricing / Facility-Vendor Pricing) ============ -->
 <aside class="rowSide" id="rowSide" aria-label="Row details"></aside>
 <div class="flagPop" id="flagPop"></div>
 
@@ -6826,7 +6832,7 @@ const VIEW_UI_KEYS = ['tab','mode','search','colFilters','freeze','issuesOnly','
   'modeB','searchB','sortKeyB','sortDirB','freezeB','issuesOnlyB','aggSearchB','aggAttnB','aggSelectedOnlyB','lastSubA','lastSubB',
   'lineItemCols','lineItemColWidths','lineItemView','lineItemCombineStat',
   'hideNoCross','xuShowNoCross','xsView','xsSearch','xuBase','xuSides','xuColWidths','xsRelColWidths',
-  'xsMode','ourHideTiers','xsGapX','xsGapExcl','xsGapOnly','ourSearch','ourIssuesOnly','ourMode','ourColWidths','ourColFilters','ocFac','ocVen','ocColWidths','xsGran','clarifyTo','clarifyStatus','clarifySearch'];
+  'xsMode','ourHideTiers','xsGapX','xsGapExcl','xsGapOnly','ourSearch','ourIssuesOnly','ourMode','ourColWidths','ourColFilters','ocFac','ocVen','ocColWidths','xsGran','xsShowNoCrossLines','clarifyTo','clarifyStatus','clarifySearch'];
 const VIEW_KEY_SET = new Set(VIEW_UI_KEYS);
 const clone = o => JSON.parse(JSON.stringify(o === undefined ? null : o));
 const pickView = ui => { const o = {}; VIEW_UI_KEYS.forEach(k => { if (ui[k] !== undefined) o[k] = ui[k]; }); return o; };
@@ -7742,6 +7748,7 @@ function renderCrosses(){
   [...$('#segXsMode').children].forEach(x => x.classList.toggle('on', x.dataset.xs === mode));
   $('#btnXsSetup').style.display = mode === 'fac' ? '' : 'none';
   $('#segXsGran').style.display = mode === 'fac' ? 'none' : '';
+  $('#lblXsNoCrossLines').style.display = mode === 'fac' ? 'none' : '';
   [...$('#segXsGran').children].forEach(x => x.classList.toggle('on', x.dataset.gran === (state.ui.xsGran === 'item' ? 'item' : 'agg')));
   $('#xsNote').innerHTML = mode === 'fac'
     ? 'Facility A&rsquo;s usage priced at Facility B&rsquo;s item with the same Crossed To. Lowest each price in green; <b style="color:var(--err)">NO CROSS</b> in red.'
@@ -8176,6 +8183,7 @@ $('#segXsGran').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
   state.ui.xsGran = b.dataset.gran; saveViewPrefs(); renderCrosses();
 });
+$('#chkXsNoCrossLines').addEventListener('change', e => { state.ui.xsShowNoCrossLines = e.target.checked; saveViewPrefs(); renderCrosses(); });
 $('#chkXuNoCross').addEventListener('change', e => { state.ui.xuShowNoCross = e.target.checked; saveViewPrefs(); renderCrosses(); });
 $('#btnXsWidths').addEventListener('click', () => {
   state.ui.xuColWidths = {}; state.ui.ocColWidths = {};
@@ -10064,7 +10072,7 @@ $('#btnPrograms').addEventListener('click', openPrograms);
 const tierPrograms = () => state.programs.filter(p => (p.tiers || []).length);
 function ourHide(){ if (!state.ui.ourHideTiers || typeof state.ui.ourHideTiers !== 'object') state.ui.ourHideTiers = {}; return state.ui.ourHideTiers; }
 function tierShown(p){ const h = state.ui.ourHideTiers || {}; return !h.__all && !h[p.id]; }
-function applyTierView(){ saveViewPrefs(); renderOur(); }
+function applyTierView(){ saveViewPrefs(); renderOur(); if (rowSideCtx && rowSideCtx.type === 'our') renderRowSide(); }
 function renderTierMenu(){
   const btn = $('#btnOurTiers'), dd = $('#ourTierDropdown');
   if (!btn || !dd) return;
@@ -10304,14 +10312,21 @@ function crossItemRows(list){
   }));
   return out;
 }
+/** Order of the lines on the Facility/Vendor Pricing sheet (flat: row order; grouped: item groups, then their rows). */
+function sheetRowRank(){
+  const m = new Map(); let i = 0;
+  if (state.ui.mode === 'flat') state.rows.forEach(r => m.set(r.id, i++));
+  else derived.groups.forEach(g => g.detail.forEach(d => m.set(d.row.id, i++)));
+  return m;
+}
 function buildCrosses(){
   const rp = crossRowPricing();
   const F = state.ui.ocFac || XC_ALL, V = state.ui.ocVen || XC_ALL;
-  const m = new Map(), list = [], notCrossed = { lines:0, net:0 };
+  const m = new Map(), list = [], notCrossed = { lines:0, net:0, list:[] };
   rp.forEach(r => {
     if ((F !== XC_ALL && xlBlankLbl(r.facility) !== F) || (V !== XC_ALL && xlBlankLbl(r.vendor) !== V)) return;
     const k = normIdent(r.ourItemNumber);
-    if (!k) { notCrossed.lines++; notCrossed.net += r.observedTotal; return; }
+    if (!k) { notCrossed.lines++; notCrossed.net += r.observedTotal; notCrossed.list.push(r); return; }
     let c = m.get(k);
     if (!c) { c = { key:k, label:r.ourItemNumber, lines:[] }; m.set(k, c); list.push(c); }
     c.lines.push(r);
@@ -10755,21 +10770,34 @@ function renderOurCompare(pane, cards){
   $('#cntXuNoCross').textContent = T.attn ? String(T.attn) : '';
   const q = String(state.ui.xsSearch || '').trim().toLowerCase();
   const perItem = state.ui.xsGran === 'item';
+  const showNCL = !!state.ui.xsShowNoCrossLines;
+  $('#chkXsNoCrossLines').checked = showNCL;
+  $('#cntXsNoCrossLines').textContent = X.notCrossed.lines ? String(X.notCrossed.lines) : '';
+  /* lines with a blank Crossed To belong to no cross; list them one by one when asked */
+  const ncEntries = showNCL ? X.notCrossed.list.map(r => {
+    const x = { key:'', pid:r.row.id, label:'', lines:[r], itemRow:true, noCross:true }; finishCross(x);
+    x.ok = false; x.status = 'No cross'; x.messages = ['Crossed To is blank \u2014 this line is not crossed to an Our Pricing item.']; return x;
+  }) : [];
+  const rank = sheetRowRank(), rk = c => { const v = rank.get(c.pid); return v == null ? 1e9 : v; };
   let rows = (perItem ? crossItemRows(all) : all).filter(c => showNC || c.ok);
   if (state.ui.xsGapOnly) rows = rows.filter(c => c.flag);
   if (q) rows = rows.filter(c => c.search.indexOf(q) >= 0);
+  let ncShown = ncEntries.filter(c => !state.ui.xsGapOnly && (!q || c.search.indexOf(q) >= 0));
   if (perItem) {
-    const cmp = (a, b) => String(a).localeCompare(String(b), undefined, { numeric:true });
-    rows.sort((a, b) => (b.parent.ok - a.parent.ok) || (b.parent.net - a.parent.net) || cmp(a.key, b.key) ||
-      cmp(xlBlankLbl(a.lines[0].facility), xlBlankLbl(b.lines[0].facility)) || cmp(xlBlankLbl(a.lines[0].vendor), xlBlankLbl(b.lines[0].vendor)) ||
-      cmp(a.lines[0].row.itemNumber || '', b.lines[0].row.itemNumber || ''));
-  } else rows.sort((a, b) => (b.ok - a.ok) || b.net - a.net);
+    /* row by row follows the Facility/Vendor Pricing sheet's own order; no-cross lines fall in where the sheet has them */
+    rows = rows.concat(ncShown); ncShown = [];
+    rows.sort((a, b) => rk(a) - rk(b));
+  } else {
+    rows.sort((a, b) => (b.ok - a.ok) || b.net - a.net);
+    ncShown.sort((a, b) => rk(a) - rk(b));
+    rows = rows.concat(ncShown);
+  }
   ocLast = rows;
 
   const t = el('table', 'grid xuTable ocTable');
   const thead = el('thead'), h1 = el('tr'), h2 = el('tr', 'xuH2');
   const grp = (txt, span, cls) => { const x = el('th', 'side ' + (cls || ''), txt); x.colSpan = span; h1.appendChild(x); };
-  grp('Comparison', 4, 'xuCmpH'); grp(perItem ? 'Facility/Vendor Pricing \u2014 observed (one line per row)' : 'Facility/Vendor Pricing \u2014 observed (all lines with this Crossed To)', 10, 'xuAH'); grp('Our Pricing \u2014 resolved from Crossed To + Tier to Apply', 12, 'xuBH');
+  grp('Comparison', 4, 'xuCmpH'); grp(perItem ? 'Facility/Vendor Pricing \u2014 observed (one line per row, in sheet order)' : 'Facility/Vendor Pricing \u2014 observed (all lines with this Crossed To)', 10, 'xuAH'); grp('Our Pricing \u2014 resolved from Crossed To + Tier to Apply', 12, 'xuBH');
   const heads = [['Observed Each', 'num'], ['Contract Each', 'num'], ['Best Priced', ''], ['Difference', 'num'],
     ['Lines', 'num sideStart'], ['Order Qty', 'num'], ['UOM', ''], ['Facility', ''], ['Vendor', ''], ['Item #', ''], ['Description', ''], ['Channel', ''], ['Each Price', 'num'], ['Total Net Sales', 'num'],
     ['Crossed To', 'sideStart'], ['Our Description', ''], ['Program \u00b7 Tier', ''], ['Contract', ''], ['Base Price', 'num'], ['Adjustment', ''], ['Override', 'num'],
@@ -10783,17 +10811,23 @@ function renderOurCompare(pane, cards){
     x.colSpan = heads.length; x.style.cssText = 'padding:12px;color:var(--ink-3)'; tr.appendChild(x); tb.appendChild(tr);
   }
   xuNavRows = [];
+  const ncShownCount = rows.filter(c => c.noCross).length;
   rows.forEach(c => {
     const L = c.lines, o = c.our;
     const pid = c.pid || c.key;
-    const firstOfCross = c.itemRow && (rows[rows.indexOf(c) - 1] || {}).key !== c.key;
-    const tr = el('tr', 'xuRow' + (c.ok ? '' : ' nocross') + (c.flag ? ' gapFlag' : '') + (c.itemRow ? ' itemRow' + (firstOfCross ? ' xgTop' : '') : ''));
+    if (c.noCross && !perItem && !(rows[rows.indexOf(c) - 1] || {}).noCross) {
+      const bn = el('tr', 'ncBanner'), bt = el('td', null, 'No cross \u2014 ' + ncShownCount + ' Facility/Vendor line' + (ncShownCount === 1 ? '' : 's') + ' with a blank Crossed To (not part of any cross, left out of the totals)');
+      bt.colSpan = heads.length; bn.appendChild(bt); tb.appendChild(bn);
+    }
+    const tr = el('tr', 'xuRow' + (c.ok ? '' : ' nocross') + (c.flag ? ' gapFlag' : '') + (c.noCross ? ' ncLine' : c.itemRow ? ' itemRow' : ''));
     tr.tabIndex = 0;
-    tr.title = (c.itemRow ? 'Double-click (or Enter) to open this line\u2019s cross \u2014 this Facility/Vendor is shown first, the other normalized ones are one tick away' : 'Double-click (or Enter) to open this cross with its Our Pricing item and normalize the lines together') + (c.messages.length ? '\n\n' + c.messages.join('\n') : '');
+    tr.title = (c.noCross ? 'No cross \u2014 Crossed To is blank on this line.' : c.itemRow ? 'Double-click (or Enter) to open this line\u2019s cross \u2014 this Facility/Vendor is shown first, the other normalized ones are one tick away' : 'Double-click (or Enter) to open this cross with its Our Pricing item and normalize the lines together') + (c.messages.length ? '\n\n' + c.messages.join('\n') : '');
     tr.dataset.pid = pid;
     if (pid === xsPicked) tr.classList.add('picked');
     tr.addEventListener('click', e => { if (!e.target.closest('.xsGrip, button')) pickCrossRow(pid); });
-    const open = c.itemRow
+    const open = c.noCross
+      ? () => { toast('This line has no Crossed To yet \u2014 set it on the Facility/Vendor Pricing sheet (or in its row side panel) to cross it.', true); }
+      : c.itemRow
       ? () => {
           pickCrossRow(pid);
           const ln = c.lines[0], fv = xlBlankLbl(ln.facility) + '\u0001' + xlBlankLbl(ln.vendor);
@@ -10810,7 +10844,7 @@ function renderOurCompare(pane, cards){
     td(tr, c.observedEach == null ? '' : fmtPrice(c.observedEach), 'num' + (best === 'fac' ? ' best' : ''));
     td(tr, c.ok ? (c.contractEach == null ? '' : fmtPrice(c.contractEach)) : lineStatus(c.bad[0]), c.ok ? 'num' + (best === 'our' ? ' best' : '') : 'nc');
     const bp = el('td');
-    if (!best) { bp.textContent = c.ok ? 'No price' : 'Unresolved'; bp.className = c.ok ? 'dim' : 'nc'; }
+    if (!best) { bp.textContent = c.ok ? 'No price' : c.noCross ? 'NO CROSS' : 'Unresolved'; bp.className = c.ok ? 'dim' : 'nc'; }
     else bp.appendChild(el('span', 'bestTag' + (best === 'fac' ? ' cur' : best === 'same' ? ' same' : ''), best === 'our' ? 'Our Pricing' : best === 'fac' ? 'Facility' : 'Same'));
     tr.appendChild(bp);
     if (c.flag) td(tr, '\u26a0 ' + signedMoney(c.diff), 'num gapCell', 'Price gap ' + fmtGap(c.gap) + ' \u2014 ' + GAP_HINT);
@@ -10831,7 +10865,7 @@ function renderOurCompare(pane, cards){
     td(tr, c.observedEach == null ? '' : fmtPrice(c.observedEach), 'num');
     td(tr, fmtMoney(c.net), 'num');
     td(tr, c.label, 'sideStart' + (!o ? ' nc' : ''));
-    td(tr, o ? o.description : 'Not in Our Pricing', 'desc' + (o ? '' : ' nc'), o ? o.description : '');
+    td(tr, o ? o.description : c.noCross ? 'NO CROSS' : 'Not in Our Pricing', 'desc' + (o ? '' : ' nc'), o ? o.description : '');
     td(tr, ocJoin(L.map(r => r.group ? pricingLabel(r) : ''), 4), L.some(r => r.state === 'tierRequired' || r.state === 'tierInvalid') ? 'nc' : null,
        ocUniq(L.map(r => r.tier ? tierLabel(r.tier) : '')).join('\n'));
     td(tr, ocJoin(L.map(r => r.contract || '')));
@@ -10881,7 +10915,7 @@ function ocCopyTable(){
   const out = [head.join('\t')];
   ocLast.forEach(c => {
     const L = c.lines;
-    out.push([c.label, c.our ? c.our.description : 'Not in Our Pricing', L.length, n(c.eaches), u(L.map(r => xlBlankLbl(r.facility))), u(L.map(r => xlBlankLbl(r.vendor))),
+    out.push([c.label, c.our ? c.our.description : c.noCross ? 'NO CROSS' : 'Not in Our Pricing', L.length, n(c.eaches), u(L.map(r => xlBlankLbl(r.facility))), u(L.map(r => xlBlankLbl(r.vendor))),
       u(L.map(r => String(r.row.itemNumber || '').trim())), u(L.map(r => String(r.d.eff.description || '').trim())), u(L.map(r => r.channel)),
       n(c.net), n(c.observedEach), u(L.map(r => r.group ? pricingLabel(r) : '')), u(L.map(r => r.contract || '')),
       u(L.map(r => r.basePrice == null ? '' : r.basePrice + '/' + r.priceUnit)), u(L.map(r => r.override == null ? '' : String(r.override))),
@@ -11083,6 +11117,28 @@ function flagFacRowData(row){
     itemNumber:String(row.itemNumber || '').trim(), mfg:String(row.mfgCatalog || ''), description:String(row.description || ''),
     ourItem:String(row.crossedTo || ''), ourDesc:'', qty:null, net:numOrZero(row.netSales), observedEach:null, contractEach:null, issue:'' };
 }
+function flagGroupData(list){
+  const U = f => ocUniq(list.map(m => m[f]));
+  const sum = f => list.reduce((t, m) => t + (m[f] || 0), 0);
+  const qty = sum('qty'), net = sum('net');
+  const items = U('itemNumber').length ? U('itemNumber') : U('ourItem');
+  return { refType:'group', refId:list.map(m => m.refId).sort().join('|'), kind:'Group of ' + list.length + ' item' + (list.length === 1 ? '' : 's'),
+    facility:U('facility').join(', '), vendor:U('vendor').join(', '), itemNumber:ocJoin(items, 4), mfg:'',
+    description:list.length + ' items flagged together', ourItem:U('ourItem').join(', '), ourDesc:'',
+    qty:qty || null, net:net || null, observedEach:qty > 0 ? net / qty : null, contractEach:null, issue:'',
+    members:list.map(m => ({ refType:m.refType, refId:m.refId, facility:m.facility, vendor:m.vendor, itemNumber:m.itemNumber, mfg:m.mfg, description:m.description,
+      ourItem:m.ourItem, ourDesc:m.ourDesc, qty:m.qty, net:m.net, observedEach:m.observedEach, contractEach:m.contractEach })) };
+}
+function flagTickedFacility(anchor){
+  const rows = checkedRows();
+  if (!rows.length) { toast('Tick the rows to flag first \u2014 they go to the report as one group.', true); return; }
+  openFlagPop(anchor, flagGroupData(rows.map(flagFacRowData)), null);
+}
+function flagTickedOur(anchor){
+  const rows = state.our.rows.filter(r => ourChecked.has(r.id));
+  if (!rows.length) { toast('Tick the records to flag first \u2014 they go to the report as one group.', true); return; }
+  openFlagPop(anchor, flagGroupData(rows.map(flagOurData)), null);
+}
 function afterClarifyChange(){
   viewDirty.clarify = true; renderRail();
   if (state.ui.tab === 'clarify') renderClarify();
@@ -11103,7 +11159,7 @@ function openFlagPop(anchor, data, after){
   const pop = $('#flagPop'); pop.innerHTML = '';
   const ex = clFind(data.refType, data.refId);
   pop.appendChild(el('h4', null, ex ? '\u2691 Flagged \u2014 edit the note' : '\u2691 Flag for clarification'));
-  pop.appendChild(el('div', 'what', data.kind + ': ' + [data.itemNumber || data.ourItem, data.description].filter(Boolean).join(' \u2014 ') +
+  pop.appendChild(el('div', 'what', data.kind + ': ' + (data.refType === 'group' ? data.itemNumber : [data.itemNumber || data.ourItem, data.description].filter(Boolean).join(' \u2014 ')) +
     (data.facility || data.vendor ? '\n' + [data.facility, data.vendor].filter(Boolean).join(' \u00b7 ') : '')));
   pop.querySelector('.what').style.whiteSpace = 'pre-line';
   pop.appendChild(el('label', null, 'Send to'));
@@ -11113,7 +11169,7 @@ function openFlagPop(anchor, data, after){
   sel.value = ex ? ex.to : 'Vendor';
   pop.appendChild(sel);
   pop.appendChild(el('label', null, 'What needs to be clarified?'));
-  const ta = el('textarea'); ta.placeholder = 'e.g. Confirm pack size (12/CS or 24/CS) and the price unit on this invoice line.';
+  const ta = el('textarea'); ta.placeholder = data.refType === 'group' ? 'One note for all ' + (data.members || []).length + ' items, e.g. Confirm pack size and price unit for every item listed.' : 'e.g. Confirm pack size (12/CS or 24/CS) and the price unit on this invoice line.';
   ta.value = ex ? ex.note : '';
   pop.appendChild(ta);
   const act = el('div', 'act');
@@ -11182,6 +11238,11 @@ function clarifyFiltered(){
     .sort((a, b) => cmp(a.to, b.to) * -1 || cmp(clContact(a), clContact(b)) || cmp(a.facility, b.facility) || cmp(a.itemNumber, b.itemNumber) || cmp(a.at, b.at));
 }
 function clarifyGo(it){
+  if (it.refType === 'group') {
+    const m = (it.members || [])[0];
+    if (!m) return;
+    it = Object.assign({}, m, { refType:m.refType });
+  }
   if (it.refType === 'our') {
     switchTab('our');
     const ri = oView.idx.get(it.refId); if (ri != null) ourSetCur(ri, 0);
@@ -11202,7 +11263,7 @@ function renderClarify(){
   $('#btnClarifyXlsx').disabled = !items.length;
   $('#btnClarifyClosed').disabled = !all.some(i => i.status === 'Closed');
   if (!all.length) {
-    pane.appendChild(el('div', 'clEmpty', 'Nothing has been flagged yet.\nOpen a cross, click \u2691 on a line (or use the \u2691 in the Crosses table, or triple-click a row on Our Pricing / Facility/Vendor Pricing and use the side panel), write what the contact should clarify, and it lands here.'));
+    pane.appendChild(el('div', 'clEmpty', 'Nothing has been flagged yet.\nOpen a cross, click \u2691 on a line (or use the \u2691 in the Crosses table, or double right-click a row on Our Pricing / Facility/Vendor Pricing and use the side panel), write what the contact should clarify, and it lands here.'));
     pane.firstChild.style.whiteSpace = 'pre-line'; return;
   }
   if (!items.length) { pane.appendChild(el('div', 'clEmpty', 'No flagged item matches these filters.')); return; }
@@ -11230,8 +11291,18 @@ function renderClarify(){
     selTo.value = it.to; selTo.addEventListener('change', () => { it.to = selTo.value; persist(); renderClarify(); });
     tdTo.appendChild(selTo); tr.appendChild(tdTo);
     c(it.facility); c(it.vendor);
-    c(it.itemNumber, 'clOur', it.kind);
-    c(it.description);
+    if (it.refType === 'group') {
+      const m = it.members || [];
+      const x = c('', 'clOur'); x.textContent = '';
+      const dt = el('details'); dt.appendChild(el('summary', null, it.kind));
+      const ul = el('div', 'hint');
+      m.forEach(mm => ul.appendChild(el('div', null, [mm.itemNumber || mm.ourItem, mm.description, [mm.facility, mm.vendor].filter(Boolean).join(' \u00b7 ')].filter(Boolean).join(' \u2014 '))));
+      dt.appendChild(ul); x.appendChild(dt);
+      c(m.length + ' items \u2014 ' + ocJoin(m.map(mm => mm.itemNumber || mm.ourItem), 3), null, m.map(mm => mm.itemNumber || mm.ourItem).join('\n'));
+    } else {
+      c(it.itemNumber, 'clOur', it.kind);
+      c(it.description);
+    }
     c(it.ourItem, 'clOur', it.ourDesc);
     c(it.observedEach == null ? '' : fmtPrice(it.observedEach), 'num');
     c(it.contractEach == null ? '' : fmtPrice(it.contractEach), 'num');
@@ -11346,10 +11417,41 @@ async function exportClarifyExcel(){
       cell.border = { bottom:xlThin('FFE6EBF0') };
       if (k === 5 || k === 6) cell.numFmt = EACH;
       if (k === 7) cell.fill = xlFill(NOTE);
+      if (it.refType === 'group') cell.font = xlFont({ bold:true });
     });
     r++;
+    if (it.refType === 'group') (it.members || []).forEach(mm => {
+      [mm.itemNumber, mm.description, mm.facility, mm.vendor, mm.ourItem, mm.observedEach, mm.contractEach, '', ''].forEach((v, k) => {
+        const cell = wc.getCell(r, k + 1); cell.value = v === '' || v == null ? null : typeof v === 'string' ? xlClean(v) : v;
+        cell.font = xlFont({ color:{ argb:XL.ink2 }, size:9 }); cell.alignment = { vertical:'top', horizontal:(k === 5 || k === 6) ? 'right' : 'left', indent:k === 0 ? 3 : 1 };
+        cell.fill = xlFill('FFFFFDF0'); cell.border = { bottom:xlThin('FFF0F0E0') };
+        if (k === 5 || k === 6) cell.numFmt = EACH;
+      });
+      r++;
+    });
   });
   [16, 34, 20, 20, 14, 14, 14, 50, 38].forEach((w, i) => { wc.getColumn(i + 1).width = w; });
+  const groups = items.map((it, i) => ({ it, no:i + 1 })).filter(x => x.it.refType === 'group');
+  if (groups.length) {
+    const wg = wb.addWorksheet('Group Members', { properties:{ tabColor:{ argb:'FF7B8B9C' } } });
+    const h3 = ['Report #', 'Send to', 'Contact', 'Facility', 'Vendor', 'Vendor Item #', 'MFG Catalog #', 'Description', 'Our Item #', 'Qty (eaches)', 'Net Sales', 'Observed Each', 'Our Each', 'Group note'];
+    title(wg, 'Items flagged as a group \u2014 ' + caseName, h3.length);
+    hdrRow(wg, 4, h3); wg.getRow(4).height = 28;
+    let gr = 5;
+    groups.forEach(({ it, no }) => (it.members || []).forEach(mm => {
+      [no, it.to + ' contact', clContact(it), mm.facility, mm.vendor, mm.itemNumber, mm.mfg, mm.description, mm.ourItem,
+       mm.qty == null ? null : Math.round(mm.qty * 1e4) / 1e4, mm.net, mm.observedEach, mm.contractEach, it.note].forEach((v, k) => {
+        const cell = wg.getCell(gr, k + 1); cell.value = v === '' || v == null ? null : typeof v === 'string' ? xlClean(v) : v;
+        cell.font = xlFont(); cell.alignment = { vertical:'top', wrapText:k === 7 || k === 13, horizontal:(k >= 9 && k <= 12) ? 'right' : 'left', indent:1 };
+        cell.border = { bottom:xlThin('FFE6EBF0') };
+        if (k === 9) cell.numFmt = '#,##0.####'; if (k === 10) cell.numFmt = MONEY; if (k === 11 || k === 12) cell.numFmt = EACH;
+        if (k === 13) cell.fill = xlFill(NOTE);
+      });
+      gr++;
+    }));
+    [9, 15, 22, 18, 18, 16, 16, 34, 14, 12, 13, 14, 14, 46].forEach((w, i) => { wg.getColumn(i + 1).width = w; });
+    wg.views = [{ state:'frozen', ySplit:4 }];
+  }
   wb.views = [{ activeTab:0, firstSheet:0 }];
   const buf = await wb.xlsx.writeBuffer();
   const name = xlSafeSheetFile(caseName) + ' - clarification report ' + stamp() + '.xlsx';
@@ -11361,9 +11463,10 @@ async function exportClarifyExcel(){
 }
 
 /* ============================================================ ROW SIDE PANEL
-   Triple-click a row on Our Pricing or Facility/Vendor Pricing (or a line in the cross window)
+   Double right-click a row on Our Pricing or Facility/Vendor Pricing (or a line in the cross window)
    to edit every field of that row here instead of scrolling across the columns. */
 let rowSideCtx = null, rowSideFields = [], rowSideSig = '';
+const rsSigOur = rec => String(rec.program || '') + '|' + JSON.stringify(state.ui.ourHideTiers || {});
 const rsDetailOf = id => { for (const g of derived.groups) for (const d of g.detail) if (d.row.id === id) return d; return null; };
 function closeRowSide(){
   rowSideCtx = null; rowSideFields = [];
@@ -11374,6 +11477,16 @@ function openRowSide(ctx){
   if (typeof commitEdit === 'function') { try { commitEdit(); } catch (e) {} }
   if (typeof ourCommitEdit === 'function') { try { ourCommitEdit(); } catch (e) {} }
   rowSideCtx = ctx;
+  /* put the sheet cursor on the row, so the yellow selected-row highlight follows the panel */
+  if (!ctx.fromModal) {
+    try {
+      if (ctx.type === 'our' && state.ui.tab === 'our') { const ri = oView.idx.get(ctx.id); if (ri != null) ourSetCur(ri, oCur ? oCur.c : 0); }
+      else if ((ctx.type === 'fac' || ctx.type === 'facgrp') && state.ui.tab === 'normalization') {
+        const vi = derived.visible.findIndex(it => ctx.type === 'fac' ? (it.type === 'row' && it.row.id === ctx.id) : (it.type === 'group' && it.group.key === ctx.key));
+        if (vi >= 0) setCur(vi, cur ? cur.c : 0);
+      }
+    } catch (e) {}
+  }
   document.querySelectorAll('tr.rowSel[data-ourid], tr.rowSel[data-rowid]').forEach(t => t.classList.remove('rowSel'));
   document.querySelectorAll('#modalBody tr[data-ourid], #modalBody tr[data-rowid]').forEach(t => {
     if ((ctx.type === 'our' && t.dataset.ourid === ctx.id) || (ctx.type === 'fac' && t.dataset.rowid === ctx.id)) t.classList.add('rowSel');
@@ -11394,7 +11507,7 @@ function rsInput(get, set, opts){
   inp.addEventListener('keydown', e => {
     e.stopPropagation();
     if (e.key === 'Enter') { e.preventDefault(); inp.blur(); }
-    else if (e.key === 'Escape') { e.preventDefault(); inp.value = get(); inp.blur(); }
+    else if (e.key === 'Escape') { e.preventDefault(); inp.value = get(); inp.blur(); closeRowSide(); }
   });
   inp.addEventListener('change', () => { set(inp.value); });
   rowSideFields.push({ inp, get });
@@ -11468,7 +11581,8 @@ function renderRowSide(){
     const rec = state.our.rows.find(r => r.id === ctx.id);
     if (!rec) { closeRowSide(); return; }
     refreshProgramList();
-    const cb = crossedByIndex(), cols = ourColumns(true);
+    const cb = crossedByIndex(), cols = ourColumns();   /* hidden tier columns (Tiers menu) are hidden here too */
+    const hiddenN = ourColumns(true).filter(c => c.kind === 'tier' || c.kind === 'each').length - cols.filter(c => c.kind === 'tier' || c.kind === 'each').length;
     ht.appendChild(el('div', 'kind', 'Our Pricing \u2014 record'));
     ht.appendChild(el('h3', null, String(rec.itemNumber || '(no Item #)')));
     ht.appendChild(el('div', 'sub', [rec.description, rec.vendor].filter(Boolean).join(' \u2014 ')));
@@ -11501,8 +11615,9 @@ function renderRowSide(){
         });
       });
     });
+    if (hiddenN > 0) body.appendChild(el('div', 'rsHint', hiddenN + ' tier price field' + (hiddenN === 1 ? '' : 's') + ' hidden \u2014 they follow the Tiers menu on the Our Pricing toolbar.'));
     const fb = flagButton(() => flagOurData(rec), { label:'\u2691 Flag for clarification' }); fb.classList.add('btn', 'sm'); foot.appendChild(fb);
-    rowSideSig = String(rec.program || '');
+    rowSideSig = rsSigOur(rec);
   }
   head.appendChild(ht); head.appendChild(x);
   side.appendChild(head); side.appendChild(body); side.appendChild(foot);
@@ -11516,7 +11631,7 @@ function syncRowSide(){
   if (ctx.type === 'our') {
     const rec = state.our.rows.find(r => r.id === ctx.id);
     if (!rec) { closeRowSide(); return; }
-    if (String(rec.program || '') !== rowSideSig) { renderRowSide(); return; }
+    if (rsSigOur(rec) !== rowSideSig) { renderRowSide(); return; }
   }
   if (ctx.type === 'facgrp') { if (!derived.byKey[ctx.key]) closeRowSide(); return; }
   rowSideFields.forEach(f => {
@@ -11524,32 +11639,48 @@ function syncRowSide(){
     else if (f.ro) f.ro.textContent = f.get();
   });
 }
-document.addEventListener('keydown', e => { if (e.key === 'Escape' && rowSideCtx && !flagPopAnchor && $('#rowSide').contains(document.activeElement)) { e.preventDefault(); closeRowSide(); } });
-/* triple-click a row -> side panel */
-document.addEventListener('click', e => {
-  if (e.detail !== 3) return;
-  const t = e.target;
-  if (!t.closest || t.closest('#rowSide, #flagPop') || t.closest('.flagBtn')) return;
-  let ctx = null;
+/* Esc closes the side panel from anywhere (captured first, so the cross window / sheet do not also react).
+   Esc inside a cell being edited elsewhere still only cancels that edit. */
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape' || !rowSideCtx || flagPopAnchor) return;
+  const t = e.target, inSide = !!(t.closest && t.closest('#rowSide'));
+  if (!inSide && t.closest && t.closest('input,textarea,select')) return;
+  e.preventDefault(); e.stopPropagation();
+  closeRowSide();
+}, true);
+/* double right-click a row -> side panel (Our Pricing, Facility/Vendor Pricing, and the lines in the cross window) */
+function rowCtxFromTarget(t){
+  if (!t || !t.closest || t.closest('#rowSide, #flagPop, .flagBtn')) return null;
   const sheetRow = t.closest('#body .r');
   if (sheetRow) {
-    const cell = t.closest('.c');
-    if (cell && (cell.classList.contains('chkcell'))) return;
     const item = derived.visible[+sheetRow.dataset.v];
-    if (item) ctx = item.type === 'group' ? { type:'facgrp', key:item.group.key } : { type:'fac', id:item.row.id };
-  } else {
-    const ourRow = t.closest('#paneOur tr.oRow');
-    if (ourRow) { const rec = oView.rows[+ourRow.dataset.r]; if (rec) ctx = { type:'our', id:rec.id }; }
-    else {
-      const mFac = t.closest('#modalBody tr[data-rowid]'), mOur = t.closest('#modalBody tr[data-ourid]');
-      if (mFac) ctx = { type:'fac', id:mFac.dataset.rowid, fromModal:true };
-      else if (mOur) ctx = { type:'our', id:mOur.dataset.ourid, fromModal:true };
-    }
+    return item ? (item.type === 'group' ? { type:'facgrp', key:item.group.key } : { type:'fac', id:item.row.id }) : null;
   }
+  const ourRow = t.closest('#paneOur tr.oRow');
+  if (ourRow) { const rec = oView.rows[+ourRow.dataset.r]; return rec ? { type:'our', id:rec.id } : null; }
+  const inModal = !!t.closest('#modalBody');
+  const mFac = t.closest('tr[data-rowid]'), mOur = t.closest('tr[data-ourid]');
+  if (mFac) return { type:'fac', id:mFac.dataset.rowid, fromModal:inModal };
+  if (mOur) return { type:'our', id:mOur.dataset.ourid, fromModal:inModal };
+  return null;
+}
+let rcLast = null;
+document.addEventListener('contextmenu', e => {
+  let t = e.target;
+  if (t && t.closest && t.closest('input,textarea,select')) return;           // keep the normal menu in fields
+  if (t && !t.isConnected) t = document.elementFromPoint(e.clientX, e.clientY);   // the sheet redraws on mousedown
+  let ctx = rowCtxFromTarget(t);
+  if (!ctx && rcLast && rcLast.ctx && Date.now() - rcLast.t < 650 && !(t && t.isConnected)) ctx = rcLast.ctx;   // row was redrawn between the two clicks
   if (!ctx) return;
-  e.preventDefault(); e.stopPropagation();
-  openRowSide(ctx);
+  e.preventDefault();
+  const key = ctx.type + ':' + (ctx.id || ctx.key), now = Date.now();
+  if (rcLast && rcLast.key === key && now - rcLast.t < 650) { rcLast = null; e.stopPropagation(); openRowSide(ctx); }
+  else rcLast = { key, t:now, ctx };
 }, true);
+
+$('#btnFlagRows').addEventListener('click', e => flagTickedFacility(e.currentTarget));
+$('#btnBulkFlag').addEventListener('click', e => flagTickedFacility(e.currentTarget));
+$('#btnOurFlag').addEventListener('click', e => flagTickedOur(e.currentTarget));
 
 /* ================================================================== INIT */
 /** Put the toolbar controls in line with this browser's view of the case. */
