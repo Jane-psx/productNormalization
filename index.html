@@ -267,6 +267,8 @@ main{flex:1;min-height:0;display:flex;overflow:hidden}
   font-size:12.5px;line-height:1;cursor:cell;user-select:none;
 }
 .c.z-analysed{background:var(--zone-analysed)}
+.c.z-rental{background:#fffaf0}
+.hcell.z-rental,.zonebar .z-rental,table.grid th.z-rental{background:#fbeccb}
 .c.z-xto{background:#f6f2fc;color:#4b2f7a}
 .c.z-xto.nomatch{color:var(--warn);font-style:italic}
 .hcell.z-xto{background:#ebe3f7}
@@ -1114,6 +1116,8 @@ table.clTable .clOur{font-family:var(--mono)}
 table.clTable .clGrp td{background:#fff8c5;font-weight:700;color:#6b4e00;border-top:2px solid #d4a72c}
 .ocTable tr.ncBanner td{background:#eef1f5;color:var(--ink-2);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.07em;padding:7px 10px;border-top:2px solid var(--ink-3)}
 .ocTable tr.ncLine td{background:#fbf7f7;color:var(--ink-2)}
+.ocTable tr.mismatchRow td{background:#fff6e0}
+.ocTable tr.mismatchRow td.nc{color:#a35b00}
 .clEmpty{padding:34px;text-align:center;color:var(--ink-3);font-size:13px;line-height:1.7}
 .srcTable td.xcBad{color:var(--err);font-weight:600}
 .srcTable td.xcGood{color:var(--ok);font-weight:600}
@@ -1297,6 +1301,7 @@ table.ourTable td.srcCell .pill{margin-left:6px;cursor:pointer}
       <span class="note" style="margin-left:0">+ Contract</span>
       <span class="sep"></span>
       <button class="btn" id="btnPrograms" title="Tier definitions, contracts, effective dates and order-level rules">Pricing programs&hellip;</button>
+      <button class="btn" id="btnOurRentals" title="Rentals: days per week / month, day counting and fees, per vendor">Rental rules&hellip;</button>
       <div class="moreMenu"><button class="btn" id="btnOurTiers" title="Show or hide tier price columns, per pricing program. View only — prices, crosses and exports are not affected.">Tiers &#9662;</button><div class="moreDropdown" id="ourTierDropdown"></div></div>
       <span class="sep"></span>
       <div class="search">
@@ -1387,6 +1392,15 @@ table.ourTable td.srcCell .pill{margin-left:6px;cursor:pointer}
       <button data-gran="agg" class="on">Aggregated</button>
       <button data-gran="item">Per item &middot; row by row</button>
     </div>
+    <div class="seg" id="segXsType" title="Purchases and rentals are never mixed in the totals, cards or price-gap flags" style="display:none">
+      <button data-type="purchase" class="on">Purchase</button>
+      <button data-type="rental">Rental</button>
+    </div>
+    <select id="selRentUnit" title="Unit the rental rates are compared in (saved with your view)" style="display:none">
+      <option value="day">per unit-day</option><option value="week">per unit-week</option><option value="month">per unit-month</option>
+    </select>
+    <label class="chk" id="lblRentFees" style="display:none" title="Add the vendor's delivery, pickup, waiver and minimum-charge rules (Rental rules) to what Our Pricing would have charged"><input type="checkbox" id="chkRentFees" checked> Include vendor fees</label>
+    <button class="btn" id="btnRentRules" style="display:none" title="Days per week / month, day counting and fees per vendor">Rental rules&hellip;</button>
     <button class="btn" id="btnXsWidths" title="Put every column in this table back to its automatic width">Reset widths</button>
     <label class="chk" title="Also list items that could not be priced: no match on the other side, not crossed, tier required, invalid tier or no price."><input type="checkbox" id="chkXuNoCross"> Show unresolved <span class="count" id="cntXuNoCross"></span></label>
     <label class="chk" id="lblXsNoCrossLines" title="Also list the Facility/Vendor lines whose Crossed To is blank. They belong to no cross, so they are otherwise only counted in the first card."><input type="checkbox" id="chkXsNoCrossLines"> Show no-cross lines <span class="count" id="cntXsNoCrossLines"></span></label>
@@ -1431,6 +1445,8 @@ table.ourTable td.srcCell .pill{margin-left:6px;cursor:pointer}
 </div>
 
 <datalist id="umList"></datalist>
+<datalist id="itemTypeList"><option value="Purchase"><option value="Rental"></datalist>
+<datalist id="periodList"><option value="DAY"><option value="WK"><option value="MO"></datalist>
 <datalist id="ourItemList"></datalist>
 <datalist id="tierList"></datalist>
 <datalist id="channelList"><option value="Direct"></option><option value="Distributor"></option></datalist>
@@ -1512,6 +1528,12 @@ const COLS = [
   { k:'factorQty',        L:'I', name:'Factor QTY',       zone:'analysed', num:true,  w:82  },
   { k:'factorUM',         L:'J', name:'Factor UM',        zone:'analysed',            w:74  },
   { k:'packagingDetails', L:'K', name:'Packaging Details',zone:'analysed',            w:196 },
+  /* Rentals: Item Type = Rental switches the row to rental maths (Ordered QTY = units rented). */
+  { k:'itemType',         L:'RT',name:'Item Type',        zone:'rental',              w:84  },
+  { k:'rentPeriods',      L:'RP',name:'Rent Periods',     zone:'rental',   num:true,  w:86  },
+  { k:'rentPeriodUM',     L:'RU',name:'Period UM',        zone:'rental',              w:78  },
+  { k:'rentStart',        L:'RS',name:'Rent Start',       zone:'rental',              w:96  },
+  { k:'rentEnd',          L:'RE',name:'Rent End',         zone:'rental',              w:96  },
   { k:'innerPack',        L:'L', name:'Inner Pack Size',  zone:'computed', calc:true, num:true, w:112, fmt:'qty'   },
   { k:'orderedQtyNorm',   L:'M', name:'Ordered Quantity', zone:'computed', calc:true, num:true, w:118, fmt:'qty'   },
   { k:'eachPrice',        L:'N', name:'Each Price',       zone:'computed', calc:true, num:true, w:106, fmt:'price' },
@@ -1521,7 +1543,7 @@ const COLS = [
 /* A:K are the editable input columns; P (Original Data) is written by Aggregate. */
 /* Pasted Excel ranges keep the workbook's column order: the three relationship
    columns added with the pricing layer come after the original A:K inputs. */
-const APPENDED_INPUT_KEYS = ['tierToApply','purchaseChannel','orderRef','contractToApply'];
+const APPENDED_INPUT_KEYS = ['tierToApply','purchaseChannel','orderRef','contractToApply','itemType','rentPeriods','rentPeriodUM','rentStart','rentEnd'];
 const INPUT_KEYS = COLS.filter(c => !c.calc && !c.meta && !APPENDED_INPUT_KEYS.includes(c.k)).map(c => c.k).concat(APPENDED_INPUT_KEYS);
 const ROW_KEYS   = COLS.filter(c => !c.calc).map(c => c.k);
 
@@ -2012,8 +2034,122 @@ function calcTotal(each, ordered){
   return { v, trace:() => 'Total Net Sales = Each Price ' + fmtPrice(each.v) + ' \u00d7 Ordered Quantity ' + fmtQty(ordered.v) + ' = ' + fmtMoney(v) };
 }
 
+/* ================================================================== RENTALS
+   Item Type = Rental switches a row to unit-period maths. Ordered QTY = units rented; the billed
+   duration comes from Periods + Period UM (DAY / WK / MO) or a Start and End date. "Eaches" become
+   unit-days, so the rest of the app (crosses, pills, flags, report) keeps working. Days per week /
+   month, day counting and fees come from the vendor's rental rules. */
+const isRentalVals = v => !!v && /^r/i.test(String(v.itemType == null ? '' : v.itemType).trim());
+function rentalProfile(vendor){
+  const R = state.rentals, key = normIdent(vendor), v = (key && R.vendors[key]) || null, d = R.defaults;
+  const pick = k => (v && v[k] != null && v[k] !== '') ? v[k] : d[k];
+  return { name:v ? (v.name || vendor) : '(default)', custom:!!v,
+    daysWeek:toNum(pick('daysWeek')) || 7, daysMonth:toNum(pick('daysMonth')) || 30,
+    monthMode:pick('monthMode') === 'calendar' ? 'calendar' : 'fixed', returnDay:!!pick('returnDay'), fees:(v && v.fees) || [] };
+}
+/** Days in one period named by a UM. Null when the UM is not a rental period. */
+function periodDays(um, prof){
+  const u = String(um == null ? '' : um).trim().toUpperCase().replace(/\s+/g, '');
+  if (/^(D|DY|DAY|DAYS)$/.test(u)) return { days:1, unit:'day' };
+  if (/^(W|WK|WKS|WEEK|WEEKS)$/.test(u)) return { days:prof.daysWeek, unit:'week' };
+  if (/^(M|MO|MOS|MON|MONTH|MONTHS)$/.test(u)) return { days:prof.daysMonth, unit:'month', month:true };
+  if (/^(4W|4WK|4WEEK|4WEEKS)$/.test(u)) return { days:4 * prof.daysWeek, unit:'4 weeks' };
+  if (/^(28D|28DAY|28DAYS)$/.test(u)) return { days:28, unit:'28 days' };
+  return null;
+}
+function parseRentDate(v){
+  const s = String(v == null ? '' : v).trim(); if (!s) return null;
+  let y, m, d, x;
+  if ((x = s.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})/))) { y = +x[1]; m = +x[2]; d = +x[3]; }
+  else if ((x = s.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2,4})/))) { m = +x[1]; d = +x[2]; y = +x[3]; if (y < 100) y += 2000; }
+  else if (/^\d{5}(\.\d+)?$/.test(s)) return Math.floor((parseFloat(s) - 25569) * 864e5);
+  else return null;
+  const t = Date.UTC(y, m - 1, d);
+  return new Date(t).getUTCMonth() === m - 1 ? t : null;
+}
+const rentDateText = t => new Date(t).toISOString().slice(0, 10);
+function addMonthsUTC(t, n){
+  const dt = new Date(t), day = dt.getUTCDate();
+  const r = new Date(Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth() + n, 1));
+  const dim = new Date(Date.UTC(r.getUTCFullYear(), r.getUTCMonth() + 1, 0)).getUTCDate();
+  r.setUTCDate(Math.min(day, dim)); return r.getTime();
+}
+/** Billed days of one rental line, by its own vendor's rules. */
+function rentalDuration(vals, prof){
+  const s = parseRentDate(vals.rentStart), e = parseRentDate(vals.rentEnd);
+  if (!isBlank(vals.rentStart) && s === null) return { err:'Rent Start \u201c' + vals.rentStart + '\u201d is not a date (use yyyy-mm-dd or m/d/yyyy).' };
+  if (!isBlank(vals.rentEnd) && e === null) return { err:'Rent End \u201c' + vals.rentEnd + '\u201d is not a date (use yyyy-mm-dd or m/d/yyyy).' };
+  if (s !== null && e !== null) {
+    let d = Math.round((e - s) / 864e5);
+    if (d < 0) return { err:'Rent End is before Rent Start.' };
+    d += prof.returnDay ? 1 : 0; if (d < 1) d = 1;
+    return { days:d, how:rentDateText(s) + ' \u2192 ' + rentDateText(e) + (prof.returnDay ? ' (return day counted)' : '') + ' = ' + d + ' day' + (d === 1 ? '' : 's') };
+  }
+  if (!isBlank(vals.rentPeriods)) {
+    const n = toNum(vals.rentPeriods);
+    if (n === null || n < 0) return { err:'Rent Periods \u201c' + vals.rentPeriods + '\u201d is not a number.' };
+    if (isBlank(vals.rentPeriodUM)) return { err:'Period UM is blank \u2014 use DAY, WK or MO.' };
+    const pd = periodDays(vals.rentPeriodUM, prof);
+    if (!pd) return { err:'Period UM \u201c' + vals.rentPeriodUM + '\u201d is not DAY, WK or MO.' };
+    if (pd.month && prof.monthMode === 'calendar' && s !== null) {
+      const d = Math.round((addMonthsUTC(s, Math.round(n)) - s) / 864e5);
+      return { days:d, how:n + ' month' + (n === 1 ? '' : 's') + ' from ' + rentDateText(s) + ' (actual calendar days) = ' + d + ' days' };
+    }
+    const d = n * pd.days;
+    return { days:d, how:n + ' \u00d7 ' + pd.days + ' days per ' + pd.unit + ' = ' + fmtQty(d) + ' days' +
+      (pd.month && prof.monthMode === 'calendar' ? ' (calendar months need a Rent Start \u2014 used ' + prof.daysMonth + ' days)' : '') };
+  }
+  return { blank:true };
+}
+function calcRentalQty(vals){
+  if (isBlank(vals.orderedQty)) return { blank:true, trace:'Ordered QTY (units rented) is blank.' };
+  const units = numOrZero(vals.orderedQty), prof = rentalProfile(vals.vendorName), du = rentalDuration(vals, prof);
+  if (du.blank) return { blank:true, trace:'Rental duration is blank \u2014 enter Rent Periods + Period UM, or Rent Start and Rent End.' };
+  if (du.err) return { err:'#VALUE!', trace:du.err };
+  const v = units * du.days;
+  return { v, units, days:du.days, rental:true, trace:() => 'Rental: ' + du.how + '\nUnit-days = ' + fmtQty(units) + ' unit' + (units === 1 ? '' : 's') + ' \u00d7 ' + fmtQty(du.days) + ' days = ' + fmtQty(v) +
+    '\nRules: ' + (prof.custom ? prof.name : 'default') + ' \u2014 ' + prof.daysWeek + ' days/week, ' + prof.daysMonth + ' days/month' };
+}
+function rentTermText(vals){
+  const s = String(vals.rentStart || '').trim(), e = String(vals.rentEnd || '').trim();
+  if (s && e) return s + ' \u2192 ' + e;
+  if (!isBlank(vals.rentPeriods)) return String(vals.rentPeriods).trim() + ' ' + String(vals.rentPeriodUM || '').trim().toUpperCase();
+  return '';
+}
+/** Billed days of a rental row (null when it is not a rental or has no usable term). */
+function rentDaysOf(vals){
+  if (!isRentalVals(vals)) return null;
+  const du = rentalDuration(vals, rentalProfile(vals.vendorName));
+  return du.days == null ? null : du.days;
+}
+const hasRentals = () => state.rows.some(isRentalVals) || state.our.rows.some(isRentalVals);
+function rentCompUnit(){ const u = state.ui.rentUnit; return u === 'week' || u === 'month' ? u : 'day'; }
+function rentCompMult(){ const u = rentCompUnit(); return u === 'week' ? 7 : u === 'month' ? (toNum(state.rentals.compMonthDays) || 30) : 1; }
+const rentUnitName = () => 'unit-' + rentCompUnit();
+function rentalRowIssues(row){
+  const out = [], add = (level, text) => out.push({ level, text });
+  const gCol = groupFieldCol();
+  if (isBlank(row[gCol.k])) add('error', 'Missing ' + gCol.name + ' \u2014 this row cannot be grouped.');
+  if (isBlank(row.orderedQty)) add('warn', 'Missing Ordered QTY (units rented).');
+  else if (toNum(row.orderedQty) === null) add('error', 'Ordered QTY \u201c' + row.orderedQty + '\u201d is not a number.');
+  if (!isBlank(row.netSales) && toNum(row.netSales) === null) add('error', 'Net Sales \u201c' + row.netSales + '\u201d is not a number.');
+  const du = rentalDuration(row, rentalProfile(row.vendorName));
+  if (du.err) add('error', du.err);
+  else if (du.blank) add('warn', 'Rental duration missing \u2014 enter Rent Periods + Period UM, or Rent Start and Rent End.');
+  return out;
+}
 /** Run L:O over one set of values. */
 function computeAll(vals){
+  if (isRentalVals(vals)) {
+    const innerPack = { blank:true, trace:'Rental line \u2014 no pack size is used.' };
+    const orderedQtyNorm = calcRentalQty(vals);
+    let eachPrice;
+    if (orderedQtyNorm.blank) eachPrice = { blank:true, trace:'Unit-days is blank.' };
+    else if (orderedQtyNorm.err) eachPrice = { err:orderedQtyNorm.err, trace:'Unit-days could not be calculated.' };
+    else if (orderedQtyNorm.v === 0) eachPrice = { err:'#DIV/0!', trace:'Unit-days is 0, so the rate cannot be calculated.' };
+    else { const C = numOrZero(vals.netSales), v = C / orderedQtyNorm.v; eachPrice = { v, trace:() => 'Rate per unit-day = Net Sales ' + fmtMoney(C) + ' \u00f7 unit-days ' + fmtQty(orderedQtyNorm.v) + ' = ' + fmtPrice(v) }; }
+    return { innerPack, orderedQtyNorm, eachPrice, totalNetSales:calcTotal(eachPrice, orderedQtyNorm) };
+  }
   const innerPack     = calcInnerPack(vals.packagingDetails, vals.factorQty);
   const orderedQtyNorm= calcOrderedQty(vals, innerPack);
   const eachPrice     = calcEachPrice(vals.netSales, orderedQtyNorm);
@@ -2056,6 +2192,7 @@ function rowIssuesB(row, calc){
 
 /* ------------------------------------------------------- row diagnostics */
 function rowIssues(row, calc){
+  if (isRentalVals(row)) return rentalRowIssues(row);
   const out = [];
   const add = (level, text) => out.push({ level, text });
 
@@ -2111,6 +2248,8 @@ const state = {
            vendorB:null, vendorBSig:null, vendorBSavedAt:null, remarks:{} },
   /* Clarification report: lines flagged by the analyst, each with a note for the vendor / facility contact */
   clarify: { items:[] },
+  /* Rentals: per-vendor rental rules (days per week/month, day counting, fees) */
+  rentals: { defaults:{ daysWeek:7, daysMonth:30, monthMode:'fixed', returnDay:false }, compMonthDays:30, vendors:{} },
   ui: { mode:'grouped', tab:'normalization', search:'', colFilters:{}, groupField:'itemNumber',
         lineItemCols:['packagingDetails','factorQty','facility','vendorName','description'],
         lineItemColWidths:{},
@@ -2159,14 +2298,14 @@ const splitFV = () => state.ui.groupSplitFV !== false;
 const fvNorm = v => String(v == null ? '' : v).trim();
 const itemKeyOf = row => { const col = groupFieldCol(); const v = String(row[col.k] == null ? '' : row[col.k]).trim();
   const base = v === '' ? NOGROUP : v;
-  return splitFV() ? base + FV_SEP + fvNorm(row.facility) + FV_SEP + fvNorm(row.vendorName) : base; };
+  return splitFV() && !isRentalVals(row) ? base + FV_SEP + fvNorm(row.facility) + FV_SEP + fvNorm(row.vendorName) : base; };   /* rentals aggregate by item only */
 const baseKey   = key => String(key).split(FV_SEP)[0];
 const isNoGroup = key => baseKey(key) === NOGROUP;
 const keyLabel  = key => isNoGroup(key) ? '(no ' + groupFieldCol().name + ')' : baseKey(key);
 
 function snapshot(){
   return JSON.stringify({ rows:state.rows, overrides:state.overrides, expanded:state.expanded,
-                          alt:state.alt, cross:state.cross, our:state.our, programs:state.programs, clarify:state.clarify });
+                          alt:state.alt, cross:state.cross, our:state.our, programs:state.programs, clarify:state.clarify, rentals:state.rentals });
 }
 let dirty = false;
 function markDirty(){
@@ -2193,12 +2332,18 @@ function restore(json){
   if (s.our) { state.our = adoptOur(s.our); bumpOurSeq(state.our.rows); }
   if (s.programs) state.programs = adoptPrograms(s.programs);
   state.clarify = adoptClarify(s.clarify);
+  state.rentals = adoptRentals(s.rentals);
   bumpSeq(state.rows); bumpSeq(state.alt.rows);
 }
 /* snapshots and sessions written before the Cross feature simply have no alt/cross block */
 function adoptAlt(a){
   a = a || {};
   return { rows:a.rows || [], overrides:a.overrides || {}, expanded:a.expanded || {} };
+}
+function adoptRentals(r){
+  r = r || {};
+  const d = Object.assign({ daysWeek:7, daysMonth:30, monthMode:'fixed', returnDay:false }, r.defaults || {});
+  return { defaults:d, compMonthDays:r.compMonthDays || 30, vendors:(r.vendors && typeof r.vendors === 'object') ? r.vendors : {} };
 }
 function adoptClarify(c){
   c = c || {};
@@ -2254,6 +2399,7 @@ function effectiveVals(row, group, overrides){
  * formulas, same grouping, same override semantics, separate data.
  */
 function buildDerived(rows, overrides, expanded, cache){
+  const rentSig = JSON.stringify(state.rentals);
   const byKey = {}, order = [];
   rows.forEach(r => {
     const key = itemKeyOf(r);
@@ -2263,7 +2409,7 @@ function buildDerived(rows, overrides, expanded, cache){
 
   const rowCalc = {}, rowIssuesMap = {};
   rows.forEach(r => {
-    const sig = ROW_KEYS.map(k => r[k]).join('\u0001');
+    const sig = ROW_KEYS.map(k => r[k]).join('\u0001') + (isRentalVals(r) ? '\u0002' + rentSig : '');
     let hit = cache.get(r.id);
     if (!hit || hit.sig !== sig) {
       const c = computeAll(r);
@@ -2284,7 +2430,8 @@ function buildDerived(rows, overrides, expanded, cache){
     CONFLICT_KEYS.forEach(k => g.distinct[k] = distinctVals(g.rows, k));
     g.conflicts = {};
     CONFLICT_KEYS.forEach(k => g.conflicts[k] = g.distinct[k].length > 1);
-    g.hasConflict = OVR_KEYS.some(k => g.conflicts[k]);
+    const rentG = g.rows.length > 0 && g.rows.every(isRentalVals);   // rentals are grouped by item across facilities/vendors
+    g.hasConflict = OVR_KEYS.some(k => g.conflicts[k] && !(rentG && (k === 'facility' || k === 'vendorName')));
     g.packConflict = PACK_KEYS.some(k => g.conflicts[k]);
     g.umConflict   = g.conflicts.orderedUM;
 
@@ -2713,7 +2860,7 @@ const colLeft   = () => geo().lefts;
 const totalWidth = () => geo().total;
 const frozenCount = () => state.ui.freeze ? 4 : 0;   // gutter + A:D
 
-function zoneClass(c){ return c.zone === 'ours' ? ' z-ours' : c.zone === 'xto' ? ' z-xto' : c.zone === 'analysed' ? ' z-analysed' : c.zone === 'computed' ? ' z-computed' : c.zone === 'orig' ? ' z-orig' : ''; }
+function zoneClass(c){ return c.zone === 'ours' ? ' z-ours' : c.zone === 'xto' ? ' z-xto' : c.zone === 'rental' ? ' z-rental' : c.zone === 'analysed' ? ' z-analysed' : c.zone === 'computed' ? ' z-computed' : c.zone === 'orig' ? ' z-orig' : ''; }
 
 function renderZonebar(){
   zonebar.innerHTML = '';
@@ -2723,12 +2870,14 @@ function renderZonebar(){
   const xto  = w.xtoFacility + w.xtoVendor + w.xtoCategory;
   const ours = w.ourDesc + w.ourPricing + w.ourCasePrice + w.ourEachPrice;
   const ana  = w.factorQty + w.factorUM + w.packagingDetails;
+  const rnt  = w.itemType + w.rentPeriods + w.rentPeriodUM + w.rentStart + w.rentEnd;
   const comp = w.innerPack + w.orderedQtyNorm + w.eachPrice + w.totalNetSales;
   const orig = w.originalData;
   [['z-vendor','Vendor data · A:H', vend, 'What you pasted or typed \u2014 the source data.'],
    ['z-xto','Also crossed to it', xto, 'Facility, vendor and category of the other Facility/Vendor items crossed to the same Our Pricing Item # \u2014 read-only.'],
    ['z-ours','Our Pricing \u00b7 resolved', ours, 'Looked up from Our Pricing through Crossed To + Tier to Apply \u2014 read-only. The item row includes order adjustments and overrides.'],
    ['z-analysed','Analysed data · I:K', ana, 'Packaging read out of Packaging Details \u2014 edit if the read is wrong.'],
+   ['z-rental','Rental data', rnt, 'Item Type = Rental makes Ordered QTY the units rented. Enter Periods + Period UM (DAY / WK / MO) or a Start and End date.'],
    ['z-computed','Computed values · L:O', comp, 'Calculated from the columns to the left \u2014 read-only.'],
    ['z-orig','Original data · P', orig, 'Record of source rows an Aggregate merged away \u2014 read-only.']]
     .forEach(([cls, label, width, title]) => {
@@ -5053,8 +5202,8 @@ function srcEditTable(g){
 
     tr.appendChild(el('td', 'n', resText(d.calc.orderedQtyNorm, 'qty')));
     if (g.pillEach) {
-      const ep = el('td', 'n pillCell'), et = resText(d.calc.eachPrice, 'price');
-      ep.appendChild(pricePill(et && et !== dash ? 'fac' : 'none', 'Facility each', et && et !== dash ? et : 'n/a'));
+      const ep = el('td', 'n pillCell'), et = g.eachText ? g.eachText(d) : resText(d.calc.eachPrice, 'price');
+      ep.appendChild(pricePill(et && et !== dash ? 'fac' : 'none', typeof g.pillEach === 'string' ? g.pillEach : 'Facility each', et && et !== dash ? et : 'n/a'));
       tr.appendChild(ep);
     } else tr.appendChild(el('td', 'n', resText(d.calc.eachPrice, 'price')));
     (g.tailCols || []).forEach(cd => tr.appendChild(cd.td(d)));
@@ -6098,6 +6247,54 @@ function xcCompare(lines, c, match){
            itemCount:[...both, ...onlyA, ...onlyB].reduce((s, r) => s + r.items.length, 0) };
 }
 
+
+/** Excel: every rental line with its billed days, unit-days, both rates and the vendor fees (comparison unit and fee setting as on screen). */
+function xlSheetRentals(wb, metaLine){
+  const rp = [...crossRowPricing().values()].filter(r => r.rental);
+  if (!rp.length) return;
+  const U = rentUnitName(), feesOn = state.ui.rentFees !== false;
+  const ws = wb.addWorksheet('Rentals', { properties:{ tabColor:{ argb:'FFD4A72C' } } });
+  ws.getCell(1, 1).value = 'Rentals \u2014 one row per rental line'; ws.getCell(1, 1).font = xlFont({ size:14, bold:true, color:{ argb:XL.navy } }); ws.getRow(1).height = 22;
+  ws.getCell(2, 1).value = metaLine + '   |   Compared per ' + U + '   |   Vendor fees ' + (feesOn ? 'included' : 'left out') + '   |   Each line converted with its own vendor\u2019s days per week / month';
+  ws.getCell(2, 1).font = xlFont({ size:9, color:{ argb:XL.ink2 } });
+  const cols = [
+    ['Facility', 18], ['Vendor', 18], ['Vendor Item #', 14], ['Description', 30], ['Our Item #', 12], ['Units', 8], ['Rental term', 22], ['Days billed', 10], ['Unit-days', 10],
+    ['Net Sales', 13], ['Observed / unit-day', 14], ['Our rate / unit-day', 14], ['Observed / ' + U, 15], ['Our rate / ' + U + (feesOn ? ' (incl. fees)' : ''), 17],
+    ['Vendor fees', 12], ['Expected (Our Pricing)', 15], ['Difference (observed \u2212 expected)', 17], ['Program \u00b7 Tier', 20], ['Status', 20]
+  ];
+  cols.forEach(([h], i) => {
+    const c = ws.getCell(4, i + 1); c.value = h; c.font = xlFont({ bold:true, color:{ argb:'FFFFFFFF' } }); c.fill = xlFill(XL.navy);
+    c.alignment = { horizontal:i >= 5 && i !== 6 && i !== 17 && i !== 18 ? 'right' : 'left', vertical:'middle', wrapText:true, indent:1 };
+  });
+  ws.getRow(4).height = 32;
+  const MONEY = '"$"#,##0.00', EACH = '"$"#,##0.0000';
+  let r0 = 5, net = 0, exp = 0, priced = 0;
+  rp.sort((a, b) => String(a.ourItemNumber).localeCompare(String(b.ourItemNumber), undefined, { numeric:true }) || String(a.facility).localeCompare(String(b.facility)));
+  rp.forEach((r, i) => {
+    const ok = lineOk(r), perDay = r.unitDays ? r.observedTotal / r.unitDays : null;
+    const vals = [xlBlankLbl(r.facility), xlBlankLbl(r.vendor), String(r.row.itemNumber || ''), String(r.d.eff.description || ''), String(r.ourItemNumber || ''), r.rentUnits, rentTermText(r.d.eff), r.rentDays, r.unitDays,
+      r.observedTotal, perDay, r.ratePerDay == null ? null : r.ratePerDay, r.observedEach, r.contractEach, r.feeTotal || null, ok ? r.expectedTotal : null,
+      ok ? r.observedTotal - r.expectedTotal : null, r.group ? pricingLabel(r) : '', lineStatus(r)];
+    vals.forEach((v, k) => {
+      const c = ws.getCell(r0 + i, k + 1); c.value = v === '' || v == null ? null : typeof v === 'string' ? xlClean(v) : v;
+      c.font = xlFont(k === 18 && !ok ? { color:{ argb:XL.errInk }, bold:true } : null);
+      c.alignment = { vertical:'top', wrapText:k === 3, horizontal:k >= 5 && k !== 6 && k !== 17 && k !== 18 ? 'right' : 'left', indent:1 };
+      c.border = { bottom:xlThin('FFE6EBF0') };
+      if (k === 8 || k === 7 || k === 5) c.numFmt = '#,##0.##';
+      if (k === 9 || k === 14 || k === 15 || k === 16) c.numFmt = MONEY;
+      if (k >= 10 && k <= 13) c.numFmt = EACH;
+      if (i % 2 === 1) c.fill = xlFill(XL.band);
+    });
+    if (ok) { net += r.observedTotal; exp += r.expectedTotal; priced++; }
+  });
+  const tr = r0 + rp.length;
+  ws.getCell(tr, 1).value = 'Total (' + priced + ' priced line' + (priced === 1 ? '' : 's') + '; mismatches and unresolved lines are left out)';
+  [[10, net], [16, exp], [17, net - exp]].forEach(([k, v]) => { const c = ws.getCell(tr, k); c.value = v; c.numFmt = MONEY; c.alignment = { horizontal:'right' }; });
+  for (let k = 1; k <= cols.length; k++) { const c = ws.getCell(tr, k); c.font = xlFont({ bold:true }); c.border = { top:xlThin(XL.navy) }; c.fill = xlFill(XL.band); }
+  cols.forEach(([, w], i) => { ws.getColumn(i + 1).width = w; });
+  ws.views = [{ state:'frozen', ySplit:4 }];
+  ws.autoFilter = { from:{ row:4, column:1 }, to:{ row:4 + rp.length, column:cols.length } };
+}
 function xlSheetCrosses(wb, lines, metaLine){
   const ws = wb.addWorksheet('Crosses', { properties:{ tabColor:{ argb:'FF7B2FBE' } } });
   const crosses = (state.ui.xlCrosses || []).filter(xcValid);
@@ -6422,6 +6619,7 @@ async function exportExcel(){
   /* ---------- Analysis sheets */
   const lines = xlLines();
   const crs = xlSheetCrosses(wb, lines, metaLine);
+  xlSheetRentals(wb, metaLine);
 
   /* ---------- Summary */
   const S = wsSum;
@@ -6832,7 +7030,7 @@ const VIEW_UI_KEYS = ['tab','mode','search','colFilters','freeze','issuesOnly','
   'modeB','searchB','sortKeyB','sortDirB','freezeB','issuesOnlyB','aggSearchB','aggAttnB','aggSelectedOnlyB','lastSubA','lastSubB',
   'lineItemCols','lineItemColWidths','lineItemView','lineItemCombineStat',
   'hideNoCross','xuShowNoCross','xsView','xsSearch','xuBase','xuSides','xuColWidths','xsRelColWidths',
-  'xsMode','ourHideTiers','xsGapX','xsGapExcl','xsGapOnly','ourSearch','ourIssuesOnly','ourMode','ourColWidths','ourColFilters','ocFac','ocVen','ocColWidths','xsGran','xsShowNoCrossLines','clarifyTo','clarifyStatus','clarifySearch'];
+  'xsMode','ourHideTiers','xsGapX','xsGapExcl','xsGapOnly','ourSearch','ourIssuesOnly','ourMode','ourColWidths','ourColFilters','ocFac','ocVen','ocColWidths','xsGran','xsShowNoCrossLines','rentUnit','rentFees','xsType','clarifyTo','clarifyStatus','clarifySearch'];
 const VIEW_KEY_SET = new Set(VIEW_UI_KEYS);
 const clone = o => JSON.parse(JSON.stringify(o === undefined ? null : o));
 const pickView = ui => { const o = {}; VIEW_UI_KEYS.forEach(k => { if (ui[k] !== undefined) o[k] = ui[k]; }); return o; };
@@ -6873,7 +7071,7 @@ function sessionPayload(){
   return { v:1, at:Date.now(), rows:state.rows, overrides:state.overrides,
            expanded:state.expanded, ui:sharedUi(),
            alt:state.alt, cross:state.cross,
-           our:state.our, programs:state.programs, auditEvents:state.auditEvents, clarify:state.clarify };
+           our:state.our, programs:state.programs, auditEvents:state.auditEvents, clarify:state.clarify, rentals:state.rentals };
 }
 let localFullWarned = false;
 function saveSession(){
@@ -6907,6 +7105,7 @@ function loadSession(silent){
     state.alt   = adoptAlt(s.alt);
     state.cross = adoptCross(s.cross);
     state.clarify = adoptClarify(s.clarify);
+    state.rentals = adoptRentals(s.rentals);
     /* only the shared settings come from the case; the view stays this browser's own */
     if (s.ui) Object.keys(s.ui).forEach(k => { if (!VIEW_KEY_SET.has(k)) state.ui[k] = s.ui[k]; });
     if (!sameCase) state.ui.tab = 'normalization';
@@ -6923,6 +7122,7 @@ function blankWorkingState(){
                    vendorB:null, vendorBSig:null, vendorBSavedAt:null, remarks:{} };
   state.ui.colFilters = {};
   state.clarify = { items:[] };
+  state.rentals = adoptRentals(null);
 }
 /** Switch which named session is active. Saves whatever's current first,
  *  under its OWN name \u2014 nothing is lost, it just stops being on screen. */
@@ -7749,8 +7949,16 @@ function renderCrosses(){
   $('#btnXsSetup').style.display = mode === 'fac' ? '' : 'none';
   $('#segXsGran').style.display = mode === 'fac' ? 'none' : '';
   $('#lblXsNoCrossLines').style.display = mode === 'fac' ? 'none' : '';
+  const rtOn = mode !== 'fac' && hasRentals(), rtRental = rtOn && xsType() === 'rental';
+  $('#segXsType').style.display = rtOn ? '' : 'none';
+  [...$('#segXsType').children].forEach(x => x.classList.toggle('on', x.dataset.type === xsType()));
+  $('#selRentUnit').style.display = rtRental ? '' : 'none'; $('#selRentUnit').value = rentCompUnit();
+  $('#lblRentFees').style.display = rtRental ? '' : 'none'; $('#chkRentFees').checked = state.ui.rentFees !== false;
+  $('#btnRentRules').style.display = rtOn ? '' : 'none';
   [...$('#segXsGran').children].forEach(x => x.classList.toggle('on', x.dataset.gran === (state.ui.xsGran === 'item' ? 'item' : 'agg')));
-  $('#xsNote').innerHTML = mode === 'fac'
+  $('#xsNote').innerHTML = mode !== 'fac' && hasRentals() && xsType() === 'rental'
+    ? 'Rental lines: each line is converted to unit-days by its own vendor\u2019s rules, then compared with Our Pricing in ' + rentUnitName() + 's. Purchases are listed under the Purchase toggle.'
+    : mode === 'fac'
     ? 'Facility A&rsquo;s usage priced at Facility B&rsquo;s item with the same Crossed To. Lowest each price in green; <b style="color:var(--err)">NO CROSS</b> in red.'
     : 'Facility/Vendor usage priced at the crossed Our Pricing item and tier. Lowest each price in green; unresolved crosses in red.';
   if (mode === 'fac') renderUsageCompare($('#paneCrosses'), $('#xsCards'));
@@ -8184,6 +8392,10 @@ $('#segXsGran').addEventListener('click', e => {
   state.ui.xsGran = b.dataset.gran; saveViewPrefs(); renderCrosses();
 });
 $('#chkXsNoCrossLines').addEventListener('change', e => { state.ui.xsShowNoCrossLines = e.target.checked; saveViewPrefs(); renderCrosses(); });
+$('#segXsType').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; state.ui.xsType = b.dataset.type; saveViewPrefs(); renderCrosses(); });
+$('#selRentUnit').addEventListener('change', e => { state.ui.rentUnit = e.target.value; saveViewPrefs(); renderCrosses(); });
+$('#chkRentFees').addEventListener('change', e => { state.ui.rentFees = e.target.checked; saveViewPrefs(); renderCrosses(); });
+$('#btnRentRules').addEventListener('click', () => openRentalRules());
 $('#chkXuNoCross').addEventListener('change', e => { state.ui.xuShowNoCross = e.target.checked; saveViewPrefs(); renderCrosses(); });
 $('#btnXsWidths').addEventListener('click', () => {
   state.ui.xuColWidths = {}; state.ui.ocColWidths = {};
@@ -8283,6 +8495,7 @@ const OUR_TEXT_FIELDS = [
   { k:'priceUnit',        name:'Price Unit',       w:70 },
   { k:'orderedUM',        name:'Ordered UM',       w:80 },
   { k:'status',           name:'Status',           w:80 },
+  { k:'itemType',         name:'Item Type',        w:84 },
   { k:'program',          name:'Pricing Program',  w:170 },
   { k:'contract',         name:'Contract',         w:100 },
   { k:'stdPrice',         name:'Standard Price',   w:100, num:true }
@@ -8445,6 +8658,7 @@ function resolvePrice(q){
   }
   const r = g.rep;
   out.group = g; out.ourItem = r;
+  out.rentalItem = isRentalVals(r);
   out.ourRecordIds = g.rows.map(x => x.id);
   out.description = String(r.description || '').trim();
   out.productCode = String(r.productCode || '').trim();
@@ -8466,6 +8680,16 @@ function resolvePrice(q){
   if (out.pricingType === 'tiered') {
     const p = out.program;
     if (!out.tierInput && tierFromContract) { out.tierInput = tierFromContract.name; out.notes.push('Tier taken from Contract ' + out.contractInput + '.'); }
+    /* Rental items with term bands: the tier comes from the billed days when none was chosen */
+    if (!out.tierInput && out.rentalItem) {
+      const banded = p.tiers.filter(t => toNum(t.minDays) !== null).sort((a, b) => toNum(a.minDays) - toNum(b.minDays));
+      const days = toNum(q.durationDays);
+      if (banded.length && days !== null) {
+        let pick = banded[0]; banded.forEach(t => { if (toNum(t.minDays) <= days) pick = t; });
+        out.tierInput = pick.name; out.tierAuto = true;
+        out.notes.push('Tier ' + pick.name + ' chosen from the rental term of ' + fmtQty(days) + ' days (band starts at day ' + pick.minDays + ').');
+      }
+    }
     if (!out.tierInput) return fail('tierRequired', 'Item # ' + g.item + ' is tiered (' + progLabel(p) + '). Choose a Tier to Apply \u2014 no tier is assumed.');
     const t = tierOf(p, out.tierInput);
     if (!t) return fail('tierInvalid', '\u201c' + out.tierInput + '\u201d is not a tier of ' + progLabel(p) + ' (valid: ' + p.tiers.map(x => x.name).join(', ') + ').');
@@ -8479,6 +8703,11 @@ function resolvePrice(q){
     const n = priceNum(r.stdPrice);
     if (n === null || isNaN(n)) return fail('noPrice', 'Our Pricing has no usable standard price for Item # ' + g.item + '.');
     out.basePrice = n;
+  }
+  if (out.rentalItem) {
+    const prof = rentalProfile(r.vendor), pd = periodDays(out.priceUnit, prof);
+    if (!pd) return fail('noPrice', 'Item # ' + g.item + ' is a rental, but its Price Unit \u201c' + out.priceUnit + '\u201d is not a rental period (DAY, WK or MO).');
+    out.periodDays = pd.days; out.periodUnit = pd.unit; out.rentProfile = prof;
   }
   out.adjustedPrice = out.basePrice;
   out.effectivePrice = out.basePrice;
@@ -8516,7 +8745,7 @@ function gVal(g, k){ return g.resolved[k] ? String(g.resolved[k].value == null ?
 function computeXref(){
   const xr = {};
   derived.groups.forEach(g => {
-    const res = resolvePrice({ ourItemNumber:gVal(g, 'crossedTo'), tierToApply:gVal(g, 'tierToApply'), contract:gVal(g, 'contractToApply') });
+    const res = resolvePrice({ ourItemNumber:gVal(g, 'crossedTo'), tierToApply:gVal(g, 'tierToApply'), contract:gVal(g, 'contractToApply'), durationDays:g.detail[0] ? rentDaysOf(g.detail[0].eff) : null });
     /* rows combined under one item must agree on the relationship \u2014 never priced on a majority vote */
     const RK = { 'Crossed To':'crossedTo', 'Tier to Apply':'tierToApply', 'Contract':'contractToApply', 'Pricing program':'crossedTo', 'Channel':'purchaseChannel' };
     const rc = g.rows.length > 1 ? relConflicts(g.rows).filter(x => !(g.resolved[RK[x.label]] && g.resolved[RK[x.label]].source === 'override')) : [];
@@ -8544,7 +8773,7 @@ function computeXref(){
   const buckets = new Map();
   derived.groups.forEach(g => {
     const r = xr[g.key];
-    if (r.state !== 'ok' || !r.program || !(r.program.adjustments || []).length) return;
+    if (r.state !== 'ok' || !r.program || !(r.program.adjustments || []).length || r.rentalItem) return;
     const k = [r.program.id, normIdent(r.facility), normIdent(r.vendor), normIdent(r.channel), normIdent(r.orderRef)].join('\u0001');
     (buckets.get(k) || buckets.set(k, []).get(k)).push(g.key);
   });
@@ -8569,13 +8798,13 @@ function computeXref(){
       if (okNum(on)) { r.override = on; r.effectivePrice = on; }
       else if (on !== null) r.notes.push('Override \u201c' + ov.contractPrice + '\u201d is not a number and was ignored.');
       /* Each price is always price \u00f7 eaches per case \u2014 Price Unit is a label and never changes it. */
-      r.contractEach = r.epc ? r.effectivePrice / r.epc : null;
+      r.contractEach = r.rentalItem ? (r.periodDays ? r.effectivePrice / r.periodDays : null) : r.epc ? r.effectivePrice / r.epc : null;   // rentals: per unit-day
       r.expectedTotal = r.contractEach == null || !okNum(r.eaches) ? null : r.contractEach * r.eaches;
       r.diff = r.expectedTotal == null ? null : r.observedTotal - r.expectedTotal;     // + = Our Pricing is lower
       r.eachDiff = r.contractEach == null || r.observedEach == null ? null : r.observedEach - r.contractEach;
       r.savePct = r.diff == null || !(r.observedTotal > 0) ? null : r.diff / r.observedTotal * 100;
       if (r.epcSource === 'vendor') r.notes.push('Our Pricing item has no packaging, so eaches per case came from the Facility/Vendor pack size (' + fmtQty(r.epc) + ').');
-      if (!r.epc) r.notes.push('No eaches-per-case is known (Our Pricing packaging is blank), so a contract each price cannot be calculated.');
+      if (!r.epc && !r.rentalItem) r.notes.push('No eaches-per-case is known (Our Pricing packaging is blank), so a contract each price cannot be calculated.');
     } else if (!isBlank(ov.contractPrice)) {
       r.notes.push('An override of ' + ov.contractPrice + ' is stored, but it is not applied until the cross resolves.');
     }
@@ -8588,7 +8817,7 @@ function computeXref(){
 let rowRefCache = new Map();
 function rowRef(eff, id){
   let r = rowRefCache.get(id);
-  if (!r) { r = resolvePrice({ ourItemNumber:eff.crossedTo, tierToApply:eff.tierToApply, contract:eff.contractToApply }); rowRefCache.set(id, r); }
+  if (!r) { r = resolvePrice({ ourItemNumber:eff.crossedTo, tierToApply:eff.tierToApply, contract:eff.contractToApply, durationDays:rentDaysOf(eff) }); rowRefCache.set(id, r); }
   return r;
 }
 /** The resolution for a sheet item: a group uses the full xref, a row its own base resolution. */
@@ -8623,7 +8852,7 @@ function refText(item, k, raw){
       if (r.state !== 'ok') return '';
       let v;
       if (isGroup) v = r.contractEach;
-      else v = r.ourEachesPerCase ? r.basePrice / r.ourEachesPerCase : null;
+      else v = r.rentalItem ? (r.periodDays ? r.basePrice / r.periodDays : null) : r.ourEachesPerCase ? r.basePrice / r.ourEachesPerCase : null;
       return v == null ? '' : raw ? String(v) : fmtPrice(v);
     }
   }
@@ -8722,6 +8951,8 @@ function listIdFor(key, eff){
   if (key === 'contractToApply') { fillContractList(eff && eff.crossedTo); return 'contractList'; }
   if (key === 'purchaseChannel') return 'channelList';
   if (key === 'orderedUM') { refreshUmList(); return 'umList'; }
+  if (key === 'itemType') return 'itemTypeList';
+  if (key === 'rentPeriodUM') return 'periodList';
   return null;
 }
 /** Tidy a typed relationship value: Crossed To keeps just the Item #, tiers become the program's tier name. */
@@ -9991,7 +10222,7 @@ function openPrograms(addNew){
   const draw = () => {
     b.innerHTML = '';
     b.appendChild(el('p', 'hint', 'A pricing program holds the tier definitions (name, description, contract) and any order-level rules. ' +
-      'Tier prices live on each Our Pricing item; the Facility/Vendor record only chooses which tier applies. Tiers are contract levels \u2014 there is no automatic eligibility or quantity break.'));
+      'Tier prices live on each Our Pricing item; the Facility/Vendor record only chooses which tier applies. Tiers are contract levels \u2014 there is no automatic eligibility or quantity break, except for rental programs: give each tier a \u201cFrom day\u201d and the tier is picked from the billed days (the largest From day that is not more than the days) when the row has no Tier to Apply.'));
     work.forEach((p, pi) => {
       const box = el('div', 'progEd');
       const f = (label, key, obj, w) => {
@@ -10007,10 +10238,10 @@ function openPrograms(addNew){
       r1.appendChild(f('Vendor name contains', 'vendorMatch', p, '110px'));
       box.appendChild(r1);
       const tt = el('table', 'aggPreviewTable');
-      const h = el('tr'); ['Tier id', 'Tier', 'Description', 'Contract', ''].forEach(x => h.appendChild(el('th', null, x))); tt.appendChild(h);
+      const h = el('tr'); ['Tier id', 'Tier', 'Description', 'Contract', 'From day (rentals)', ''].forEach(x => h.appendChild(el('th', null, x))); tt.appendChild(h);
       (p.tiers || []).forEach((t, ti) => {
         const tr = el('tr');
-        [['id', '70px'], ['name', '80px'], ['description', '420px'], ['contract', '100px']].forEach(([k, w]) => {
+        [['id', '70px'], ['name', '80px'], ['description', '380px'], ['contract', '100px'], ['minDays', '70px']].forEach(([k, w]) => {
           const td = el('td'); const i = el('input'); i.value = t[k] || ''; i.style.width = w;
           i.addEventListener('input', () => { t[k] = i.value; }); td.appendChild(i); tr.appendChild(td); });
         const td = el('td'); const x = el('button', 'btn sm', 'Remove');
@@ -10222,7 +10453,7 @@ function crossRowPricing(){
   state.rows.forEach(row => {
     const x = detOf.get(row.id); if (!x) return;
     const d = x.d, g = x.g, e = d.eff;
-    const r = resolvePrice({ ourItemNumber:e.crossedTo, tierToApply:e.tierToApply, contract:e.contractToApply });
+    const r = resolvePrice({ ourItemNumber:e.crossedTo, tierToApply:e.tierToApply, contract:e.contractToApply, durationDays:rentDaysOf(e) });
     r.row = row; r.d = d; r.g = g;
     r.facility = String(e.facility == null ? '' : e.facility).trim();
     r.vendor = String(e.vendorName == null ? '' : e.vendorName).trim();
@@ -10232,18 +10463,27 @@ function crossRowPricing(){
     r.eaches = q && !q.err && okNum(q.v) ? q.v : null;
     r.observedTotal = numOrZero(row.netSales);
     r.observedEach = r.eaches ? r.observedTotal / r.eaches : null;
+    r.rental = isRentalVals(e);
+    if (r.rental) {   /* \u201ceaches\u201d = unit-periods in the comparison unit; \u201ceach price\u201d = rate per that unit */
+      const mult = rentCompMult();
+      r.rentMult = mult; r.rentUnits = q && q.rental ? q.units : null; r.rentDays = q && q.rental ? q.days : null;
+      r.unitDays = r.eaches;
+      r.eaches = r.unitDays == null ? null : r.unitDays / mult;
+      r.observedEach = r.eaches ? r.observedTotal / r.eaches : null;
+    }
     let epc = r.ourEachesPerCase || null, src = epc ? 'our' : null;
     const ip = d.calc.innerPack;
     if (!epc && ip && okNum(ip.v) && ip.v > 0) { epc = ip.v; src = 'vendor'; }
     r.epc = epc; r.epcSource = src;
     r.cases = r.eaches != null && epc ? r.eaches / epc
             : (!isBlank(row.orderedUM) && isCaseUnit(row.orderedUM) ? numOrZero(row.orderedQty) : null);
+    if (r.rental) { r.epc = null; r.epcSource = null; r.cases = null; }
     out.set(row.id, r);
   });
   /* order-level rules: same program + facility + vendor + channel + order ref = one order */
   const buckets = new Map();
   out.forEach((r, id) => {
-    if (r.state !== 'ok' || !r.program || !(r.program.adjustments || []).length) return;
+    if (r.state !== 'ok' || !r.program || !(r.program.adjustments || []).length || r.rental || r.rentalItem) return;
     const k = [r.program.id, normIdent(r.facility), normIdent(r.vendor), normIdent(r.channel), normIdent(r.orderRef)].join('\u0001');
     (buckets.get(k) || buckets.set(k, []).get(k)).push(id);
   });
@@ -10260,27 +10500,75 @@ function crossRowPricing(){
     const on = priceNum(ov.contractPrice);
     r.override = okNum(on) ? on : null;
     if (r.override != null) { r.effectivePrice = on; r.overrideReason = ov.contractPriceReason || ''; }
+    /* rental vs purchase: allowed, but flagged \u2014 there is no honest comparison, so nothing is priced */
+    if (!!r.rental !== !!r.rentalItem) {
+      r.typeMismatch = r.rental ? 'Rental line crossed to a purchase item \u2014 a rental rate cannot be compared with a purchase price.'
+                                : 'Purchase line crossed to a rental item \u2014 a purchase price cannot be compared with a rental rate.';
+      r.contractEach = null; r.expectedTotal = null; r.gap = null; return;
+    }
+    if (r.rental) {
+      r.ratePerDay = r.periodDays ? r.effectivePrice / r.periodDays : null;
+      r.rentalBase = r.ratePerDay == null || r.unitDays == null ? null : r.ratePerDay * r.unitDays;
+      r.contractEach = r.ratePerDay == null ? null : r.ratePerDay * rentCompMult();
+      r.expectedTotal = r.rentalBase;
+      r.gap = r.expectedTotal == null ? null : gapOf(r.observedEach, r.contractEach);
+      return;
+    }
     r.contractEach = r.epc ? r.effectivePrice / r.epc : null;
     r.expectedTotal = r.contractEach == null || r.eaches == null ? null : r.contractEach * r.eaches;
     r.gap = r.expectedTotal == null ? null : gapOf(r.observedEach, r.contractEach);
   });
+  applyRentalFees(out);
   return out;
+}
+/** Vendor fees for rental lines (delivery, pickup, waiver, minimum charge...), added to what Our Pricing would have charged. */
+function applyRentalFees(out){
+  if (state.ui.rentFees === false) return;
+  const buckets = new Map();
+  out.forEach((r, id) => {
+    if (!r.rental || r.typeMismatch || r.state !== 'ok' || r.expectedTotal == null) return;
+    const prof = r.rentProfile; if (!prof || !prof.fees.some(f => f.inCompare !== false && toNum(f.amount))) return;
+    const k = [prof.name, normIdent(r.facility), normIdent(r.vendor), normIdent(r.orderRef)].join('\u0001');
+    (buckets.get(k) || buckets.set(k, []).get(k)).push(r);
+  });
+  buckets.forEach(lines => {
+    const prof = lines[0].rentProfile, base = lines.reduce((t, r) => t + r.rentalBase, 0);
+    prof.fees.filter(f => f.inCompare !== false).forEach(f => {
+      const amt = toNum(f.amount); if (!amt) return;
+      lines.forEach(r => {
+        let a = 0;
+        if (f.kind === 'perUnit') a = amt * (r.rentUnits || 0);
+        else if (f.kind === 'pct') a = r.rentalBase * amt / 100;
+        else if (f.kind === 'min') { const short = Math.max(0, amt - base); a = base > 0 ? short * r.rentalBase / base : short / lines.length; }
+        else a = base > 0 ? amt * r.rentalBase / base : amt / lines.length;       // flat, once per order, shared by charge
+        if (a) { (r.fees = r.fees || []).push({ label:f.label || f.kind, kind:f.kind, amount:a }); r.feeTotal = (r.feeTotal || 0) + a; }
+      });
+    });
+    lines.forEach(r => { if (r.feeTotal) { r.expectedTotal = r.rentalBase + r.feeTotal; r.contractEach = r.eaches ? r.expectedTotal / r.eaches : null; r.gap = gapOf(r.observedEach, r.contractEach); } });
+  });
 }
 const lineOk = r => r.state === 'ok' && r.expectedTotal != null;
 /* Large price gap: observed each vs contract each differ by at least this many times \u2014
    almost always a packaging / Factor QTY / Ordered UM mismatch rather than a real price. */
 function xsGapX(){ const n = toNum(state.ui.xsGapX); return n && n > 1 ? n : 3; }
 const xsGapExcl = () => state.ui.xsGapExcl !== false;
+/** Crosses are shown one type at a time once any rental exists, so totals never mix purchases and rentals. */
+function xsType(){
+  if (state.ui.xsType === 'rental' || state.ui.xsType === 'purchase') return state.ui.xsType;
+  return state.rows.some(r => !isRentalVals(r)) ? 'purchase' : 'rental';
+}
 const gapOf = (a, b) => a > 0 && b > 0 ? Math.max(a, b) / Math.min(a, b) : null;
 const fmtGap = g => (g >= 10 ? Math.round(g).toLocaleString() : String(Math.round(g * 10) / 10)) + '\u00d7';
 const GAP_HINT = 'The observed each price and the contract each price are far apart. Usually the pack size is read differently on the two sides \u2014 check Packaging Details, Factor QTY and Ordered UM on the Facility/Vendor lines and on the Our Pricing item (double-click to open the cross).';
 function lineStatus(r){
   if (lineOk(r)) return 'Priced';
-  if (r.state === 'ok') return r.eaches == null ? 'No quantity' : 'No pack size';
+  if (r.typeMismatch) return 'Type mismatch';
+  if (r.state === 'ok') return r.eaches == null ? 'No quantity' : r.rental ? 'No rate' : 'No pack size';
   return XSTATE[r.state].label;
 }
 function lineMessage(r){
   if (lineOk(r)) return '';
+  if (r.typeMismatch) return r.typeMismatch;
   if (r.state === 'ok') return r.eaches == null ? 'Ordered Quantity could not be calculated for this line.' : 'No eaches-per-case is known (Our Pricing and the line both lack a pack size).';
   return r.message || XSTATE[r.state].label;
 }
@@ -10301,6 +10589,8 @@ function finishCross(c){
   c.our = L.find(r => r.group) || null;
   c.status = c.ok ? 'Resolved' : lineStatus(c.bad[0]) + (L.length > 1 ? ' (' + c.bad.length + ' of ' + L.length + ' lines)' : '');
   c.messages = ocUniq(c.bad.map(lineMessage));
+  c.mismatch = L.some(r => r.typeMismatch);
+  c.rental = L.some(r => r.rental);
   c.search = [c.label, c.our ? c.our.description : '', ...L.map(r => [r.facility, r.vendor, r.row.itemNumber, r.d.eff.description].join(' '))].join(' ').toLowerCase();
 }
 /** Per-item view: one pseudo-cross per Facility/Vendor line, keeping the parent cross for grouping. */
@@ -10323,8 +10613,10 @@ function buildCrosses(){
   const rp = crossRowPricing();
   const F = state.ui.ocFac || XC_ALL, V = state.ui.ocVen || XC_ALL;
   const m = new Map(), list = [], notCrossed = { lines:0, net:0, list:[] };
+  const TV = hasRentals() ? xsType() : null;
   rp.forEach(r => {
     if ((F !== XC_ALL && xlBlankLbl(r.facility) !== F) || (V !== XC_ALL && xlBlankLbl(r.vendor) !== V)) return;
+    if (TV && !!r.rental !== (TV === 'rental')) return;
     const k = normIdent(r.ourItemNumber);
     if (!k) { notCrossed.lines++; notCrossed.net += r.observedTotal; notCrossed.list.push(r); return; }
     let c = m.get(k);
@@ -10494,6 +10786,7 @@ function buildCrossPanel(key){
   const lines = crossLinesFor(key, rp);
   const label = lines.length ? lines[0].ourItemNumber : key;
   const og = ourD.byKey.get(ourKey(label));
+  const RX = lines.some(r => r.rental), RU = rentUnitName();
   const p = el('div', 'edPanel');
   p.dataset.key = key; p.dataset.label = label;
   p.addEventListener('click', e => e.stopPropagation());
@@ -10510,7 +10803,7 @@ function buildCrossPanel(key){
   hd.appendChild(el('h3', null, label));
   hd.appendChild(el('span', 'edDesc' + (og ? '' : ' none'), og ? (og.rep.description || '(no description)') : 'Not in Our Pricing'));
   hd.appendChild(el('span', 'meta', shown.length + ' Facility/Vendor line' + (shown.length === 1 ? '' : 's') + (!showOther && othLines.length ? ' (+' + othLines.length + ' other normalized hidden)' : '') + ' \u00b7 ' +
-    facs.length + ' facilit' + (facs.length === 1 ? 'y' : 'ies') + ' \u00b7 ' + fmtMoney(net) + ' \u00b7 ' + fmtQty(Math.round(eaches * 1e4) / 1e4) + ' eaches'));
+    facs.length + ' facilit' + (facs.length === 1 ? 'y' : 'ies') + ' \u00b7 ' + fmtMoney(net) + ' \u00b7 ' + fmtQty(Math.round(eaches * 1e4) / 1e4) + (RX ? ' ' + RU + 's' : ' eaches')));
   hd.appendChild(flagButton(() => flagCrossData({ key:key, label:label, lines:shown, net:net, observedEach:eaches > 0 ? net / eaches : null, contractEach:null }), { label:'\u2691 Flag this product for clarification' }));
   p.appendChild(hd);
 
@@ -10553,14 +10846,17 @@ function buildCrossPanel(key){
       const ip = calcInnerPack(rec.packagingDetails, rec.factorQty);
       const epc = okNum(ip.v) && ip.v > 0 ? ip.v : null;
       const perU = eachesPerUM(rec, ourUMOf(rec));
-      tr.appendChild(el('td', perU ? null : 'xcBad', perU ? fmtQty(perU) + ' / ' + ourUMOf(rec) : 'not in packaging'));
-      tr.appendChild(el('td', null, epc ? fmtQty(epc) : 'No pack'));
+      const isRentRec = isRentalVals(rec);
+      tr.appendChild(isRentRec ? el('td', 'dim', 'rental') : el('td', perU ? null : 'xcBad', perU ? fmtQty(perU) + ' / ' + ourUMOf(rec) : 'not in packaging'));
+      tr.appendChild(isRentRec ? el('td', 'dim', 'rental') : el('td', null, epc ? fmtQty(epc) : 'No pack'));
       const pg = programById(rec.program), tiered = !!(pg && (pg.tiers || []).length);
       tr.appendChild(el('td', null, pg ? progLabel(pg) : 'Standard'));
       tr.appendChild(el('td', null, tiered ? ocJoin(pg.tiers.map(t2 => t2.contract || ''), 6) || dash : (rec.contract || dash)));
       const prPill = (name, v) => { const n = priceNum(v);
         if (n === null) return pricePill('none', name, 'n/a');
         if (isNaN(n)) return pricePill('none', name, '?' + v);
+        if (isRentRec) { const pdx = periodDays(rec.priceUnit, rentalProfile(rec.vendor));
+          return pdx ? pricePill('our', name + ' / ' + RU, fmtPrice(n / pdx.days * rentCompMult()), fmtMoney(n) + '/' + String(rec.priceUnit || '').toUpperCase()) : pricePill('none', name, fmtMoney(n), 'unit?'); }
         return epc ? pricePill('our', name + ' each', fmtPrice(n / epc), fmtMoney(n) + '/case') : pricePill('our', name, fmtMoney(n) + '/case', 'no pack'); };
       const pt = el('td', 'prices');
       (tiered ? pg.tiers.map(t2 => prPill(t2.name, (rec.prices || {})[t2.id])) : [prPill('Standard', rec.stdPrice)]).forEach(x => pt.appendChild(x));
@@ -10577,30 +10873,30 @@ function buildCrossPanel(key){
   const sum = el('div', 'xcSum');
   const put = (k, v) => { const x = el('span', null, k + ' '); x.appendChild(el('b', null, v)); sum.appendChild(x); };
   put('Observed spend', fmtMoney(net));
-  put('Normalized eaches', fmtQty(Math.round(eaches * 1e4) / 1e4));
-  put('Observed each', eaches > 0 ? fmtPrice(net / eaches) : dash);
+  put(RX ? 'Normalized ' + RU + 's' : 'Normalized eaches', fmtQty(Math.round(eaches * 1e4) / 1e4));
+  put(RX ? 'Observed / ' + RU : 'Observed each', eaches > 0 ? fmtPrice(net / eaches) : dash);
   put('At Our Pricing', exp == null ? 'not all lines priced' : fmtMoney(exp));
-  put('Contract each', exp != null && eaches > 0 ? fmtPrice(exp / eaches) : dash);
+  put(RX ? 'Our rate / ' + RU : 'Contract each', exp != null && eaches > 0 ? fmtPrice(exp / eaches) : dash);
   put('Difference', exp == null ? dash : signedMoney(net - exp) + (net - exp >= 0 ? ' (Our Pricing lower)' : ' (Our Pricing higher)'));
   p.appendChild(sum);
   {
     const oEach = eaches > 0 ? net / eaches : null, cEach = exp != null && eaches > 0 ? exp / eaches : null;
     const strip = el('div', 'pillStrip');
-    strip.appendChild(el('span', 'lbl', 'Each price'));
+    strip.appendChild(el('span', 'lbl', RX ? 'Rate / ' + RU : 'Each price'));
     const lowOur = oEach != null && cEach != null && cEach < oEach - 1e-9, lowFac = oEach != null && cEach != null && oEach < cEach - 1e-9;
-    const pf = pricePill(oEach == null ? 'none' : 'fac', 'Facility each', oEach == null ? 'n/a' : fmtPrice(oEach)); if (lowFac) pf.classList.add('win');
-    const po = pricePill(cEach == null ? 'none' : 'our', 'Our each', cEach == null ? 'n/a' : fmtPrice(cEach)); if (lowOur) po.classList.add('win');
+    const pf = pricePill(oEach == null ? 'none' : 'fac', RX ? 'Facility / ' + RU : 'Facility each', oEach == null ? 'n/a' : fmtPrice(oEach)); if (lowFac) pf.classList.add('win');
+    const po = pricePill(cEach == null ? 'none' : 'our', RX ? 'Our rate / ' + RU : 'Our each', cEach == null ? 'n/a' : fmtPrice(cEach)); if (lowOur) po.classList.add('win');
     strip.appendChild(pf); strip.appendChild(po);
     if (oEach != null && cEach != null) {
       const d = oEach - cEach;
-      strip.appendChild(pricePill(d > 1e-9 ? 'diffGood' : d < -1e-9 ? 'diffBad' : 'none', d > 1e-9 ? 'Our pricing lower' : d < -1e-9 ? 'Our pricing higher' : 'Same', (d > 1e-9 ? '\u2212' : d < -1e-9 ? '+' : '') + fmtPrice(Math.abs(d)) + ' ea'));
+      strip.appendChild(pricePill(d > 1e-9 ? 'diffGood' : d < -1e-9 ? 'diffBad' : 'none', d > 1e-9 ? 'Our pricing lower' : d < -1e-9 ? 'Our pricing higher' : 'Same', (d > 1e-9 ? '\u2212' : d < -1e-9 ? '+' : '') + fmtPrice(Math.abs(d)) + (RX ? ' / ' + RU : ' ea')));
     }
     strip.appendChild(el('span', 'lbl', showOther ? 'all lines shown' : (selInfo.filtered ? 'selected Facility/Vendor' : 'all lines')));
     p.appendChild(strip);
   }
   const bg = exp != null && eaches > 0 ? gapOf(net / eaches, exp / eaches) : null;
   if (bg != null && bg >= xsGapX()) p.appendChild(Object.assign(el('div', 'msg err'), { innerHTML:'<b>\u26a0 Price gap ' + esc(fmtGap(bg)) +
-    '.</b> Observed ' + esc(fmtPrice(net / eaches)) + ' each vs contract ' + esc(fmtPrice(exp / eaches)) + ' each. ' + esc(GAP_HINT.replace(/ \(double-click.*\)\.$/, '.')) }));
+    '.</b> Observed ' + esc(fmtPrice(net / eaches)) + (RX ? ' / ' + RU : ' each') + ' vs contract ' + esc(fmtPrice(exp / eaches)) + (RX ? ' / ' + RU : ' each') + '. ' + esc(GAP_HINT.replace(/ \(double-click.*\)\.$/, '.')) }));
   if (bad.length) {
     const msgs = new Map();
     bad.forEach(r => { const m = lineMessage(r); msgs.set(m, (msgs.get(m) || 0) + 1); });
@@ -10613,7 +10909,7 @@ function buildCrossPanel(key){
   const R = d => byId.get(d.row.id);
   const cell = (txt, cls, title) => { const x = el('td', cls || null, txt == null || txt === '' ? dash : txt); if (title) x.title = title; return x; };
   const fvLabel = r => xlBlankLbl(r.facility) + ' \u00b7 ' + xlBlankLbl(r.vendor);
-  const mkPg = (subset, suffix) => ({
+  const mkPg0 = (subset, suffix) => ({
     key:'xto:' + key + suffix, detail:subset.map(r => r.d), rows:subset.map(r => r.row), pillEach:true,
     leadCols:[
       { key:'xc_item', label:'Item #', w:110, td:d => cell(String(d.row.itemNumber || '')) },
@@ -10626,7 +10922,7 @@ function buildCrossPanel(key){
       { key:'xc_ourqty', label:'Our Qty (' + ourUM + ')', w:100, numeric:true, td:d => { const r = R(d);
           if (r.eaches == null || !ourPer) return cell('', 'n', ourPer ? '' : ourUM + ' is not in the Our Pricing Packaging Details');
           return cell(fmtQty(Math.round(r.eaches / ourPer * 1e4) / 1e4) + ' ' + ourUM, 'n', 'Normalized eaches \u00f7 ' + fmtQty(ourPer) + ' eaches per ' + ourUM + ' (Our Pricing)'); } },
-      { key:'xc_ceach', label:'Our Each', w:150, td:d => { const r = R(d); const x = el('td', 'pillCell'); x.appendChild(r.contractEach == null ? pricePill('none', 'Our each', 'n/a') : pricePill('our', 'Our each', fmtPrice(r.contractEach))); return x; } },
+      { key:'xc_ceach', label:RX ? 'Our rate / ' + RU : 'Our Each', w:170, td:d => { const r = R(d); const lb = RX ? 'Our rate / ' + RU : 'Our each'; const x = el('td', 'pillCell'); x.appendChild(r.contractEach == null ? pricePill('none', lb, 'n/a') : pricePill('our', lb, fmtPrice(r.contractEach))); return x; } },
       { key:'xc_exp', label:'Expected', w:96, numeric:true, td:d => { const r = R(d); return cell(r.expectedTotal == null ? '' : fmtMoney(r.expectedTotal), 'n'); } },
       { key:'xc_diff', label:'Difference', w:96, numeric:true, td:d => { const r = R(d);
           const v = r.expectedTotal == null ? null : r.observedTotal - r.expectedTotal;
@@ -10637,6 +10933,18 @@ function buildCrossPanel(key){
       { key:'xc_flag', label:'Flag', w:60, td:d => { const x = el('td'); x.appendChild(flagButton(() => flagLineData(R(d)))); return x; } }
     ]
   });
+  const mkPg = (subset, suffix) => {
+    const o = mkPg0(subset, suffix);
+    if (RX) {
+      o.pillEach = 'Facility / ' + RU;
+      o.eachText = d => { const r = R(d); return r.observedEach == null ? '' : fmtPrice(r.observedEach); };
+      o.tailCols = o.tailCols.filter(c => c.key !== 'xc_ourqty');
+      o.tailCols.splice(1, 0,
+        { key:'xc_term', label:'Rental term', w:150, td:d => { const r = R(d); return cell(rentTermText(d.row) + (r.rentDays != null ? ' = ' + fmtQty(r.rentDays) + ' d' : ''), null, r.rentDays == null ? 'No usable term' : 'Billed days: ' + r.rentDays); } },
+        { key:'xc_fees', label:'Vendor fees', w:100, numeric:true, td:d => { const r = R(d); return cell(r.feeTotal ? fmtMoney(r.feeTotal) : '', 'n', (r.fees || []).map(f => f.label + ': ' + fmtMoney(f.amount)).join('\n')); } });
+    }
+    return o;
+  };
   const pg = mkPg(selLines, ':sel');
   const fvUniq = subset => ocJoin(ocUniq(subset.map(fvLabel)), 4);
 
@@ -10653,7 +10961,8 @@ function buildCrossPanel(key){
   sh.appendChild(colsBtn);
   ss.appendChild(sh);
   if (lineItemColsOpen) ss.appendChild(lineItemColsPicker());
-  if (selLines.length) {
+  if (selLines.length && RX) { ss.appendChild(srcEditTable(pg)); }
+  else if (selLines.length) {
     const bar = el('div', 'umBar');
     bar.appendChild(el('span', null, 'Set every selected line\u2019s Ordered UM to'));
     const umAll = el('input'); umAll.setAttribute('list', 'umList'); umAll.placeholder = ourUM; umAll.dataset.umall = '1';
@@ -10770,6 +11079,7 @@ function renderOurCompare(pane, cards){
   $('#cntXuNoCross').textContent = T.attn ? String(T.attn) : '';
   const q = String(state.ui.xsSearch || '').trim().toLowerCase();
   const perItem = state.ui.xsGran === 'item';
+  const RT = hasRentals() && xsType() === 'rental', UN = rentUnitName();
   const showNCL = !!state.ui.xsShowNoCrossLines;
   $('#chkXsNoCrossLines').checked = showNCL;
   $('#cntXsNoCrossLines').textContent = X.notCrossed.lines ? String(X.notCrossed.lines) : '';
@@ -10779,7 +11089,7 @@ function renderOurCompare(pane, cards){
     x.ok = false; x.status = 'No cross'; x.messages = ['Crossed To is blank \u2014 this line is not crossed to an Our Pricing item.']; return x;
   }) : [];
   const rank = sheetRowRank(), rk = c => { const v = rank.get(c.pid); return v == null ? 1e9 : v; };
-  let rows = (perItem ? crossItemRows(all) : all).filter(c => showNC || c.ok);
+  let rows = (perItem ? crossItemRows(all) : all).filter(c => showNC || c.ok || c.mismatch);
   if (state.ui.xsGapOnly) rows = rows.filter(c => c.flag);
   if (q) rows = rows.filter(c => c.search.indexOf(q) >= 0);
   let ncShown = ncEntries.filter(c => !state.ui.xsGapOnly && (!q || c.search.indexOf(q) >= 0));
@@ -10802,7 +11112,8 @@ function renderOurCompare(pane, cards){
     ['Lines', 'num sideStart'], ['Order Qty', 'num'], ['UOM', ''], ['Facility', ''], ['Vendor', ''], ['Item #', ''], ['Description', ''], ['Channel', ''], ['Each Price', 'num'], ['Total Net Sales', 'num'],
     ['Crossed To', 'sideStart'], ['Our Description', ''], ['Program \u00b7 Tier', ''], ['Contract', ''], ['Base Price', 'num'], ['Adjustment', ''], ['Override', 'num'],
     ['Effective Price', 'num'], ['Eaches/Case', 'num'], ['Contract Each', 'num'], ['Expected Net Sales', 'num'], ['Status', '']];
-  heads.forEach(([h, c]) => h2.appendChild(el('th', c, h)));
+  const RTN = { 'Observed Each':'Observed / ' + UN, 'Contract Each':'Our rate / ' + UN, 'Order Qty':'Order ' + UN + 's', 'UOM':'Rental term', 'Each Price':'Rate / ' + UN, 'Eaches/Case':'Days billed' };
+  heads.forEach(([h, c]) => h2.appendChild(el('th', c, RT && RTN[h] ? RTN[h] : h)));
   thead.appendChild(h1); thead.appendChild(h2); t.appendChild(thead);
   const tb = el('tbody');
   const td = (tr, txt, cls, title) => { const x = el('td', cls || null, txt == null || txt === '' ? dash : txt); if (title) x.title = title; tr.appendChild(x); return x; };
@@ -10819,7 +11130,7 @@ function renderOurCompare(pane, cards){
       const bn = el('tr', 'ncBanner'), bt = el('td', null, 'No cross \u2014 ' + ncShownCount + ' Facility/Vendor line' + (ncShownCount === 1 ? '' : 's') + ' with a blank Crossed To (not part of any cross, left out of the totals)');
       bt.colSpan = heads.length; bn.appendChild(bt); tb.appendChild(bn);
     }
-    const tr = el('tr', 'xuRow' + (c.ok ? '' : ' nocross') + (c.flag ? ' gapFlag' : '') + (c.noCross ? ' ncLine' : c.itemRow ? ' itemRow' : ''));
+    const tr = el('tr', 'xuRow' + (c.ok ? '' : ' nocross') + (c.flag ? ' gapFlag' : '') + (c.mismatch ? ' mismatchRow' : '') + (c.noCross ? ' ncLine' : c.itemRow ? ' itemRow' : ''));
     tr.tabIndex = 0;
     tr.title = (c.noCross ? 'No cross \u2014 Crossed To is blank on this line.' : c.itemRow ? 'Double-click (or Enter) to open this line\u2019s cross \u2014 this Facility/Vendor is shown first, the other normalized ones are one tick away' : 'Double-click (or Enter) to open this cross with its Our Pricing item and normalize the lines together') + (c.messages.length ? '\n\n' + c.messages.join('\n') : '');
     tr.dataset.pid = pid;
@@ -10852,7 +11163,8 @@ function renderOurCompare(pane, cards){
        c.diff == null ? '' : (c.diff >= 0 ? 'Our Pricing saves ' : 'Our Pricing costs ') + fmtMoney(Math.abs(c.diff)) + (c.savePct != null ? ' (' + c.savePct.toFixed(1) + '%)' : ''));
     td(tr, String(L.length), 'num sideStart');
     td(tr, fmtQty(Math.round(c.eaches * 1e4) / 1e4), 'num', 'Normalized Ordered Quantity (column M), summed over every line with this Crossed To');
-    td(tr, ocJoin(L.map(r => String(r.d.eff.factorUM || '').trim().toUpperCase() || 'EA')));
+    if (RT) td(tr, ocJoin(L.map(r => rentTermText(r.d.eff)), 3), null, ocUniq(L.map(r => rentTermText(r.d.eff))).join('\n'));
+    else td(tr, ocJoin(L.map(r => String(r.d.eff.factorUM || '').trim().toUpperCase() || 'EA')));
     td(tr, ocJoin(L.map(r => xlBlankLbl(r.facility))), null, ocUniq(L.map(r => xlBlankLbl(r.facility))).join('\n'));
     td(tr, ocJoin(L.map(r => xlBlankLbl(r.vendor))), null, ocUniq(L.map(r => xlBlankLbl(r.vendor))).join('\n'));
     td(tr, ocJoin(L.map(r => String(r.row.itemNumber || '').trim())), null, ocUniq(L.map(r => String(r.row.itemNumber || '').trim())).join('\n'));
@@ -10877,7 +11189,8 @@ function renderOurCompare(pane, cards){
     const ovs = ocUniq(L.map(r => r.override == null ? '' : fmtMoney(r.override)));
     td(tr, ovs.join(', '), 'num' + (ovs.length ? ' ovrcell' : ''), ocUniq(L.map(r => r.override != null ? r.overrideReason || '' : '')).join('\n'));
     td(tr, ocJoin(L.map(r => r.state === 'ok' ? fmtMoney(r.effectivePrice) + '/' + r.priceUnit : '')), 'num');
-    td(tr, ocJoin(L.map(r => r.epc ? fmtQty(r.epc) : '')), 'num', L.some(r => r.epcSource === 'vendor') ? 'Some lines use their own pack size \u2014 Our Pricing has no packaging' : '');
+    if (RT) td(tr, ocJoin(L.map(r => r.rentDays != null ? fmtQty(r.rentDays) : '')), 'num', 'Billed days per unit, by each line\u2019s own vendor rules');
+    else td(tr, ocJoin(L.map(r => r.epc ? fmtQty(r.epc) : '')), 'num', L.some(r => r.epcSource === 'vendor') ? 'Some lines use their own pack size \u2014 Our Pricing has no packaging' : '');
     td(tr, c.contractEach == null ? '' : fmtPrice(c.contractEach), 'num', 'Expected Net Sales \u00f7 normalized eaches');
     td(tr, c.expected == null ? '' : fmtMoney(c.expected), 'num');
     if (c.flag) td(tr, '\u26a0 Check \u2014 ' + fmtGap(c.gap) + ' gap', 'gapCell', GAP_HINT);
@@ -11086,7 +11399,7 @@ const clFind = (refType, refId) => state.clarify.items.find(i => i.refType === r
 const clContact = it => it.to === 'Facility' ? (it.facility || '(no facility)') : (it.vendor || '(no vendor)');
 function flagLineData(r){
   const e = r.d.eff, og = ourD.byKey.get(ourKey(r.ourItemNumber));
-  return { refType:'line', refId:r.row.id, kind:'Facility/Vendor line',
+  return { refType:'line', refId:r.row.id, kind:'Facility/Vendor line' + (r.rental ? ' \u00b7 Rental (per ' + rentUnitName() + ')' : ''), rental:!!r.rental,
     facility:xlBlankLbl(r.facility), vendor:xlBlankLbl(r.vendor), itemNumber:String(r.row.itemNumber || '').trim(),
     mfg:String(e.mfgCatalog || ''), description:String(e.description || ''),
     ourItem:String(r.ourItemNumber || ''), ourDesc:og ? String(og.rep.description || '') : '',
@@ -11098,7 +11411,8 @@ function flagCrossData(c){
   const net = L.reduce((s, r) => s + r.observedTotal, 0), eaches = L.reduce((s, r) => s + (r.eaches || 0), 0);
   const bad = L.filter(r => !lineOk(r)), ok = L.length > 0 && !bad.length;
   const exp = ok ? L.reduce((s, r) => s + r.expectedTotal, 0) : null;
-  return { refType:'cross', refId:normIdent(c.key || c.label), kind:'Cross (product)',
+  const isRent = L.some(r => r.rental);
+  return { refType:'cross', refId:normIdent(c.key || c.label), kind:'Cross (product)' + (isRent ? ' \u00b7 Rental (per ' + rentUnitName() + ')' : ''), rental:isRent,
     facility:ocUniq(L.map(r => xlBlankLbl(r.facility))).join(', '), vendor:ocUniq(L.map(r => xlBlankLbl(r.vendor))).join(', '),
     itemNumber:ocUniq(L.map(r => String(r.row.itemNumber || '').trim())).join(', '), mfg:'',
     description:L[0] ? String(L[0].d.eff.description || '') : '', ourItem:String(c.label || ''), ourDesc:og ? String(og.rep.description || '') : '',
@@ -11169,8 +11483,16 @@ function openFlagPop(anchor, data, after){
   sel.value = ex ? ex.to : 'Vendor';
   pop.appendChild(sel);
   pop.appendChild(el('label', null, 'What needs to be clarified?'));
+  const QN = ['Confirm the pack size and price unit on this line.', 'Confirm the item this line is crossed to.', 'Confirm the contract / tier price that applies.'];
+  const QR = ['Confirm the billing period (daily / weekly / monthly) and how many days a month is counted as.', 'Confirm the minimum rental term and whether a minimum charge applies.',
+    'Confirm what the rate includes (delivery, pickup, insurance / damage waiver, maintenance).', 'Confirm the delivery, pickup and any other fees charged on this order.',
+    'Confirm the start and return dates billed, and whether the return day is charged.', 'Confirm which rate tier (term band) applied to this rental.', 'Confirm the number of units on this invoice line.'];
+  const qsel = el('select'); qsel.appendChild(Object.assign(el('option', null, 'Quick note\u2026'), { value:'' }));
+  (data.rental ? QR.concat(QN) : QN).forEach(t => qsel.appendChild(Object.assign(el('option', null, t.length > 52 ? t.slice(0, 50) + '\u2026' : t), { value:t })));
+  pop.appendChild(qsel);
   const ta = el('textarea'); ta.placeholder = data.refType === 'group' ? 'One note for all ' + (data.members || []).length + ' items, e.g. Confirm pack size and price unit for every item listed.' : 'e.g. Confirm pack size (12/CS or 24/CS) and the price unit on this invoice line.';
   ta.value = ex ? ex.note : '';
+  qsel.addEventListener('change', () => { if (!qsel.value) return; ta.value = (ta.value.trim() ? ta.value.trim() + '\n' : '') + qsel.value; qsel.value = ''; ta.focus(); });
   pop.appendChild(ta);
   const act = el('div', 'act');
   const cancel = el('button', 'btn sm', 'Cancel'); cancel.addEventListener('click', closeFlagPop);
@@ -11561,7 +11883,7 @@ function renderRowSide(){
     ht.appendChild(el('div', 'kind', 'Facility/Vendor Pricing \u2014 row'));
     ht.appendChild(el('h3', null, String(row.itemNumber || '(no Item #)')));
     ht.appendChild(el('div', 'sub', [d.eff.description, xlBlankLbl(d.eff.facility) + ' \u00b7 ' + xlBlankLbl(d.eff.vendorName)].filter(Boolean).join(' \u2014 ')));
-    const ZN = { vendor:'Vendor data', ours:'Our Pricing \u00b7 resolved (read-only)', analysed:'Analysed data', computed:'Computed values (read-only)', xto:'Also crossed to it (read-only)', orig:'Original data' };
+    const ZN = { rental:'Rental data', vendor:'Vendor data', ours:'Our Pricing \u00b7 resolved (read-only)', analysed:'Analysed data', computed:'Computed values (read-only)', xto:'Also crossed to it (read-only)', orig:'Original data' };
     let lastZone = null;
     COLS.forEach(col => {
       if (col.zone !== lastZone) { lastZone = col.zone; secTitle(ZN[col.zone] || col.zone); }
@@ -11681,6 +12003,137 @@ document.addEventListener('contextmenu', e => {
 $('#btnFlagRows').addEventListener('click', e => flagTickedFacility(e.currentTarget));
 $('#btnBulkFlag').addEventListener('click', e => flagTickedFacility(e.currentTarget));
 $('#btnOurFlag').addEventListener('click', e => flagTickedOur(e.currentTarget));
+
+
+/* ============================================================ RENTAL RULES (per vendor) */
+const RENT_FEE_KINDS = [['flat', 'Flat, once per order'], ['perUnit', 'Per unit'], ['pct', '% of rental charge'], ['min', 'Minimum order charge']];
+function openRentalRules(){
+  const work = clone(state.rentals);
+  const list = Object.values(work.vendors).map(v => clone(v));
+  const known = ocUniq(state.rows.map(r => String(r.vendorName || '').trim()).concat(state.our.rows.map(r => String(r.vendor || '').trim()))).sort((a, b) => a.localeCompare(b));
+  const b = el('div', 'rentRules');
+  const field = (label, obj, key, w, ph) => {
+    const l = el('label'); l.appendChild(el('span', null, label));
+    const i = el('input'); i.value = obj[key] == null ? '' : String(obj[key]); if (w) i.style.width = w; if (ph) i.placeholder = ph;
+    i.addEventListener('input', () => { obj[key] = i.value; }); i.addEventListener('keydown', e => e.stopPropagation());
+    l.appendChild(i); return l;
+  };
+  const modeSel = (obj, allowBlank) => {
+    const l = el('label'); l.appendChild(el('span', null, 'Month counts as'));
+    const sel = el('select');
+    if (allowBlank) sel.appendChild(Object.assign(el('option', null, '(default)'), { value:'' }));
+    sel.appendChild(Object.assign(el('option', null, 'Fixed days'), { value:'fixed' }));
+    sel.appendChild(Object.assign(el('option', null, 'Actual calendar days (needs Rent Start)'), { value:'calendar' }));
+    sel.value = obj.monthMode || (allowBlank ? '' : 'fixed');
+    sel.addEventListener('change', () => { obj.monthMode = sel.value; });
+    l.appendChild(sel); return l;
+  };
+  const retSel = (obj, allowBlank) => {
+    const l = el('label'); l.appendChild(el('span', null, 'Return day'));
+    const sel = el('select');
+    if (allowBlank) sel.appendChild(Object.assign(el('option', null, '(default)'), { value:'' }));
+    sel.appendChild(Object.assign(el('option', null, 'Not charged'), { value:'no' }));
+    sel.appendChild(Object.assign(el('option', null, 'Charged (counts as a day)'), { value:'yes' }));
+    sel.value = obj.returnDay === true || obj.returnDay === 'yes' ? 'yes' : obj.returnDay === false && !allowBlank ? 'no' : obj.returnDay === 'no' ? 'no' : (allowBlank ? '' : 'no');
+    sel.addEventListener('change', () => { obj.returnDay = sel.value === '' ? '' : sel.value === 'yes'; });
+    l.appendChild(sel); return l;
+  };
+  const draw = () => {
+    b.innerHTML = '';
+    b.appendChild(el('p', 'hint', 'Rental rules are kept per vendor. Each rental line is converted to unit-days with its own vendor\\u2019s rules, so vendors that count a month as 28, 30 or 31 days still compare correctly. ' +
+      'Fees are added to what Our Pricing would have charged, using the rules of the Our Pricing item\\u2019s vendor. A blank vendor field uses the defaults below.'));
+    const d = el('div', 'progEd');
+    d.appendChild(el('div', 'progSub', 'Defaults (used when a vendor has no profile, or leaves a field blank)'));
+    const r1 = el('div', 'progRow');
+    r1.appendChild(field('Days per week', work.defaults, 'daysWeek', '60px')); r1.appendChild(field('Days per month', work.defaults, 'daysMonth', '60px'));
+    r1.appendChild(modeSel(work.defaults, false)); r1.appendChild(retSel(work.defaults, false));
+    r1.appendChild(field('Comparison: days per unit-month', work, 'compMonthDays', '60px'));
+    d.appendChild(r1);
+    d.appendChild(el('div', 'hint', 'The comparison month only sets the yardstick for \\u201cper unit-month\\u201d on the Crosses tab \\u2014 one week is always 7 days. It never changes how a vendor\\u2019s own invoice is converted.'));
+    b.appendChild(d);
+    list.forEach((v, vi) => {
+      const box = el('div', 'progEd');
+      const r = el('div', 'progRow');
+      const nameL = field('Vendor name', v, 'name', '240px'); nameL.querySelector('input').setAttribute('list', 'rentVendorList'); r.appendChild(nameL);
+      r.appendChild(field('Days per week', v, 'daysWeek', '60px', '(default)')); r.appendChild(field('Days per month', v, 'daysMonth', '60px', '(default)'));
+      r.appendChild(modeSel(v, true)); r.appendChild(retSel(v, true));
+      const rm = el('button', 'btn sm danger', 'Remove vendor'); rm.addEventListener('click', () => { list.splice(vi, 1); draw(); }); r.appendChild(rm);
+      box.appendChild(r);
+      box.appendChild(el('div', 'progSub', 'Fees for this vendor (applied automatically on the Crosses tab)'));
+      v.fees = v.fees || [];
+      if (v.fees.length) {
+        const t = el('table', 'aggPreviewTable'), h = el('tr');
+        ['Fee', 'How it is charged', 'Amount', 'In comparison', ''].forEach(x => h.appendChild(el('th', null, x))); t.appendChild(h);
+        v.fees.forEach((f, fi) => {
+          const tr = el('tr');
+          const tdIn = (k, w) => { const td = el('td'), i = el('input'); i.value = f[k] == null ? '' : String(f[k]); i.style.width = w; i.addEventListener('input', () => { f[k] = i.value; }); i.addEventListener('keydown', e => e.stopPropagation()); td.appendChild(i); tr.appendChild(td); };
+          tdIn('label', '170px');
+          const tk = el('td'), sk = el('select'); RENT_FEE_KINDS.forEach(([val, txt]) => sk.appendChild(Object.assign(el('option', null, txt), { value:val }))); sk.value = f.kind || 'flat';
+          sk.addEventListener('change', () => { f.kind = sk.value; }); tk.appendChild(sk); tr.appendChild(tk);
+          tdIn('amount', '80px');
+          const tc = el('td'), cb = el('input'); cb.type = 'checkbox'; cb.checked = f.inCompare !== false; cb.title = 'Untick for fees that should not affect the comparison, such as a refundable deposit';
+          cb.addEventListener('change', () => { f.inCompare = cb.checked; }); tc.appendChild(cb); tr.appendChild(tc);
+          const tx = el('td'), x = el('button', 'btn sm', 'Remove'); x.addEventListener('click', () => { v.fees.splice(fi, 1); draw(); }); tx.appendChild(x); tr.appendChild(tx);
+          t.appendChild(tr);
+        });
+        box.appendChild(t);
+      }
+      const add = (label, kind, inCompare) => { const bt = el('button', 'btn sm', '+ ' + label); bt.addEventListener('click', () => { v.fees.push({ id:'fee-' + Date.now() + Math.random().toString(36).slice(2, 5), label, kind, amount:'', inCompare }); draw(); }); return bt; };
+      const bar = el('div', 'progRow');
+      [['Delivery', 'flat', true], ['Pickup', 'flat', true], ['Damage waiver', 'pct', true], ['Minimum charge', 'min', true], ['Deposit', 'flat', false], ['Other fee', 'flat', true]].forEach(a => bar.appendChild(add(a[0], a[1], a[2])));
+      box.appendChild(bar);
+      b.appendChild(box);
+    });
+    const dl = el('datalist'); dl.id = 'rentVendorList'; known.forEach(n => dl.appendChild(Object.assign(el('option'), { value:n }))); b.appendChild(dl);
+    const addV = el('button', 'btn', '+ Add vendor profile'); addV.addEventListener('click', () => { list.push({ name:'', fees:[] }); draw(); });
+    b.appendChild(addV);
+  };
+  draw();
+  showModal('Rental rules', b, [
+    { label:'Cancel', cls:'btn', fn:hideModal },
+    { label:'Add rental examples', cls:'btn', fn:() => { hideModal(); addRentalExamples(); } },
+    { label:'Save rules', cls:'btn primary', fn:() => {
+        const vendors = {};
+        list.forEach(v => { const nm = String(v.name || '').trim(); if (!nm) return; vendors[normIdent(nm)] = Object.assign({}, v, { name:nm, fees:(v.fees || []).filter(f => f.label || f.amount) }); });
+        const dflt = Object.assign({}, work.defaults);
+        ['daysWeek', 'daysMonth'].forEach(k => { dflt[k] = toNum(dflt[k]) || (k === 'daysWeek' ? 7 : 30); });
+        pushUndo();
+        state.rentals = { defaults:dflt, compMonthDays:toNum(work.compMonthDays) || 30, vendors };
+        logEvent('Rental rules changed', 'Rental rules', Object.keys(vendors).length + ' vendor profile(s); ' + dflt.daysWeek + ' days/week, ' + dflt.daysMonth + ' days/month by default');
+        hideModal(); refresh(); toast('Rental rules saved.');
+      } }
+  ], { wide:true });
+}
+/** Adds clearly-labelled rental sample data without touching anything already there. */
+function addRentalExamples(){
+  pushUndo();
+  const PID = 'rent-sample-terms';
+  if (!state.programs.some(p => p.id === PID)) state.programs.push({ id:PID, name:'RENTAL EXAMPLE \\u2014 term bands (delete after testing)', shortName:'Rental terms', vendorMatch:'', effectiveDate:'2026-01-01', currency:'USD',
+    priceUnit:'DAY', priceBasis:'Price per unit per day, USD', tiers:[{ id:'daily', name:'Daily', description:'1\\u20136 days', contract:'', minDays:'0' }, { id:'weekly', name:'Weekly', description:'7\\u201327 days', contract:'', minDays:'7' },
+    { id:'fourwk', name:'4-Week', description:'28 days or more', contract:'', minDays:'28' }], adjustments:[], notes:'Sample rental data.' });
+  const mk = o => Object.assign(blankOurRow(), { source:'Rental example data', itemType:'Rental' }, o);
+  const V = o => Object.assign(blankRow(), { factorQty:'1', itemType:'Rental' }, o);
+  const ourNew = [
+    mk({ itemNumber:'RENT-1001', description:'EXAMPLE \\u2014 Scissor lift (weekly rate)', vendor:'Acme Rentals', priceUnit:'WK', stdPrice:'100' }),
+    mk({ itemNumber:'RENT-1002', description:'EXAMPLE \\u2014 Forklift (term bands, per day)', vendor:'Acme Rentals', priceUnit:'DAY', program:PID, prices:{ daily:'30', weekly:'25', fourwk:'20' } })
+  ];
+  state.our.rows = state.our.rows.filter(r => r.source !== 'Rental example data').concat(ourNew);
+  const keep = state.rows.filter(r => r.description.indexOf('RENTAL EXAMPLE') !== 0);
+  const rows = [
+    V({ facility:'Facility A', vendorName:'Acme Rentals', itemNumber:'RV-001', description:'RENTAL EXAMPLE \\u2014 lift, 3 weeks billed', orderedQty:'4', orderedUM:'EA', netSales:'1200', crossedTo:'RENT-1001', rentPeriods:'3', rentPeriodUM:'WK', orderRef:'RA-1' }),
+    V({ facility:'Facility A', vendorName:'Acme Rentals', itemNumber:'RV-002', description:'RENTAL EXAMPLE \\u2014 forklift, invoice shows dates', orderedQty:'2', orderedUM:'EA', netSales:'840', crossedTo:'RENT-1002', rentStart:'2026-03-01', rentEnd:'2026-03-22', orderRef:'RA-1' }),
+    V({ facility:'Facility B', vendorName:'Big Rent', itemNumber:'RV-003', description:'RENTAL EXAMPLE \\u2014 lift, one month (31-day vendor)', orderedQty:'1', orderedUM:'EA', netSales:'500', crossedTo:'RENT-1001', rentPeriods:'1', rentPeriodUM:'MO' }),
+    V({ facility:'Facility C', vendorName:'Acme Rentals', itemNumber:'RV-004', description:'RENTAL EXAMPLE \\u2014 28-day forklift (4-Week band)', orderedQty:'1', orderedUM:'EA', netSales:'560', crossedTo:'RENT-1002', rentPeriods:'28', rentPeriodUM:'DAY' })
+  ];
+  state.rows = keep.concat(rows);
+  const R = state.rentals;
+  if (!R.vendors[normIdent('Acme Rentals')]) R.vendors[normIdent('Acme Rentals')] = { name:'Acme Rentals', fees:[ { id:'fe1', label:'Delivery', kind:'flat', amount:'50', inCompare:true }, { id:'fe2', label:'Damage waiver', kind:'pct', amount:'10', inCompare:true }, { id:'fe3', label:'Deposit', kind:'flat', amount:'200', inCompare:false } ] };
+  if (!R.vendors[normIdent('Big Rent')]) R.vendors[normIdent('Big Rent')] = { name:'Big Rent', daysMonth:'31', fees:[] };
+  state.ui.xsType = 'rental';
+  refresh();
+  toast('Rental examples added: 2 Our Pricing items, 4 Facility/Vendor lines, Acme (fees) and Big Rent (31-day month) rules.');
+}
+$('#btnOurRentals').addEventListener('click', () => openRentalRules());
 
 /* ================================================================== INIT */
 /** Put the toolbar controls in line with this browser's view of the case. */
