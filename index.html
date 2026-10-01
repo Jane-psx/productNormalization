@@ -697,6 +697,39 @@ table.sugTable tr.tot td{font-weight:600;border-top:1px solid var(--line)}
 .aggPreviewBoxTitle{font-weight:700;margin-bottom:4px}
 .aggPreviewLine{margin-left:2px}
 
+/* ---------- add items modal ---------- */
+.addItems .aiHead{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px;margin-bottom:12px}
+.addItems .aiField{display:flex;flex-direction:column;gap:3px;font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-3)}
+.addItems .aiField input[type=text]{height:27px;width:220px;padding:0 7px;border:1px solid var(--line);border-radius:3px;font-size:12.5px;color:var(--ink);text-transform:none;letter-spacing:0}
+.addItems .aiField .numin{width:70px}
+.addItems .aiChk{font-size:12px;color:var(--ink-2);display:inline-flex;align-items:center;gap:4px;height:27px;cursor:pointer}
+.addItems .aiTabRow{display:flex;align-items:center;gap:12px;margin-bottom:8px;flex-wrap:wrap}
+.addItems .aiNote{font-size:11.5px;color:var(--ink-3)}
+.addItems .aiLink{border:0;background:none;padding:0;color:var(--accent);cursor:pointer;font-size:11.5px;text-decoration:underline}
+.addItems .aiGridWrap{overflow:auto;max-height:52vh;border:1px solid var(--line);border-radius:3px}
+.addItems .aiGrid{border-collapse:collapse;font-size:12px;width:100%}
+.addItems .aiGrid th{position:sticky;top:0;z-index:1;background:#f6f8fa;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-3);padding:4px 5px;border-bottom:1px solid var(--line);white-space:nowrap}
+.addItems .aiGrid.z-rental th{background:var(--zone-analysed-h)}
+.addItems .aiGrid th.n{text-align:right}
+.addItems .aiGrid td{padding:0;border-bottom:1px solid var(--line-soft);height:var(--row-h);white-space:nowrap}
+.addItems .aiGrid.z-rental tbody td{background:var(--zone-analysed)}
+.addItems .aiGrid td.aiNum,.addItems .aiGrid th.aiNum{width:30px;text-align:center;color:var(--ink-3);font-size:11px}
+.addItems .aiIn{width:100%;height:24px;border:1px solid transparent;background:transparent;padding:0 5px;font-size:12px;color:var(--ink)}
+.addItems .aiIn.n{text-align:right;font-family:var(--mono);font-size:11.5px}
+.addItems .aiIn:focus{outline:none;border-color:var(--sel);background:#fff;box-shadow:inset 0 0 0 1px var(--sel)}
+.addItems .aiGrid td.aiCalc{background:var(--zone-computed)!important;color:var(--ink-2);font-family:var(--mono);font-size:11px;text-align:right;padding:0 6px;cursor:help}
+.addItems .aiGrid td.aiStat{padding:0 6px;font-size:11px;max-width:260px;overflow:hidden;text-overflow:ellipsis}
+.addItems .aiDot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:middle}
+.addItems .aiDot.ok{background:var(--ok)} .addItems .aiDot.warn{background:var(--warn-line)} .addItems .aiDot.err{background:var(--err)}
+.addItems .aiMsg.err{color:var(--err)} .addItems .aiMsg.warn{color:var(--warn)}
+.addItems tr.hasErr td.aiNum{color:var(--err);font-weight:700}
+.addItems .aiMode{height:20px;font-size:11px;margin:0 3px}
+.addItems .aiX{border:0;background:none;color:var(--ink-3);cursor:pointer;font-size:15px;width:24px;height:22px}
+.addItems .aiX:hover{color:var(--err)}
+.addItems button:focus-visible,.addItems input[type=checkbox]:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.addItems .aiBelow{display:flex;gap:8px;margin-top:8px}
+.addItems .aiTabs .count{margin-left:4px}
+
 /* ---------- toast ---------- */
 #toast{
   position:fixed;bottom:16px;left:50%;transform:translateX(-50%) translateY(80px);z-index:400;
@@ -1219,8 +1252,10 @@ table.ourTable td.srcCell .pill{margin-left:6px;cursor:pointer}
 <div class="toolbar" id="toolbarA">
   <button class="btn primary" id="btnPaste">Paste from Excel</button>
   <div class="addrow">
-    <input class="numin" id="addRowCount" type="number" min="1" max="500" step="1" value="1" title="Number of rows to add" aria-label="Number of rows to add">
-    <button class="btn" id="btnAddRow">Add rows</button>
+    <button class="btn primary" id="btnAddItems" title="Enter Purchase (per case) and Rental lines in a focused window">Add items&hellip;</button>
+    <button class="btn sm" id="btnAddBlank" title="Insert blank rows after the ticked rows or the cursor">Blank rows</button>
+    <input class="numin" id="addRowCount" type="number" min="1" max="500" step="1" value="1" title="Number of rows to add" aria-label="Number of rows to add" hidden style="display:none">
+    <button class="btn" id="btnAddRow" hidden style="display:none">Add rows</button>
   </div>
   <button class="btn" id="btnAggRows" title="Aggregate the ticked rows: Ordered QTY and Net Sales are summed only when every ticked row has the same Ordered UM. The replaced rows are recorded in Original Data (column P).">Aggregate ticked</button>
   <button class="btn" id="btnFindDupA" title="Find and tick the next multi-row item with no packaging/UM conflict — a safe, ready-to-merge candidate.">Find duplicates</button>
@@ -7436,6 +7471,349 @@ $('#btnAddRow').addEventListener('click', () => {
   state.rows.splice(at, 0, ...fresh);
   refresh();
   toast(n === 1 ? 'Row added.' : n + ' rows added.');
+});
+
+/* ===================================================== ADD ITEMS MODAL
+   Focused entry for Facility/Vendor lines: Purchase (per case) and Rental tabs, a batch Facility +
+   Vendor, live previews from the existing calc engine, and one undo step on commit. Rows built here
+   are plain blankRow() rows, so they behave exactly like pasted rows. */
+const AI_KEY = 'productNormalization.addItems.v1';
+let aiCtx = null;
+const AI_PUR = [
+  { k:'itemNumber', l:'Item #', w:90 },
+  { k:'description', l:'Description', w:220 },
+  { k:'orderedQty', l:'Ordered QTY (cases)', num:true, w:80 },
+  { k:'netSales', l:'Net Sales', num:true, w:90 },
+  { k:'packagingDetails', l:'Packaging Details', ph:'e.g. 10/BX 20BX/CS', w:150 },
+  { k:'factorQty', l:'Factor QTY', num:true, ph:'1', w:60 }
+];
+const AI_REN = [
+  { k:'itemNumber', l:'Item #', w:90 },
+  { k:'description', l:'Description', w:220 },
+  { k:'orderedQty', l:'Ordered QTY (units rented)', num:true, w:80 },
+  { k:'netSales', l:'Net Sales', num:true, w:90 },
+  { k:'_mode', l:'Term', toggle:true, w:62 },
+  { k:'_t1', l:'Periods / Start', w:96 },
+  { k:'_t2', l:'Period UM / End', w:96 }
+];
+const AI_FV = [{ k:'facility', l:'Facility', w:120, ph:'(batch)' }, { k:'vendorName', l:'Vendor', w:120, ph:'(batch)' }];
+const AI_MORE = [
+  { k:'crossedTo', l:'Crossed To', w:100 }, { k:'tierToApply', l:'Tier to Apply', w:90, list:'tierList' },
+  { k:'contractToApply', l:'Contract', w:90 }, { k:'purchaseChannel', l:'Channel', w:90, list:'channelList' },
+  { k:'orderRef', l:'Order Ref', w:90 }, { k:'mfgCatalog', l:'MFG Catalog #', w:100 },
+  { k:'skuNumber', l:'SKU Number', w:90 }, { k:'category', l:'Category', w:100 }
+];
+const aiNumClean = v => String(v == null ? '' : v).trim().replace(/[$,\s]/g, '');
+const aiIsNum = v => { const c = aiNumClean(v); return c === '' || (isFinite(Number(c)) && /\d/.test(c)); };
+function aiLoadPrefs(){ try { return JSON.parse(localStorage.getItem(AI_KEY) || 'null') || {}; } catch (e) { return {}; } }
+function aiSavePrefs(){
+  if (!aiCtx) return;
+  try { localStorage.setItem(AI_KEY, JSON.stringify({ tab:aiCtx.tab, fac:aiCtx.fac, ven:aiCtx.ven, more:aiCtx.more, override:aiCtx.override })); } catch (e) {}
+}
+const aiBlankLine = () => ({ v:{}, mode:'p' });
+function aiCols(tab){
+  const base = tab === 'ren' ? AI_REN : AI_PUR;
+  let cols = base.slice(0, 2).concat(aiCtx.override ? AI_FV : [], base.slice(2));
+  if (aiCtx.more) cols = cols.concat(AI_MORE);
+  return cols;
+}
+/* term columns map to Periods/UM or Start/End depending on the line's toggle */
+function aiTermKey(line, k){ return k === '_t1' ? (line.mode === 'd' ? 'rentStart' : 'rentPeriods') : (line.mode === 'd' ? 'rentEnd' : 'rentPeriodUM'); }
+function aiGet(line, k){ const rk = (k === '_t1' || k === '_t2') ? aiTermKey(line, k) : k; return line.v[rk] == null ? '' : line.v[rk]; }
+function aiSet(line, k, val){ const rk = (k === '_t1' || k === '_t2') ? aiTermKey(line, k) : k; line.v[rk] = val; }
+function aiLineEmpty(line){ return !Object.keys(line.v).some(k => !isBlank(line.v[k])); }
+function aiLineVals(tab, line){
+  const v = Object.assign({}, line.v);
+  v.facility = isBlank(v.facility) ? aiCtx.fac : v.facility;
+  v.vendorName = isBlank(v.vendorName) ? aiCtx.ven : v.vendorName;
+  if (tab === 'ren') {
+    v.itemType = 'Rental'; v.orderedUM = 'EA';
+    if (line.mode === 'd') { v.rentPeriods = ''; v.rentPeriodUM = ''; } else { v.rentStart = ''; v.rentEnd = ''; }
+  } else { v.itemType = 'Purchase'; v.orderedUM = 'CS'; v.pkgQty = '1'; v.um = 'CS'; }
+  ['orderedQty', 'netSales', 'factorQty', 'rentPeriods'].forEach(k => { if (v[k] != null && v[k] !== '') v[k] = aiNumClean(v[k]); });
+  return v;
+}
+function aiIssues(tab, line){
+  const out = { empty:aiLineEmpty(line), errs:[], warns:[] };
+  if (out.empty) return out;
+  const v = aiLineVals(tab, line);
+  if (isBlank(v.itemNumber)) out.errs.push('Item # is missing.');
+  if (!aiIsNum(line.v.orderedQty)) out.errs.push('Ordered QTY is not a number.');
+  if (!aiIsNum(line.v.netSales)) out.errs.push('Net Sales is not a number.');
+  if (tab === 'pur' && !aiIsNum(line.v.factorQty)) out.errs.push('Factor QTY is not a number.');
+  if (isBlank(line.v.netSales)) out.warns.push('Net Sales is blank.');
+  if (tab === 'pur') {
+    const inner = calcInnerPack(v.packagingDetails, v.factorQty);
+    if (inner.blank) out.warns.push('Packaging Details is blank: Inner pack will fall back to 1.');
+    else if (inner.err) out.warns.push('Packaging Details cannot be read.');
+  } else {
+    if (line.mode === 'd') {
+      if (!isBlank(v.rentStart) && parseRentDate(v.rentStart) === null) out.errs.push('Start is not a date (yyyy-mm-dd or m/d/yyyy).');
+      if (!isBlank(v.rentEnd) && parseRentDate(v.rentEnd) === null) out.errs.push('End is not a date (yyyy-mm-dd or m/d/yyyy).');
+    } else if (!aiIsNum(line.v.rentPeriods)) out.errs.push('Periods is not a number.');
+    const du = rentalDuration(v, rentalProfile(v.vendorName));
+    if (du.blank || (du.err && !out.errs.length)) out.warns.push(du.err || 'No usable rent term (Periods + UM, or Start + End).');
+  }
+  return out;
+}
+function aiPreview(tab, line){
+  if (aiLineEmpty(line)) return [{ t:'' }, { t:'' }];
+  const v = aiLineVals(tab, line);
+  if (tab === 'pur') {
+    const inner = calcInnerPack(v.packagingDetails, v.factorQty);
+    const ord = calcOrderedQty(v, inner), each = calcEachPrice(v.netSales, ord);
+    return [{ t:resText(ord, 'qty'), tip:traceOf(inner) + '\n' + traceOf(ord) }, { t:resText(each, 'price'), tip:traceOf(each) }];
+  }
+  const du = rentalDuration(v, rentalProfile(v.vendorName)), rq = calcRentalQty(v);
+  return [{ t:du.err ? '#VALUE!' : du.blank ? '' : fmtQty(du.days), tip:du.err || du.how || '' }, { t:resText(rq, 'qty'), tip:traceOf(rq) }];
+}
+function aiDirty(){ return !!aiCtx && (aiCtx.lines.pur.some(l => !aiLineEmpty(l)) || aiCtx.lines.ren.some(l => !aiLineEmpty(l))); }
+function aiActive(){ return !!aiCtx && $('#scrim').classList.contains('on') && $('#modalBody').contains(aiCtx.root); }
+function aiDistinct(k){ const s = new Set(); state.rows.forEach(r => { const x = String(r[k] == null ? '' : r[k]).trim(); if (x) s.add(x); }); return [...s].sort(); }
+
+function openAddItems(){
+  const p = aiLoadPrefs();
+  aiCtx = { tab:p.tab === 'ren' ? 'ren' : 'pur', fac:p.fac || '', ven:p.ven || '', more:!!p.more, override:!!p.override,
+            lines:{ pur:[aiBlankLine()], ren:[aiBlankLine()] }, root:null };
+  const root = el('div', 'addItems'); aiCtx.root = root;
+  const head = el('div', 'aiHead');
+  const mkField = (label, id, val, list) => {
+    const w = el('label', 'aiField'); w.appendChild(el('span', null, label));
+    const inp = el('input'); inp.type = 'text'; inp.id = id; inp.value = val; inp.autocomplete = 'off';
+    if (list) { const dl = el('datalist'); dl.id = id + 'List'; list.forEach(x => { const o = el('option'); o.value = x; dl.appendChild(o); }); w.appendChild(dl); inp.setAttribute('list', dl.id); }
+    w.appendChild(inp); head.appendChild(w); return inp;
+  };
+  const fac = mkField('Facility *', 'aiFac', aiCtx.fac, aiDistinct('facility'));
+  const ven = mkField('Vendor Name *', 'aiVen', aiCtx.ven, aiDistinct('vendorName'));
+  const linesW = el('label', 'aiField'); linesW.appendChild(el('span', null, 'Lines'));
+  const lines = el('input', 'numin'); lines.type = 'number'; lines.min = 1; lines.max = 500; lines.step = 1; lines.id = 'aiLines';
+  linesW.appendChild(lines); head.appendChild(linesW);
+  const ovW = el('label', 'aiChk'); const ov = el('input'); ov.type = 'checkbox'; ov.checked = aiCtx.override;
+  ovW.appendChild(ov); ovW.appendChild(document.createTextNode(' Different facility/vendor on some lines')); head.appendChild(ovW);
+  root.appendChild(head);
+
+  const tabs = el('div', 'seg aiTabs'); tabs.setAttribute('role', 'tablist');
+  const tP = el('button'); tP.type = 'button'; const tR = el('button'); tR.type = 'button';
+  tabs.appendChild(tP); tabs.appendChild(tR);
+  const tabRow = el('div', 'aiTabRow'); tabRow.appendChild(tabs);
+  const note = el('span', 'aiNote'); tabRow.appendChild(note);
+  root.appendChild(tabRow);
+
+  const wrap = el('div', 'aiGridWrap'); root.appendChild(wrap);
+  const below = el('div', 'aiBelow');
+  const addLine = el('button', 'btn sm', '+ Line'); addLine.type = 'button';
+  const moreBtn = el('button', 'btn sm aiMore'); moreBtn.type = 'button';
+  below.appendChild(addLine); below.appendChild(moreBtn);
+  root.appendChild(below);
+
+  const fv = () => { aiCtx.fac = fac.value.trim(); aiCtx.ven = ven.value.trim(); };
+  fac.addEventListener('input', () => { fv(); aiRefreshAll(); });
+  ven.addEventListener('input', () => { fv(); aiRefreshAll(); });
+  ov.addEventListener('change', () => { aiCtx.override = ov.checked; aiRender(); });
+  tP.addEventListener('click', () => { aiCtx.tab = 'pur'; aiRender(); });
+  tR.addEventListener('click', () => { aiCtx.tab = 'ren'; aiRender(); });
+  addLine.addEventListener('click', () => { aiCtx.lines[aiCtx.tab].push(aiBlankLine()); aiRender(); aiFocus(aiCtx.lines[aiCtx.tab].length - 1, 0); });
+  moreBtn.addEventListener('click', () => { aiCtx.more = !aiCtx.more; aiRender(); });
+  lines.addEventListener('change', () => {
+    const arr = aiCtx.lines[aiCtx.tab];
+    let n = parseInt(lines.value, 10); if (!isFinite(n) || n < 1) n = 1; n = Math.min(n, 500);
+    let last = -1; arr.forEach((l, i) => { if (!aiLineEmpty(l)) last = i; });
+    if (n < last + 1) { n = last + 1; toast('Clear those lines first.', true); }
+    if (n === arr.length) { lines.value = n; return; }
+    while (arr.length < n) arr.push(aiBlankLine());
+    arr.length = n;
+    aiRender();
+  });
+
+  aiCtx.els = { fac, ven, lines, tP, tR, note, wrap, moreBtn };
+  aiRender();
+  showModal('Add Facility/Vendor items', root, [
+    { label:'Cancel', cls:'btn', fn:() => { if (!aiDirty() || confirm('Discard the lines you typed?')) { aiSavePrefs(); hideModal(); aiCtx = null; } } },
+    { label:'Save & add more', cls:'btn', fn:() => aiCommit(false) },
+    { label:'Add to sheet', cls:'btn primary', fn:() => aiCommit(true) }
+  ], { wide:true });
+  setTimeout(() => { if (!aiCtx) return; if (!aiCtx.fac) fac.focus(); else if (!aiCtx.ven) ven.focus(); else aiFocus(0, 0); }, 30);
+}
+
+function aiRender(){
+  const c = aiCtx, E = c.els, tab = c.tab, arr = c.lines[tab], cols = aiCols(tab);
+  E.tP.classList.toggle('on', tab === 'pur'); E.tR.classList.toggle('on', tab === 'ren');
+  E.tP.setAttribute('aria-selected', tab === 'pur'); E.tR.setAttribute('aria-selected', tab === 'ren');
+  E.lines.value = arr.length;
+  E.moreBtn.textContent = (c.more ? '\u25be' : '\u25b8') + ' More (optional)';
+  E.moreBtn.setAttribute('aria-expanded', c.more);
+  E.note.innerHTML = '';
+  if (tab === 'ren') {
+    E.note.appendChild(document.createTextNode('Rentals group by Item # across facilities and vendors. '));
+    const a = el('button', 'aiLink', 'Rental rules\u2026'); a.type = 'button';
+    a.addEventListener('click', () => {
+      if (aiDirty() && !confirm('Close this window (typed lines are discarded) and open Rental rules?')) return;
+      aiSavePrefs(); hideModal(); aiCtx = null; openRentalRules();
+    });
+    E.note.appendChild(a);
+  } else E.note.textContent = 'Ordered UM, Pkg Qty and UM are set to CS / 1 / CS automatically.';
+  const t = el('table', 'aiGrid z-' + (tab === 'ren' ? 'rental' : 'purchase'));
+  const thr = el('tr'); thr.appendChild(el('th', 'aiNum', '#'));
+  cols.forEach(col => { const th = el('th', col.num ? 'n' : null, col.l); th.style.minWidth = col.w + 'px'; thr.appendChild(th); });
+  (tab === 'ren' ? ['Billed days', 'Unit-days'] : ['Ordered Quantity', 'Each Price']).forEach(l => thr.appendChild(el('th', 'aiCalc n', l)));
+  thr.appendChild(el('th', 'aiStat', '')); thr.appendChild(el('th', null, ''));
+  const thead = el('thead'); thead.appendChild(thr); t.appendChild(thead);
+  const tb = el('tbody');
+  arr.forEach((line, ri) => {
+    const tr = el('tr'); tr.dataset.ri = ri;
+    tr.appendChild(el('td', 'aiNum', String(ri + 1)));
+    let ci = 0;
+    cols.forEach(col => {
+      const td = el('td');
+      if (col.toggle) {
+        const b = el('button', 'btn sm aiMode', line.mode === 'd' ? 'Dates' : 'Periods'); b.type = 'button';
+        b.title = 'Switch between Periods + Period UM and Start + End dates'; b.setAttribute('aria-label', 'Line ' + (ri + 1) + ' rent term: ' + b.textContent + ' (click to switch)');
+        b.addEventListener('click', () => { line.mode = line.mode === 'd' ? 'p' : 'd'; aiRender(); });
+        td.appendChild(b); tr.appendChild(td); return;
+      }
+      const inp = el('input', 'aiIn' + (col.num ? ' n' : '')); inp.type = 'text'; inp.autocomplete = 'off';
+      inp.dataset.k = col.k; inp.dataset.ci = ci++;
+      inp.value = aiGet(line, col.k);
+      let ph = col.ph || '', lab = col.l;
+      if (col.k === '_t1') { ph = line.mode === 'd' ? 'yyyy-mm-dd' : 'Periods'; lab = line.mode === 'd' ? 'Start' : 'Periods'; inp.classList.add('n'); }
+      if (col.k === '_t2') { ph = line.mode === 'd' ? 'yyyy-mm-dd' : 'DAY / WK / MO'; lab = line.mode === 'd' ? 'End' : 'Period UM'; if (line.mode !== 'd') inp.setAttribute('list', 'periodList'); }
+      if (col.k === 'facility' && c.fac) ph = c.fac;
+      if (col.k === 'vendorName' && c.ven) ph = c.ven;
+      if (col.list) inp.setAttribute('list', col.list);
+      inp.placeholder = ph; inp.setAttribute('aria-label', lab + ', line ' + (ri + 1));
+      inp.addEventListener('input', () => { aiSet(line, col.k, inp.value); aiRefreshLine(tr, line); aiBadges(); });
+      inp.addEventListener('keydown', e => aiKey(e, ri, +inp.dataset.ci));
+      inp.addEventListener('paste', e => aiPaste(e, ri, +inp.dataset.ci));
+      td.appendChild(inp); tr.appendChild(td);
+    });
+    tr.appendChild(el('td', 'aiCalc n')); tr.appendChild(el('td', 'aiCalc n'));
+    tr.appendChild(el('td', 'aiStat'));
+    const xtd = el('td'); const x = el('button', 'aiX', '\u00d7'); x.type = 'button'; x.title = 'Remove line'; x.setAttribute('aria-label', 'Remove line ' + (ri + 1));
+    x.addEventListener('click', () => { arr.splice(ri, 1); if (!arr.length) arr.push(aiBlankLine()); aiRender(); });
+    xtd.appendChild(x); tr.appendChild(xtd);
+    tb.appendChild(tr);
+    aiRefreshLine(tr, line);
+  });
+  t.appendChild(tb);
+  E.wrap.innerHTML = ''; E.wrap.appendChild(t);
+  aiBadges(); aiSavePrefs();
+}
+function aiRefreshLine(tr, line){
+  const tab = aiCtx.tab, pv = aiPreview(tab, line), cells = tr.querySelectorAll('td.aiCalc');
+  pv.forEach((p, i) => { cells[i].textContent = p.t; cells[i].title = p.tip || ''; });
+  const is = aiIssues(tab, line), st = tr.querySelector('td.aiStat');
+  st.innerHTML = '';
+  tr.classList.toggle('hasErr', is.errs.length > 0);
+  if (is.empty) return;
+  const d = el('span', 'aiDot ' + (is.errs.length ? 'err' : is.warns.length ? 'warn' : 'ok'));
+  const msg = is.errs.concat(is.warns).join('\n') || 'Ready';
+  d.title = msg; d.setAttribute('role', 'img'); d.setAttribute('aria-label', msg);
+  st.appendChild(d);
+  if (is.errs.length || is.warns.length) st.appendChild(el('span', 'aiMsg ' + (is.errs.length ? 'err' : 'warn'), (is.errs[0] || is.warns[0])));
+}
+function aiRefreshAll(){
+  if (!aiCtx) return;
+  const arr = aiCtx.lines[aiCtx.tab];
+  aiCtx.els.wrap.querySelectorAll('tbody tr').forEach(tr => aiRefreshLine(tr, arr[+tr.dataset.ri]));
+  aiCtx.els.wrap.querySelectorAll('input[data-k="facility"]').forEach(i => i.placeholder = aiCtx.fac || '(batch)');
+  aiCtx.els.wrap.querySelectorAll('input[data-k="vendorName"]').forEach(i => i.placeholder = aiCtx.ven || '(batch)');
+  aiSavePrefs();
+}
+function aiBadges(){
+  const n = t => aiCtx.lines[t].filter(l => !aiLineEmpty(l)).length;
+  const set = (b, label, k) => { b.textContent = label; const s = el('span', 'count', '(' + n(k) + ')'); b.appendChild(s); };
+  set(aiCtx.els.tP, 'Purchase (per case) ', 'pur'); set(aiCtx.els.tR, 'Rental ', 'ren');
+}
+function aiFocus(ri, ci){
+  const inp = aiCtx && aiCtx.els.wrap.querySelector('tr[data-ri="' + ri + '"] input[data-ci="' + ci + '"]');
+  if (inp) { inp.focus(); inp.select(); }
+}
+function aiKey(e, ri, ci){
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    const arr = aiCtx.lines[aiCtx.tab];
+    if (ri >= arr.length - 1) { if (arr.length >= 500) return; arr.push(aiBlankLine()); aiRender(); }
+    aiFocus(ri + 1, ci);
+  }
+}
+function aiPaste(e, ri, ci){
+  const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+  if (!text || !/[\t\n]/.test(text.replace(/\r?\n$/, ''))) return;   // single value: let the input take it
+  e.preventDefault(); e.stopPropagation();
+  const m = parseClipboard(text, true), arr = aiCtx.lines[aiCtx.tab];
+  const cols = aiCols(aiCtx.tab).filter(c => !c.toggle);
+  m.forEach((row, dr) => {
+    const r = ri + dr; if (r >= 500) return;
+    while (arr.length <= r) arr.push(aiBlankLine());
+    row.forEach((val, dc) => {
+      const col = cols[ci + dc]; if (!col) return;
+      let v = String(val == null ? '' : val).trim();
+      if (col.num || (col.k === '_t1' && arr[r].mode !== 'd')) v = aiNumClean(v);
+      aiSet(arr[r], col.k, v);
+    });
+  });
+  aiRender();
+  aiFocus(ri, ci);
+}
+function aiCommit(close){
+  const c = aiCtx; if (!c) return;
+  c.fac = c.els.fac.value.trim(); c.ven = c.els.ven.value.trim();
+  const needFV = (c.lines.pur.concat(c.lines.ren)).some(l => !aiLineEmpty(l) && (isBlank(l.v.facility) || isBlank(l.v.vendorName)));
+  if (needFV || !aiDirty()) {
+    if (!c.fac) { c.els.fac.focus(); toast('Enter the Facility first.', true); return; }
+    if (!c.ven) { c.els.ven.focus(); toast('Enter the Vendor Name first.', true); return; }
+  }
+  if (!aiDirty()) { toast('Nothing to add yet \u2014 type at least one line.', true); return; }
+  for (const tab of ['pur', 'ren']) {
+    const bad = c.lines[tab].findIndex(l => aiIssues(tab, l).errs.length);
+    if (bad >= 0) {
+      if (c.tab !== tab) { c.tab = tab; aiRender(); }
+      const tr = c.els.wrap.querySelector('tr[data-ri="' + bad + '"]');
+      if (tr && tr.scrollIntoView) tr.scrollIntoView({ block:'nearest' });
+      aiFocus(bad, 0);
+      toast('Line ' + (bad + 1) + ' (' + (tab === 'ren' ? 'Rental' : 'Purchase') + '): ' + aiIssues(tab, c.lines[tab][bad]).errs[0], true);
+      return;
+    }
+  }
+  const build = tab => c.lines[tab].filter(l => !aiLineEmpty(l)).map(l => {
+    const v = aiLineVals(tab, l), r = blankRow();
+    ROW_KEYS.forEach(k => { if (v[k] != null && String(v[k]).trim() !== '') r[k] = String(v[k]).trim(); });
+    return r;
+  });
+  const pur = build('pur'), ren = build('ren');
+  pushUndo();
+  const ticked = checkedRows();
+  const at = ticked.length
+    ? state.rows.indexOf(ticked[ticked.length - 1]) + 1
+    : Math.min(cur ? sourceIndexAt(cur.r) + 1 : state.rows.length, state.rows.length);
+  state.rows.splice(at, 0, ...pur, ...ren);
+  refresh();
+  toast(pur.length + ' purchase and ' + ren.length + ' rental line' + (ren.length === 1 ? '' : 's') + ' added.');
+  logEvent('Facility/Vendor items added', c.fac + ' / ' + c.ven, pur.length + ' purchase (per case), ' + ren.length + ' rental');
+  aiSavePrefs();
+  if (close) { hideModal(); aiCtx = null; return; }
+  ['pur', 'ren'].forEach(t => { const n = c.lines[t].length; c.lines[t] = []; for (let i = 0; i < n; i++) c.lines[t].push(aiBlankLine()); });
+  aiRender(); aiFocus(0, 0);
+}
+/* Escape / clicking outside only discards typed lines after a confirm (capture phase, before the generic close). */
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape' || !aiActive()) return;
+  if (aiDirty() && !confirm('Discard the lines you typed?')) { e.preventDefault(); e.stopImmediatePropagation(); return; }
+  aiSavePrefs(); aiCtx = null;
+}, true);
+$('#scrim').addEventListener('mousedown', e => {
+  if (e.target !== $('#scrim') || !aiActive()) return;
+  if (aiDirty() && !confirm('Discard the lines you typed?')) { e.stopImmediatePropagation(); return; }
+  aiSavePrefs(); aiCtx = null;
+}, true);
+$('#btnAddItems').addEventListener('click', openAddItems);
+$('#btnAddBlank').addEventListener('click', () => {
+  const inp = $('#addRowCount');
+  const ans = prompt('How many blank rows? (1\u2013500)', inp.value || '1');
+  if (ans == null) return;
+  let n = parseInt(ans, 10); if (!isFinite(n) || n < 1) n = 1;
+  inp.value = Math.min(n, 500);
+  $('#btnAddRow').click();
 });
 
 $('#btnDelRow').addEventListener('click', () => {
