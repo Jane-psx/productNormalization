@@ -1331,7 +1331,7 @@ table.ourTable td.srcCell .pill{margin-left:6px;cursor:pointer}
       </div>
       <label class="chk" style="gap:6px" for="ourGroupField">Group by</label>
       <select id="ourGroupField" title="Records group (and aggregate) by this field together with Contract.">
-        <option value="itemNumber">Item #</option><option value="productCode">Product Code</option><option value="description">Description</option>
+        <option value="itemNumber">Item #</option><option value="productCode">Prod Code / MFG Code</option><option value="description">Product Description</option>
       </select>
       <span class="note" style="margin-left:0">+ Contract</span>
       <span class="sep"></span>
@@ -8864,19 +8864,33 @@ function logEvent(type, target, detail){
 
 /* ======================================================= OUR PRICING MODEL */
 const OUR_TEXT_FIELDS = [
-  { k:'itemNumber',       name:'Item #',           w:110 },
-  { k:'productCode',      name:'Product Code',     w:120 },
-  { k:'description',      name:'Description',      w:220 },
-  { k:'vendor',           name:'Vendor',           w:150 },
-  { k:'packagingDetails', name:'Packaging Details',w:140 },
-  { k:'factorQty',        name:'Factor QTY',       w:70, num:true },
-  { k:'priceUnit',        name:'Price Unit',       w:70 },
-  { k:'orderedUM',        name:'Ordered UM',       w:80 },
-  { k:'status',           name:'Status',           w:80 },
-  { k:'itemType',         name:'Item Type',        w:84 },
-  { k:'program',          name:'Pricing Program',  w:170 },
-  { k:'contract',         name:'Contract',         w:100 },
-  { k:'stdPrice',         name:'Standard Price',   w:100, num:true }
+  { k:'vendor',             name:'Vendor',                             w:150 },
+  { k:'pricingFile',        name:'Pricing File',                       w:150 },
+  { k:'itemNumber',         name:'Item #',                             w:110 },
+  { k:'productCode',        name:'Prod Code / MFG Code',               w:140 },
+  { k:'manufacturerName',   name:'Manufacturer Name',                  w:160 },
+  { k:'description',        name:'Product Description',                w:220 },
+  { k:'category',           name:'Category',                           w:130 },
+  { k:'packagingDetails',   name:'Packsize',                           w:110 },
+  { k:'priceUnit',          name:'UOM',                                w:70 },
+  { k:'innerPackEa',        name:'Inner Packsize (EA)',                w:110, num:true },
+  { k:'factorQty',          name:'Factor QTY / Dilution Ratio',        w:150, num:true },
+  { k:'stdPrice',           name:'Unit Price',                         w:100, num:true },
+  { k:'dailyRate',          name:'Daily Rate',                         w:90,  num:true },
+  { k:'monthlyRate',        name:'Monthly Rate',                       w:100, num:true },
+  { k:'daysToCap',          name:'Days to Cap',                        w:90,  num:true },
+  { k:'casePrice',          name:'Case Price',                         w:100, num:true },
+  { k:'eaPrice',            name:'EA Price',                           w:90,  num:true },
+  { k:'location',           name:'Location',                           w:130 },
+  { k:'distributionCenter', name:'Distribution Center',                w:150 },
+  { k:'itemType',           name:'Item Type',                          w:90 },
+  { k:'status',             name:'Status (Active / Inactive / Discontinued)', w:150 },
+  { k:'program',            name:'Pricing Structure',                  w:170 },
+  { k:'pricingDate',        name:'Pricing Date',                       w:100 },
+  { k:'contract',           name:'Contract',                           w:100 },
+  { k:'otherDetails',       name:'Other Details',                      w:200 },
+  { k:'linkReference',      name:'Link Reference',                     w:200 },
+  { k:'orderedUM',          name:'Ordered UM',                         w:80 }
 ];
 const OUR_FIELD_NAME = Object.fromEntries(OUR_TEXT_FIELDS.map(f => [f.k, f.name]));
 const ourKey = v => normIdent(v);
@@ -9721,7 +9735,7 @@ function renderOur(){
 }
 
 /* ------------------------------------------------ Our Pricing grouping */
-const OUR_GROUP_FIELDS = { itemNumber:'Item #', productCode:'Product Code', description:'Description' };
+const OUR_GROUP_FIELDS = { itemNumber:'Item #', productCode:'Prod Code / MFG Code', description:'Product Description' };
 const ourGroupField = () => OUR_GROUP_FIELDS[state.ui.ourGroupField] ? state.ui.ourGroupField : 'itemNumber';
 /** Records group (and aggregate) by the chosen field together with Contract. */
 function ourGroupKeyOf(r){ return normIdent(r[ourGroupField()]) + '\u241f' + String(r.contract || '').trim().toLowerCase(); }
@@ -10319,6 +10333,23 @@ $('#chkOurIssues').addEventListener('change', e => { state.ui.ourIssuesOnly = e.
 
 /* ------------------------------------------------ import / paste mapping */
 const OUR_HEADER_RULES = [
+  ['pricingFile', /pricing\s*file|price\s*file|source\s*file/i],
+  ['pricingDate', /pricing\s*date|price\s*date|effective\s*date/i],
+  ['program', /pricing\s*structure|price\s*structure/i],
+  ['manufacturerName', /manufacturer|^mfr(\s*name)?$|mfg\.?\s*name/i],
+  ['innerPackEa', /inner\s*pack/i],
+  ['dailyRate', /daily\s*(rate)?/i],
+  ['monthlyRate', /monthly\s*(rate)?/i],
+  ['daysToCap', /days?\s*to\s*cap|cap\s*days/i],
+  ['casePrice', /^(cs|case)\s*price/i],
+  ['eaPrice', /^(ea|each)\s*price/i],
+  ['distributionCenter', /distribution\s*cent|^dc$/i],
+  ['location', /^location|^loc$/i],
+  ['category', /categ/i],
+  ['itemType', /item\s*type|^type$/i],
+  ['otherDetails', /other\s*details|^notes?$|remarks|comments/i],
+  ['linkReference', /link|url|reference/i],
+  ['factorQty', /dilution/i],
   ['vendor', /^(vendor|supplier|distributor)(\s*name)?$/i],
   ['itemNumber', /^(our\s*)?item\s*(#|no\.?|num(ber)?)?$|material\s*(#|no\.?|num(ber)?)?$|^sku(\s*#)?$|^(\S+\s*)?(item|product)\s*(#|no\.?)$/i],
   ['productCode', /product\s*(code|#|no\.?|num)|prod\.?\s*code|mfg|catalog|^ndc|^upc|gtin|material\s*code|item\s*code/i],
