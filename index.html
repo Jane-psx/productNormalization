@@ -1204,12 +1204,6 @@ table.ourGrid td.oc.kT::before{border-top-width:2px}table.ourGrid td.oc.kB::befo
 table.ourGrid td.oc input.edit{position:absolute;left:0;top:0;width:100%;height:100%;z-index:60;border:2px solid var(--sel);outline:0;padding:0 4px;font-size:12.5px;background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.15);user-select:text;font-style:normal;color:var(--ink);text-align:left}
 table.ourGrid tr.ourGrp td{padding:5px 8px;height:auto;line-height:1.4}
 table.ourGrid tr.ourGrp .grpIn{position:sticky;left:8px;display:inline-flex;align-items:center;flex-wrap:wrap;gap:4px;max-width:calc(100vw - 160px);white-space:normal}
-.ourPager{position:sticky;left:0;display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:10px 8px;border-top:1px solid var(--line);background:#fff;font-size:12px}
-.ourPager .pgInfo{color:var(--ink-3);margin-right:auto}
-.ourPager button.pg{min-width:28px;height:26px;padding:0 8px;border:1px solid var(--line);border-radius:3px;background:#fff;cursor:pointer;font-size:12px}
-.ourPager button.pg.on{background:#0d5c4d;border-color:#0d5c4d;color:#fff;font-weight:600}
-.ourPager button.pg:disabled{opacity:.4;cursor:default}
-.ourPager .pgGap{color:var(--ink-3);padding:0 2px}
 #paneOur:focus{outline:none}
 #ourGroupField{height:27px;border:1px solid var(--line);border-radius:3px;padding:0 6px;font-size:12.5px;background:#fff;color:var(--ink)}
 table.ourTable td.srcCell{font-size:11.5px;color:var(--ink-3)}
@@ -9417,7 +9411,7 @@ function setOurField(id, k, val){
    letters and row numbers select whole columns/rows, column filters,
    resizable columns and a frozen Item # column. Pasting a range that starts
    with a header row goes through the import preview (column matching). */
-const OUR_GUT_W = 44, OUR_CK_W = 26, OUR_ST_W = 18, OUR_ROW_CAP = 3000;
+const OUR_GUT_W = 44, OUR_CK_W = 26, OUR_ST_W = 18;
 let oCur = null, oSel = null, oCopy = null, oEditor = null, oAnchor = null, oPendingEdit = false;
 let oView = { cols:[], rows:[], items:[], trs:[], tds:[], idx:new Map(), total:0 };
 let oPainted = [], oRowSelEl = null;
@@ -9650,15 +9644,8 @@ function renderOur(){
     return true;
   });
   oView.total = gRows.length;
-  /* pagination: one page holds up to OUR_ROW_CAP records; page resets when the search, filters or mode change */
-  const pageSig = JSON.stringify([q, issuesOnly, state.ui.ourColFilters, state.ui.ourMode, state.ui.ourGroupField]);
-  if (state.ui.ourPageSig !== pageSig) { state.ui.ourPageSig = pageSig; state.ui.ourPage = 0; }
-  const pageCount = Math.max(1, Math.ceil(oView.total / OUR_ROW_CAP));
-  const page = Math.min(Math.max(0, state.ui.ourPage || 0), pageCount - 1);
-  state.ui.ourPage = page;
-  const pageRows = gRows.slice(page * OUR_ROW_CAP, (page + 1) * OUR_ROW_CAP);
   const grouped = state.ui.ourMode === 'grouped';
-  const dGroups = grouped ? ourDisplayGroups(pageRows) : [{ rows:pageRows }];
+  const dGroups = grouped ? ourDisplayGroups(gRows) : [{ rows:gRows }];
   const banner = g => {
     const gr = el('tr', 'ourGrp' + (g.priceConflict ? ' bad' : ''));
     const td = el('td'); td.colSpan = span;
@@ -9674,10 +9661,9 @@ function renderOur(){
     td.appendChild(inner); gr.appendChild(td); tb.appendChild(gr);
   };
   dGroups.forEach(dg => {
-    if (grouped && dg.rows.length > 1 && listed < OUR_ROW_CAP) banner(dg);
+    if (grouped && dg.rows.length > 1) banner(dg);
     const gRows = dg.rows;
     gRows.forEach(r => {
-      if (listed >= OUR_ROW_CAP) return;
       const ri = oView.rows.length;
       oView.rows.push(r); oView.idx.set(r.id, ri); listed++;
       const lvl = ourIssueLevel(r);
@@ -9714,35 +9700,11 @@ function renderOur(){
     td.colSpan = span; td.style.cssText = 'padding:14px;color:var(--ink-3)';
     tr.appendChild(td); tb.appendChild(tr);
   }
-  if (oView.total > OUR_ROW_CAP) {
-    const tr = el('tr'), td = el('td', null, 'End of page ' + (page + 1) + ' \u2014 use the page buttons below to see the rest of the ' + oView.total.toLocaleString() + ' matching records.');
-    td.colSpan = span; td.style.cssText = 'padding:10px;color:var(--ink-3);background:var(--warn-bg)';
-    tr.appendChild(td); tb.appendChild(tr);
-  }
   const listedIds = oView.rows.map(r => r.id);
   allBox.checked = listedIds.length > 0 && listedIds.every(id => ourChecked.has(id));
   allBox.addEventListener('change', () => { listedIds.forEach(id => allBox.checked ? ourChecked.add(id) : ourChecked.delete(id)); renderOur(); });
   t.appendChild(tb);
   pane.appendChild(t);
-  if (pageCount > 1) {
-    const goTo = p => { state.ui.ourPage = p; oCur = oSel = null; oAnchor = null; renderOur(); saveSoon(); pane.scrollTop = 0; };
-    const bar = el('div', 'ourPager');
-    const info = el('span', 'pgInfo', 'Page ' + (page + 1) + ' of ' + pageCount + ' \u00b7 ' + oView.total.toLocaleString() + ' matching records \u00b7 ' + OUR_ROW_CAP.toLocaleString() + ' per page');
-    bar.appendChild(info);
-    const prev = el('button', 'pg', '\u2039 Prev'); prev.type = 'button'; prev.disabled = page === 0;
-    prev.addEventListener('click', () => goTo(page - 1)); bar.appendChild(prev);
-    const win = [];
-    for (let p = 0; p < pageCount; p++) if (p < 2 || p >= pageCount - 2 || Math.abs(p - page) <= 2) win.push(p);
-    let last = -1;
-    win.forEach(p => {
-      if (p - last > 1) bar.appendChild(el('span', 'pgGap', '\u2026'));
-      const b = el('button', 'pg' + (p === page ? ' on' : ''), String(p + 1)); b.type = 'button';
-      b.addEventListener('click', () => goTo(p)); bar.appendChild(b); last = p;
-    });
-    const next = el('button', 'pg', 'Next \u203a'); next.type = 'button'; next.disabled = page === pageCount - 1;
-    next.addEventListener('click', () => goTo(page + 1)); bar.appendChild(next);
-    pane.appendChild(bar);
-  }
   pane.scrollTop = keepTop; pane.scrollLeft = keepLeft;
 
   /* restore the cursor on the same record/column */
