@@ -1224,6 +1224,63 @@ table.ourTable td.srcCell .pill{margin-left:6px;cursor:pointer}
 .c.z-ours.ctr.num{justify-content:flex-end;text-align:right}
 .ovrPrice .aggIn{border:1px solid var(--line);background:#fff}
 .r .c.flagtier{box-shadow:inset 0 0 0 1px var(--warn-line);background:#fffaf0}
+
+/* ---------- Our Pricing: Catalog view (compact, read-first) ---------- */
+#view-our.catalogMode .editOnly{display:none !important}
+#view-our:not(.catalogMode) .catOnly{display:none !important}
+.catBar{flex:0 0 auto;display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;padding:7px 12px;background:#f6f8fb;border-bottom:1px solid var(--line)}
+.catBar label{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--ink-2)}
+.catBar select{height:26px;border:1px solid var(--line);border-radius:3px;padding:0 4px;background:#fff;font-size:12.5px;max-width:200px}
+.catBar select.on{border-color:var(--accent);background:#eef4ff}
+.catBar .catSum{margin-left:auto;font-size:11.5px;color:var(--ink-3)}
+table.cat{border-collapse:separate;border-spacing:0;width:100%;min-width:1040px;table-layout:fixed;font-size:12.5px}
+table.cat th{position:sticky;top:0;z-index:3;background:var(--zone-vendor-h);text-align:left;font-weight:600;font-size:12px;padding:6px 8px;border-bottom:1px solid var(--line);color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+table.cat th.mkey{background:var(--zone-analysed-h);color:#5b4310}
+table.cat td{padding:5px 8px;border-bottom:1px solid var(--line-soft);vertical-align:top;overflow:hidden;text-overflow:ellipsis;background:#fff}
+table.cat th.key,table.cat td.key{position:sticky;left:0;z-index:2}
+table.cat th.key{z-index:4}
+table.cat td.key{font-family:var(--mono);font-size:12px;font-weight:600}
+table.cat td .l2{display:block;font-size:11px;color:var(--ink-3);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+table.cat td .l1{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+table.cat td .dsc{display:block;white-space:normal;line-height:1.3;max-height:2.6em;overflow:hidden}
+table.cat tr.catRow{cursor:pointer}
+table.cat tr.catRow:hover td{background:#f1f6fd}
+table.cat tr.catRow:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+table.cat tr.catRow.rowSel td{background:#fff3b0}
+table.cat .dim{color:var(--ink-3)}
+table.cat .need{color:var(--warn)}
+table.cat .bad{color:var(--err)}
+table.cat .money{font-variant-numeric:tabular-nums;font-weight:600}
+.iBadge{display:inline-block;min-width:18px;padding:0 6px;border-radius:9px;font-size:11px;font-weight:600;line-height:17px;text-align:center;margin-right:4px}
+.iBadge.err{background:var(--err-bg);color:var(--err)}
+.iBadge.warn{background:var(--warn-bg);color:var(--warn)}
+.iBadge.caut{background:#fff;color:var(--ink-2);border:1px solid var(--line)}
+table.ourGrid th.mkey .ohName::after{content:" \25CF";color:#b07a14;font-size:9px}
+.rowSide .rsKeys{background:var(--zone-analysed);border:1px solid var(--zone-analysed-h);border-radius:4px;padding:2px 10px 8px;margin-top:10px}
+.rowSide .rsKeys .rsSec{margin-top:8px;border-bottom-color:var(--zone-analysed-h)}
+.rowSide .rsField .ro.blank{color:var(--ink-3);font-style:italic}
+.rowSide .rsFlag{display:flex;gap:6px;align-items:flex-start;font-size:12px;color:var(--ink-2);padding:2px 0;line-height:1.35}
+
+/* ---------- Catalog phase 2: vendor level, review, families ---------- */
+.catBar .seg button{height:26px}
+.catBar .grp{display:inline-flex;align-items:center;gap:6px}
+.catBar .sepv{width:1px;height:20px;background:var(--line)}
+table.cat.vend{min-width:0}
+table.cat.vend tr.catRow td{vertical-align:middle;padding-top:8px;padding-bottom:8px}
+table.cat.vend td.num,table.cat.vend th.num{text-align:right}
+table.cat tr.vTotal td{background:#f6f8fb;font-weight:600;border-top:1px solid var(--line)}
+table.cat tr.famRow td{background:#fbfcfe}
+table.cat tr.famRow:hover td{background:#f1f6fd}
+table.cat tr.famSub td{background:#fcfcfa;border-bottom-color:var(--line-soft)}
+table.cat tr.famSub td.key{padding-left:22px;font-weight:500}
+table.cat tr.famSub:hover td{background:#f1f6fd}
+table.cat tr.famSub.rowSel td{background:#fff3b0}
+table.cat td.dif{background:var(--warn-bg) !important;box-shadow:inset 3px 0 0 var(--warn-line)}
+table.cat .chev{display:inline-block;width:14px;color:var(--ink-3);font-size:11px}
+table.cat .varies{font-style:italic;color:var(--ink-3)}
+table.cat td .reason{display:block;font-size:11px;color:var(--ink-2);white-space:normal;line-height:1.3;margin-top:2px}
+.revLink{border:0;background:transparent;color:var(--accent);cursor:pointer;font-size:11.5px;padding:0 0 0 4px}
+.revLink:hover{text-decoration:underline}
 </style>
 </head>
 <body>
@@ -1315,37 +1372,43 @@ table.ourTable td.srcCell .pill{margin-left:6px;cursor:pointer}
   <!-- ============ OUR PRICING ============ -->
   <section class="view" id="view-our">
     <div class="paneToolbar">
+      <div class="seg" id="segOurView" title="Catalog: compact, searchable list with a detail panel. Edit all fields: the full spreadsheet-style grid for pasting and bulk cleanup.">
+        <button data-ourview="catalog" class="on">Catalog</button>
+        <button data-ourview="edit">Edit all fields</button>
+      </div>
+      <span class="sep"></span>
       <button class="btn primary" id="btnOurImport" title="Import a price workbook (.xlsx) or CSV. An &ldquo;All Tiers&rdquo; sheet, or one sheet per tier, is read by column name.">Import price file&hellip;</button>
       <input type="file" id="ourFile" accept=".xlsx,.xlsm,.csv,.tsv,.txt" hidden>
-      <button class="btn" id="btnOurPaste">Paste from Excel</button>
-      <button class="btn" id="btnOurAdd">Add item</button>
-      <span class="sep"></span>
-      <button class="btn" id="btnOurAgg" title="Combine the ticked records of the same Item #. Conflicting pricing blocks the merge; the originals are kept for the audit.">Aggregate ticked</button>
-      <button class="btn" id="btnOurDup">Find duplicates</button>
-      <button class="btn danger" id="btnOurDel">Delete ticked</button>
-      <button class="btn" id="btnOurFlag" title="Send every ticked record to the Clarification Report as one group, with a single note">&#9873; Flag ticked</button>
-      <span class="sep"></span>
-      <div class="seg" id="segOurMode">
+      <button class="btn editOnly" id="btnOurPaste">Paste from Excel</button>
+      <button class="btn editOnly" id="btnOurAdd">Add item</button>
+      <span class="sep editOnly"></span>
+      <button class="btn editOnly" id="btnOurAgg" title="Combine the ticked records of the same Item #. Conflicting pricing blocks the merge; the originals are kept for the audit.">Aggregate ticked</button>
+      <button class="btn editOnly" id="btnOurDup">Find duplicates</button>
+      <button class="btn danger editOnly" id="btnOurDel">Delete ticked</button>
+      <button class="btn editOnly" id="btnOurFlag" title="Send every ticked record to the Clarification Report as one group, with a single note">&#9873; Flag ticked</button>
+      <span class="sep editOnly"></span>
+      <div class="seg editOnly" id="segOurMode">
         <button data-mode="flat" class="on">Flat</button>
         <button data-mode="grouped">Grouped</button>
       </div>
-      <label class="chk" style="gap:6px" for="ourGroupField">Group by</label>
-      <select id="ourGroupField" title="Records group (and aggregate) by this field together with Contract.">
+      <label class="chk editOnly" style="gap:6px" for="ourGroupField">Group by</label>
+      <select class="editOnly" id="ourGroupField" title="Records group (and aggregate) by this field together with Contract.">
         <option value="itemNumber">Item #</option><option value="productCode">Product Code</option><option value="description">Description</option>
       </select>
-      <span class="note" style="margin-left:0">+ Contract</span>
+      <span class="note editOnly" style="margin-left:0">+ Contract</span>
       <span class="sep"></span>
       <button class="btn" id="btnPrograms" title="Tier definitions, contracts, effective dates and order-level rules">Pricing programs&hellip;</button>
       <button class="btn" id="btnOurRentals" title="Rentals: days per week / month, day counting and fees, per vendor">Rental rules&hellip;</button>
-      <div class="moreMenu"><button class="btn" id="btnOurTiers" title="Show or hide tier price columns, per pricing program. View only — prices, crosses and exports are not affected.">Tiers &#9662;</button><div class="moreDropdown" id="ourTierDropdown"></div></div>
+      <div class="moreMenu editOnly"><button class="btn" id="btnOurTiers" title="Show or hide tier price columns, per pricing program. View only — prices, crosses and exports are not affected.">Tiers &#9662;</button><div class="moreDropdown" id="ourTierDropdown"></div></div>
       <span class="sep"></span>
       <div class="search">
         <span class="ico">&#8981;</span>
-        <input id="ourSearch" type="search" placeholder="Item # &middot; product code &middot; description" autocomplete="off">
+        <input id="ourSearch" type="search" placeholder="Item # &middot; product code &middot; description &middot; category &middot; vendor" autocomplete="off">
       </div>
       <label class="chk"><input type="checkbox" id="chkOurIssues"> Issues only</label>
       <span class="note" id="ourNote"></span>
     </div>
+    <div class="catBar catOnly" id="ourCatBar"></div>
     <div class="ourTop" id="ourTop"></div>
     <div class="pane" id="paneOur" tabindex="0"></div>
     <div class="statusbar" id="ourStatus"></div>
@@ -2289,7 +2352,7 @@ const state = {
         lineItemCols:['packagingDetails','factorQty','facility','vendorName','description'],
         lineItemColWidths:{},
         lineItemView:'each', lineItemCombineStat:'sum', hideNoCross:false, xuShowNoCross:false,
-        xsMode:'ours', ourSearch:'', ourIssuesOnly:false, ourMode:'flat', ourGroupField:'itemNumber', groupSplitFV:true, ourColWidths:{}, ourColFilters:{}, ocFac:'', ocVen:'',
+        xsMode:'ours', ourSearch:'', ourIssuesOnly:false, ourMode:'flat', ourView:'catalog', ourCat:{}, ourScope:'vendors', ourReview:'catalog', ourIssueType:'', ourFam:true, ourGroupField:'itemNumber', groupSplitFV:true, ourColWidths:{}, ourColFilters:{}, ocFac:'', ocVen:'',
         freeze:true, issuesOnly:false, outMode:'audit', aggSearch:'', aggAttn:false, aggSelectedOnly:false,
         modeB:'grouped', searchB:'', sortKeyB:null, sortDirB:1, freezeB:true, issuesOnlyB:false,
         aggSearchB:'', aggAttnB:false, aggSelectedOnlyB:false, lastSubA:'normalization', lastSubB:'normalizationB' },
@@ -7065,7 +7128,7 @@ const VIEW_UI_KEYS = ['tab','mode','search','colFilters','freeze','issuesOnly','
   'modeB','searchB','sortKeyB','sortDirB','freezeB','issuesOnlyB','aggSearchB','aggAttnB','aggSelectedOnlyB','lastSubA','lastSubB',
   'lineItemCols','lineItemColWidths','lineItemView','lineItemCombineStat',
   'hideNoCross','xuShowNoCross','xsView','xsSearch','xuBase','xuSides','xuColWidths','xsRelColWidths',
-  'xsMode','ourHideTiers','xsGapX','xsGapExcl','xsGapOnly','ourSearch','ourIssuesOnly','ourMode','ourColWidths','ourColFilters','ocFac','ocVen','ocColWidths','xsGran','xsShowNoCrossLines','rentUnit','rentFees','xsType','clarifyTo','clarifyStatus','clarifySearch'];
+  'xsMode','ourHideTiers','xsGapX','xsGapExcl','xsGapOnly','ourSearch','ourIssuesOnly','ourMode','ourView','ourCat','ourScope','ourReview','ourIssueType','ourFam','ourColWidths','ourColFilters','ocFac','ocVen','ocColWidths','xsGran','xsShowNoCrossLines','rentUnit','rentFees','xsType','clarifyTo','clarifyStatus','clarifySearch'];
 const VIEW_KEY_SET = new Set(VIEW_UI_KEYS);
 const clone = o => JSON.parse(JSON.stringify(o === undefined ? null : o));
 const pickView = ui => { const o = {}; VIEW_UI_KEYS.forEach(k => { if (ui[k] !== undefined) o[k] = ui[k]; }); return o; };
@@ -8876,9 +8939,14 @@ const OUR_TEXT_FIELDS = [
   { k:'itemType',         name:'Item Type',        w:84 },
   { k:'program',          name:'Pricing Program',  w:170 },
   { k:'contract',         name:'Contract',         w:100 },
-  { k:'stdPrice',         name:'Standard Price',   w:100, num:true }
+  { k:'stdPrice',         name:'Standard Price',   w:100, num:true },
+  { k:'category',         name:'Category',         w:120 }
 ];
 const OUR_FIELD_NAME = Object.fromEntries(OUR_TEXT_FIELDS.map(f => [f.k, f.name]));
+/** The four fields Facility/Vendor matching reads. Labels live here so renaming them is a one-line change. */
+const OUR_KEY_FIELDS = ['itemNumber', 'productCode', 'description', 'category'];
+const OUR_KEY_LABEL = { itemNumber:'Item #', productCode:'Product Code', description:'Description', category:'Category' };
+const ourViewMode = () => state.ui.ourView === 'edit' ? 'edit' : 'catalog';
 const ourKey = v => normIdent(v);
 function blankOurRow(){
   const r = { id:newOurId(), prices:{} };
@@ -8955,6 +9023,7 @@ function buildOurDerived(){
     const add = (level, text) => out.push({ level, text });
     const g = byKey.get(ourKey(r.itemNumber) || ('\u0000' + r.id));
     if (isBlank(r.itemNumber)) add('error', 'Missing Item # \u2014 nothing can cross to this record.');
+    if (isBlank(r.description)) add('warn', 'Description is blank \u2014 weaker matching and harder to review.');
     const p = programById(r.program);
     if (!isBlank(r.program) && !p) add('error', 'Pricing program \u201c' + r.program + '\u201d is not defined (Pricing programs\u2026).');
     if (p && (p.tiers || []).length) {
@@ -9498,6 +9567,8 @@ function ourActiveFilters(){ const f = state.ui.ourColFilters || {}; return Obje
 
 function renderOur(){
   renderTierMenu();
+  syncOurViewUi();
+  if (ourViewMode() === 'catalog') { renderOurCatalog(); return; }
   const pane = $('#paneOur'), top = $('#ourTop');
   const keepTop = pane.scrollTop, keepLeft = pane.scrollLeft;
   if (oEditor) { const e = oEditor; oEditor = null; if (e.inp.parentNode) e.inp.parentNode.removeChild(e.inp); }
@@ -9582,7 +9653,7 @@ function renderOur(){
   const sth = el('th', 'st fz'); sth.style.left = lefts[1] + 'px'; htr.appendChild(sth);
   const gth = el('th', 'gut fz', '#'); gth.style.left = lefts[2] + 'px'; htr.appendChild(gth);
   cols.forEach((c, i) => {
-    const h = el('th', (c.num ? 'num' : '') + (c.k === 'itemNumber' ? ' key fz fzEdge' : '') + (c.kind === 'tier' ? ' tierH' : '') + (c.kind === 'each' ? ' eachH' : '') + (c.kind === 'calc' ? ' z-computed' : ''));
+    const h = el('th', (c.num ? 'num' : '') + (OUR_KEY_FIELDS.indexOf(c.k) >= 0 ? ' mkey' : '') + (c.k === 'itemNumber' ? ' key fz fzEdge' : '') + (c.kind === 'tier' ? ' tierH' : '') + (c.kind === 'each' ? ' eachH' : '') + (c.kind === 'calc' ? ' z-computed' : ''));
     if (c.k === 'itemNumber') h.style.left = lefts[3] + 'px';
     const hd = el('div', 'oh');
     const L = el('span', 'lref', c.L); L.title = 'Select column ' + c.L;
@@ -9624,7 +9695,7 @@ function renderOur(){
   /* Records are listed in the order they were entered or pasted — no automatic grouping by Item #.
      The same Item # may appear more than once (e.g. different contracts). */
   const gRows = state.our.rows.filter(r => {
-    if (q && ![r.itemNumber, r.productCode, r.description, r.vendor, r.packagingDetails, r.contract].some(v => String(v || '').toLowerCase().includes(q))) return false;
+    if (q && ![r.itemNumber, r.productCode, r.description, r.category, r.vendor, r.packagingDetails, r.contract].some(v => String(v || '').toLowerCase().includes(q))) return false;
     if (issuesOnly && ourIssueLevel(r) === 'ok') return false;
     if (filt.length && !filt.every(f => f.set.has(ourFilterText(r, f.col, cb)))) return false;
     return true;
@@ -9719,6 +9790,593 @@ function renderOur(){
   renderOurStatus();
   if (oPendingEdit && oCur) { oPendingEdit = false; ourEnsureVisible(oCur.r, oCur.c); ourBeginEdit(); }
 }
+
+
+/* ===================================================== OUR PRICING: CATALOG VIEW
+   Compact, read-first list of the same records the Edit grid shows. It never owns data:
+   every record, flag and price here is derived from state.our.rows, and every edit goes
+   through the same setOurField path (side panel). The four matching keys are locked here
+   until "Edit matching keys" is pressed on the panel, or the person switches to Edit all fields.
+   Flag levels:  error / warn  = Issue (counted by "Issues only")
+                 caution       = Warning (shown on the row, not counted as an issue)
+                 info          = context only (duplicate listing, blank Category)           */
+const CAT_BLANK = '\u0000blank';
+const CAT_PAGE = 1000;
+let catShown = CAT_PAGE, catSig = '';
+const catVal = (r, k) => String(r[k] == null ? '' : r[k]).trim();
+const ourStructureOf = r => { const p = programById(r.program); return p && (p.tiers || []).length ? 'Tiered' : 'Standard'; };
+const CAT_FILTERS = [
+  { k:'vendor',    label:'Vendor',     get:r => catVal(r, 'vendor') },
+  { k:'status',    label:'Status',     get:r => catVal(r, 'status') },
+  { k:'itemType',  label:'Item type',  get:r => catVal(r, 'itemType') },
+  { k:'structure', label:'Pricing',    get:r => ourStructureOf(r), fixed:['Standard', 'Tiered'] },
+  { k:'uom',       label:'Ordered UM', get:r => catVal(r, 'orderedUM').toUpperCase() },
+  { k:'category',  label:'Category',   get:r => catVal(r, 'category') }
+];
+const catKey = v => v === '' ? CAT_BLANK : v.toLowerCase();
+
+/** One primary price with its basis, and an each-price only when the pack size is valid. */
+function ourPriceView(r){
+  const p = programById(r.program), tiered = !!(p && (p.tiers || []).length);
+  const rental = isRentalVals(r);
+  const unit = String(r.priceUnit || (p && p.priceUnit) || 'CS').trim().toUpperCase();
+  const ip = calcInnerPack(r.packagingDetails, r.factorQty);
+  const epc = okNum(ip.v) && ip.v > 0 ? ip.v : null;
+  const money = n => Math.abs(n) >= 0.01 ? fmtMoney(n) : fmtPrice(n);
+  const o = { primary:'', second:'', cls:'', secondCls:'', title:'', tiered, rental, epc, unit };
+  if (tiered) {
+    const vals = [], bad = [], lines = [];
+    p.tiers.forEach(t => {
+      const n = priceNum((r.prices || {})[t.id]);
+      if (n === null) lines.push(t.name + ': not set');
+      else if (isNaN(n)) { bad.push(t.name); lines.push(t.name + ': \u201c' + r.prices[t.id] + '\u201d is not a number'); }
+      else { vals.push(n); lines.push(t.name + ': ' + money(n) + ' / ' + unit); }
+    });
+    o.title = progLabel(p) + '\n' + lines.join('\n');
+    if (!vals.length) { o.primary = bad.length ? 'Invalid price' : 'No price'; o.cls = bad.length ? ' bad' : ' need'; }
+    else {
+      const lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals);
+      o.primary = (lo === hi ? money(lo) : money(lo) + '\u2013' + money(hi)) + ' / ' + unit;
+      o.lo = lo; o.hi = hi;
+    }
+    o.second = progLabel(p) + ' \u00b7 ' + vals.length + '/' + p.tiers.length + ' tiers priced' + (bad.length ? ' \u00b7 ' + bad.length + ' invalid' : '');
+    o.secondCls = vals.length < p.tiers.length ? ' need' : '';
+    return o;
+  }
+  const n = priceNum(r.stdPrice);
+  if (n === null) { o.primary = 'No price'; o.cls = ' need'; o.title = 'Standard Price is blank.'; }
+  else if (isNaN(n)) { o.primary = 'Invalid price'; o.cls = ' bad'; o.title = 'Standard Price \u201c' + r.stdPrice + '\u201d is not a number.'; }
+  else {
+    o.primary = money(n) + ' / ' + unit; o.lo = o.hi = n;
+    if (rental) o.second = 'Rental rate \u00b7 no each price';
+    else if (/^(EA|EACH)$/.test(unit)) o.second = '';
+    else if (!/^(CS|CASE|CA)$/.test(unit)) { o.second = 'Each price: not converted from ' + unit; o.secondCls = ' need'; o.title = 'The each price is only calculated from a case price (CS). This price is per ' + unit + '.'; }
+    else if (epc) { o.second = '\u2248 ' + fmtPrice(n / epc) + ' / EA'; o.title = money(n) + ' / ' + unit + ' \u00f7 ' + fmtQty(epc) + ' eaches per case'; }
+    else { o.second = 'Each price: pack missing'; o.secondCls = ' need'; }
+  }
+  return o;
+}
+/* ---- status and rentals ---- */
+const isInactiveRec = r => /^(inactive|discontinued|disc\b|obsolete)/i.test(catVal(r, 'status'));
+/** Daily / monthly rate and days-to-cap, derived from the record's price unit (DAY, WK, MO), its term-band tiers, and the vendor's rental rules. */
+function ourRentalView(r){
+  const p = programById(r.program), prof = rentalProfile(r.vendor);
+  const unit = String(r.priceUnit || (p && p.priceUnit) || '').trim().toUpperCase();
+  const pd = periodDays(unit, prof);
+  const o = { note:'', daily:'\u2014', monthly:'\u2014', cap:'\u2014', dailyCls:' dim', monthlyCls:' dim', capCls:' dim', rates:'', title:'', capTitle:'',
+    rules:prof.daysMonth + ' days / month \u00b7 ' + (prof.custom ? prof.name + ' rules' : 'default rules') };
+  if (!pd) { o.note = unit ? 'price unit \u201c' + unit + '\u201d is not DAY, WK or MO' : 'price unit is blank'; o.rates = unit ? 'Unit ' + unit : 'Unit missing'; return o; }
+  const pts = [];
+  const add = (label, v, minDays) => { const n = priceNum(v); if (n !== null && !isNaN(n)) pts.push({ label, price:n, perDay:n / pd.days, minDays:toNum(minDays) }); };
+  if (p && (p.tiers || []).length) p.tiers.forEach(t => add(t.name, (r.prices || {})[t.id], t.minDays)); else add('Rate', r.stdPrice, null);
+  if (!pts.length) { o.rates = 'No price'; return o; }
+  o.rates = pts.map(x => (pts.length > 1 ? x.label + ' ' : '') + catMoney(x.price)).join(' \u00b7 ') + ' / ' + pd.unit;
+  const exactDay = pd.days === 1, exactMo = !!pd.month, banded = pts.filter(x => x.minDays !== null).sort((a, b) => a.minDays - b.minDays);
+  if (banded.length > 1) {
+    const base = banded[0], top = banded[banded.length - 1], monthEq = top.perDay * prof.daysMonth, cap = monthEq / base.perDay;
+    o.daily = (exactDay ? '' : '\u2248 ') + catMoney(base.perDay) + ' / day'; o.dailyCls = '';
+    o.monthly = (exactMo && top === banded[0] ? '' : '\u2248 ') + catMoney(monthEq) + ' / mo'; o.monthlyCls = '';
+    o.title = 'Daily = ' + base.label + ' (from ' + base.minDays + ' days). Monthly = ' + top.label + ' rate \u00d7 ' + prof.daysMonth + ' days.';
+    if (cap < prof.daysMonth) { o.cap = fmtQty(Math.round(cap * 10) / 10) + ' days'; o.capCls = ''; o.capTitle = 'The monthly price equals ' + fmtQty(Math.round(cap * 10) / 10) + ' days at the daily rate.'; }
+    else o.capTitle = 'The longer-term rate is not cheaper than the daily rate over a month.';
+  } else {
+    const lo = Math.min.apply(null, pts.map(x => x.perDay)), hi = Math.max.apply(null, pts.map(x => x.perDay));
+    const rng = k => lo === hi ? catMoney(lo * k) : catMoney(lo * k) + '\u2013' + catMoney(hi * k);
+    o.daily = (exactDay ? '' : '\u2248 ') + rng(1) + ' / day'; o.dailyCls = '';
+    o.monthly = (exactMo ? '' : '\u2248 ') + rng(prof.daysMonth) + ' / mo'; o.monthlyCls = '';
+    o.capTitle = 'Needs term bands (a tier with a minimum number of days) to find where the monthly price takes over.';
+  }
+  return o;
+}
+/* ---- families: one vendor + normalized Item # ---- */
+const catMoney = n => Math.abs(n) >= 0.01 ? fmtMoney(n) : fmtPrice(n);
+const catNorm = v => String(v == null ? '' : v).trim().toLowerCase().replace(/\s+/g, ' ');
+const catVendorKey = r => catVal(r, 'vendor').toLowerCase();
+const catFamKey = r => { const k = ourKey(r.itemNumber); return k ? catVendorKey(r) + '\u241f' + k : null; };
+/** Fields that must agree before repeated records count as identical. `col` says which catalog cell to highlight. */
+const FAM_DEFS = [
+  { label:'price or contract', col:'price', fn:r => ourPricingSig(r) },
+  { label:'pack size',         col:'pack',  fn:r => catNorm(r.packagingDetails) + '|' + catNorm(r.factorQty) },
+  { label:'Ordered UM',        col:'pack',  fn:r => catVal(r, 'orderedUM').toUpperCase() },
+  { label:'description',       col:'desc',  fn:r => catNorm(r.description) },
+  { label:'Product Code',      col:'code',  fn:r => catNorm(r.productCode) },
+  { label:'category',          col:'cat',   fn:r => catNorm(r.category) }
+];
+function famMake(key, rows){
+  const f = { key, rows, diffs:[], conflict:false };
+  if (rows.length > 1) FAM_DEFS.forEach(d => { if (new Set(rows.map(d.fn)).size > 1) f.diffs.push(d); });
+  f.conflict = f.diffs.length > 0;
+  return f;
+}
+function famIndex(rows){
+  const m = new Map();
+  rows.forEach(r => { const k = catFamKey(r); if (!k) return; let a = m.get(k); if (!a) { a = []; m.set(k, a); } a.push(r); });
+  const out = new Map(); m.forEach((a, k) => out.set(k, famMake(k, a)));
+  return out;
+}
+const catIssueType = t => /Missing Item #|Description is blank/.test(t) ? 'key' : /No standard price|No price for/.test(t) ? 'price' : /not a number|not defined/.test(t) ? 'invalid' : 'other';
+const CAT_TYPES = { price:'Missing price', key:'Missing Item # / description', conflict:'Conflicting records', invalid:'Invalid value or program', other:'Other' };
+
+/** Existing record issues plus the catalog's own flags. `idx` is the family index of the current render (built on demand for a single record). */
+function ourCatFlags(r, pv, idx){
+  pv = pv || ourPriceView(r);
+  const out = [];
+  (ourD.rowIssues[r.id] || []).forEach(i => {
+    if (i.level === 'info' && /^Item # is listed/.test(i.text)) return;   /* replaced by the family flags below */
+    out.push({ level:i.level, type:catIssueType(i.text), text:i.text });
+  });
+  const fk = catFamKey(r);
+  if (fk) {
+    const f = idx ? idx.get(fk) : famMake(fk, state.our.rows.filter(x => catFamKey(x) === fk));
+    if (f && f.rows.length > 1) {
+      if (f.conflict) out.push({ level:'warn', type:'conflict', text:'Item # is listed ' + f.rows.length + '\u00d7 for this vendor with different ' + f.diffs.map(d => d.label).join(', ') + '. Review before it is used for matching.' });
+      else out.push({ level:'info', type:'dup', text:'Item # is listed ' + f.rows.length + '\u00d7 for this vendor with identical values \u2014 safe to aggregate.' });
+    }
+    const g = ourD.byKey.get(ourKey(r.itemNumber));
+    if (g && g.rows.length > 1) {
+      const me = catVendorKey(r), others = [...new Set(g.rows.filter(x => catVendorKey(x) !== me).map(x => catVal(x, 'vendor') || '(no vendor)'))];
+      if (others.length) out.push({ level:g.priceConflict ? 'warn' : 'info', type:'conflict', text:'Item # is also used by ' + others.slice(0, 3).join(', ') + (others.length > 3 ? ' and ' + (others.length - 3) + ' more' : '') + ' \u2014 Crossed To matches on Item # alone' + (g.priceConflict ? ', and the pricing differs.' : '.') });
+    }
+  }
+  if (pv.rental) { const rv = ourRentalView(r); if (rv.note) out.push({ level:'warn', type:'invalid', text:'Rental rate: ' + rv.note + ' \u2014 daily and monthly rates cannot be worked out.' }); }
+  if (isBlank(r.productCode)) out.push({ level:'caution', type:'code', text:'Product Code is blank \u2014 reduced matching confidence.' });
+  if (!pv.rental && !pv.epc) out.push({ level:'caution', type:'pack', text:'Pack size missing \u2014 an each price cannot be calculated.' });
+  if (isBlank(r.orderedUM)) out.push({ level:'caution', type:'um', text:'Ordered UM is blank.' });
+  if (isBlank(r.category)) out.push({ level:'info', type:'cat', text:'Category is blank.' });
+  return out;
+}
+const catIsIssue = f => f.level === 'error' || f.level === 'warn';
+const CAT_LEVEL_LABEL = { error:'Error', warn:'Issue', caution:'Warning', info:'Note' };
+
+function syncOurViewUi(){
+  const m = ourViewMode();
+  $('#view-our').classList.toggle('catalogMode', m === 'catalog');
+  [...$('#segOurView').children].forEach(b => b.classList.toggle('on', b.dataset.ourview === m));
+}
+function setOurView(m, anchorId){
+  m = m === 'edit' ? 'edit' : 'catalog';
+  if (ourViewMode() === m && !anchorId) return;
+  if (rowSideCtx && rowSideCtx.type === 'our') closeRowSide();
+  state.ui.ourView = m; oCur = oSel = null;
+  if (anchorId && m === 'edit') oAnchor = { id:anchorId, k:'itemNumber', sel:null };
+  renderOur(); saveSoon();
+  if (m === 'edit') { const pane = $('#paneOur'); pane.focus({ preventScroll:true }); }
+}
+
+const CAT_MODES = [
+  ['catalog',  'Catalog',        'Active records. Inactive and discontinued ones are left out unless you search or filter by Status.'],
+  ['review',   'Needs review',   'Records with an issue: missing price or key, conflicting repeats, invalid values'],
+  ['rentals',  'Rentals',        'Rental items, with daily and monthly rates worked out from the price unit and the vendor\u2019s rental rules'],
+  ['tiered',   'Tiered pricing', 'Items on a tiered pricing program, with program, contract and tier prices'],
+  ['inactive', 'Inactive',       'Inactive and discontinued records']
+];
+const catOpen = new Set();   /* family keys that are expanded */
+const catSet = (patch) => { Object.keys(patch).forEach(k => { state.ui[k] = patch[k]; }); renderOur(); saveSoon(); };
+
+function renderOurCatBar(scopeRows, shownN, c){
+  const bar = $('#ourCatBar'); bar.innerHTML = '';
+  const cf = state.ui.ourCat || {};
+  /* where am I: Vendors > All vendors > one vendor */
+  const nav = el('div', 'seg'); nav.setAttribute('aria-label', 'Browse level');
+  const nb = (label, on, fn, title) => { const b = el('button', on ? 'on' : '', label); b.type = 'button'; if (title) b.title = title; b.addEventListener('click', fn); nav.appendChild(b); };
+  nb('Vendors', c.scope === 'vendors', () => catSet({ ourScope:'vendors' }), 'One row per vendor, with counts');
+  nb('All vendors', c.scope === 'all', () => catSet({ ourScope:'all' }), 'Every record, for cross-vendor search and duplicate review');
+  if (c.scope !== 'vendors' && c.scope !== 'all') nb(c.vendorNames.get(c.scope) || '(no vendor)', true, () => {}, 'The vendor being browsed');
+  bar.appendChild(nav);
+  /* mode */
+  const md = el('div', 'seg'); md.setAttribute('aria-label', 'Mode');
+  const mb = (label, on, fn, title) => { const b = el('button', on ? 'on' : '', label); b.type = 'button'; b.title = title; b.addEventListener('click', fn); md.appendChild(b); };
+  CAT_MODES.forEach(m => mb(m[1] + (c.modeCount[m[0]] != null ? ' (' + c.modeCount[m[0]].toLocaleString() + ')' : ''), c.mode === m[0], () => catSet({ ourReview:m[0] }), m[2]));
+  bar.appendChild(md);
+  if (c.review) {
+    const lab = el('label'); lab.appendChild(document.createTextNode('Issue'));
+    const sel = el('select'); sel.setAttribute('aria-label', 'Issue type');
+    const o0 = el('option', null, 'Any issue'); o0.value = ''; sel.appendChild(o0);
+    Object.keys(CAT_TYPES).forEach(k => { const n = c.typeCount[k] || 0; if (!n && state.ui.ourIssueType !== k) return; const o = el('option', null, CAT_TYPES[k] + ' (' + n.toLocaleString() + ')'); o.value = k; sel.appendChild(o); });
+    sel.value = state.ui.ourIssueType || ''; if (sel.value) sel.classList.add('on');
+    sel.addEventListener('change', () => catSet({ ourIssueType:sel.value }));
+    lab.appendChild(sel); bar.appendChild(lab);
+  }
+  bar.appendChild(el('span', 'sepv'));
+  let active = (state.ui.ourIssueType && c.review) ? 1 : 0;
+  CAT_FILTERS.forEach(f => {
+    if (f.k === 'vendor' && c.scope !== 'all') return;   /* the browse level already says which vendor */
+    const m = new Map();
+    scopeRows.forEach(r => { const v = f.get(r), k = catKey(v), e = m.get(k); if (e) e.n++; else m.set(k, { label:v, n:1 }); });
+    if (f.fixed) f.fixed.forEach(v => { if (!m.has(v.toLowerCase())) m.set(v.toLowerCase(), { label:v, n:0 }); });
+    const sel0 = cf[f.k] || '';
+    if (sel0 && !m.has(sel0)) m.set(sel0, { label:sel0 === CAT_BLANK ? '' : sel0, n:0 });
+    const ent = [...m.entries()].filter(([k]) => k !== CAT_BLANK).sort((a, b) => f.fixed ? f.fixed.indexOf(a[1].label) - f.fixed.indexOf(b[1].label) : a[1].label.localeCompare(b[1].label, undefined, { numeric:true }));
+    if (m.has(CAT_BLANK)) ent.push([CAT_BLANK, m.get(CAT_BLANK)]);
+    const lab = el('label'); lab.appendChild(document.createTextNode(f.label));
+    const sel = el('select'); sel.setAttribute('aria-label', 'Filter by ' + f.label);
+    const o0 = el('option', null, 'All'); o0.value = ''; sel.appendChild(o0);
+    ent.forEach(([k, e]) => { const o = el('option', null, (k === CAT_BLANK ? '(blank)' : e.label) + ' (' + e.n.toLocaleString() + ')'); o.value = k; sel.appendChild(o); });
+    sel.value = sel0;
+    if (sel0) { sel.classList.add('on'); active++; }
+    sel.addEventListener('change', () => { state.ui.ourCat = Object.assign({}, state.ui.ourCat, { [f.k]:sel.value }); renderOur(); saveSoon(); });
+    lab.appendChild(sel); bar.appendChild(lab);
+  });
+  if (c.scope !== 'vendors' && (c.mode === 'catalog' || c.mode === 'review' || c.mode === 'inactive')) {
+    const g = el('label', 'chk', ''); const cb = el('input'); cb.type = 'checkbox'; cb.checked = state.ui.ourFam !== false;
+    cb.addEventListener('change', () => catSet({ ourFam:cb.checked }));
+    g.appendChild(cb); g.appendChild(document.createTextNode(' Group repeated Item #'));
+    g.title = 'Records with the same Item # for the same vendor become one expandable row. Nothing is merged.';
+    bar.appendChild(g);
+  }
+  if (active) {
+    const b = el('button', 'btn sm', 'Clear filters'); b.type = 'button';
+    b.addEventListener('click', () => { state.ui.ourCat = {}; state.ui.ourIssueType = ''; renderOur(); saveSoon(); });
+    bar.appendChild(b);
+  }
+  bar.appendChild(el('span', 'catSum', shownN.toLocaleString() + (c.scope === 'vendors' ? ' records in ' + c.vendorN.toLocaleString() + ' vendors' : ' of ' + scopeRows.length.toLocaleString() + ' records')));
+}
+
+function renderOurCatalog(){
+  const pane = $('#paneOur'), top = $('#ourTop');
+  const keepTop = pane.scrollTop, keepLeft = pane.scrollLeft;
+  if (oEditor) { const e = oEditor; oEditor = null; if (e.inp.parentNode) e.inp.parentNode.removeChild(e.inp); }
+  oView = { cols:[], rows:[], items:[], trs:[], tds:[], idx:new Map(), total:0 };
+  oCur = oSel = null; oAnchor = null; oPainted = [];
+  pane.innerHTML = ''; top.innerHTML = '';
+  const rows = state.our.rows;
+  const note = $('#ourNote'); note.innerHTML = '';
+  const status = $('#ourStatus'); status.innerHTML = '';
+  if (!rows.length) {
+    $('#ourCatBar').innerHTML = '';
+    const d = el('div', 'empty on');
+    d.style.cssText = 'position:static;padding:36px;text-align:center';
+    d.innerHTML = '<div class="drop"><h2>Our Pricing is empty</h2><p>This is the master catalog. Import a price file, or open <b>Edit all fields</b> to paste a range from Excel.</p></div>';
+    const p = el('p');
+    const bi = el('button', 'btn primary sm', 'Import price file\u2026'); bi.addEventListener('click', () => $('#btnOurImport').click());
+    const be = el('button', 'btn sm', 'Edit all fields'); be.style.marginLeft = '8px'; be.addEventListener('click', () => setOurView('edit'));
+    const bt = el('button', 'btn sm', 'Load the test scenarios'); bt.style.marginLeft = '8px'; bt.addEventListener('click', loadTestScenarios);
+    p.appendChild(bi); p.appendChild(be); p.appendChild(bt); d.appendChild(p);
+    pane.appendChild(d);
+    return;
+  }
+
+  /* derive once per render */
+  const famIdx = famIndex(rows);
+  const pvOf = new Map(), flOf = new Map();
+  rows.forEach(r => { const pv = ourPriceView(r); pvOf.set(r.id, pv); flOf.set(r.id, ourCatFlags(r, pv, famIdx)); });
+
+  const vendorNames = new Map();
+  rows.forEach(r => { const k = catKey(catVal(r, 'vendor')); if (!vendorNames.has(k)) vendorNames.set(k, catVal(r, 'vendor')); });
+  const qRaw = String(state.ui.ourSearch || '').trim().toLowerCase();
+  const toks = qRaw ? qRaw.split(/\s+/) : [];
+  const issuesOnly = !!state.ui.ourIssuesOnly;
+  const cf = state.ui.ourCat || {};
+  const mode = CAT_MODES.some(m => m[0] === state.ui.ourReview) ? state.ui.ourReview : 'catalog';
+  const review = mode === 'review', itype = review ? (state.ui.ourIssueType || '') : '';
+  const incInactive = !!qRaw || !!cf.status;   /* inactive records stay out of working lists, but a search or Status filter finds them */
+  const modeOk = (r, m, inc) => {
+    const ina = isInactiveRec(r);
+    if (m === 'inactive') return ina;
+    if (ina && !inc) return false;
+    if (m === 'rentals') return isRentalVals(r);
+    if (m === 'tiered') return pvOf.get(r.id).tiered;
+    if (m === 'review') return flOf.get(r.id).some(catIsIssue);
+    return true;
+  };
+  let scope = state.ui.ourScope || 'vendors';
+  if (scope !== 'vendors' && scope !== 'all' && !vendorNames.has(scope)) scope = 'vendors';
+  /* a search, or a catalog with one vendor, has nothing to summarize: go straight to the records */
+  const eff = scope === 'vendors' && (qRaw || vendorNames.size <= 1) ? 'all' : scope;
+
+  const inScope = r => eff === 'all' || eff === 'vendors' || catKey(catVal(r, 'vendor')) === eff;
+  const scopeRows = eff === 'all' || eff === 'vendors' ? rows : rows.filter(inScope);
+  /* counts that describe the scope, whatever else is filtered */
+  const typeCount = {}; let reviewN = 0;
+  const modeCount = {}; CAT_MODES.forEach(m => { modeCount[m[0]] = scopeRows.filter(r => modeOk(r, m[0], false)).length; });
+  const hiddenInactive = (mode === 'inactive' || incInactive) ? 0 : scopeRows.filter(isInactiveRec).length;
+  scopeRows.forEach(r => { const iss = flOf.get(r.id).filter(catIsIssue); if (iss.length && !isInactiveRec(r)) { reviewN++; new Set(iss.map(f => f.type)).forEach(t => { typeCount[t] = (typeCount[t] || 0) + 1; }); } });
+
+  let list = rows.filter(r => {
+    if (!inScope(r)) return false;
+    if (toks.length) {
+      const hay = [r.itemNumber, r.productCode, r.description, r.category, r.vendor].map(v => String(v || '').toLowerCase()).join('\u241f');
+      if (!toks.every(t => hay.indexOf(t) >= 0)) return false;
+    }
+    if (!modeOk(r, mode, incInactive)) return false;
+    const iss = flOf.get(r.id).filter(catIsIssue);
+    if (issuesOnly && !iss.length) return false;
+    if (itype && !iss.some(f => f.type === itype)) return false;
+    for (const f of CAT_FILTERS) { if (f.k === 'vendor' && eff !== 'all') continue; const sel = cf[f.k]; if (sel && catKey(f.get(r)) !== sel) return false; }
+    return true;
+  });
+  if (qRaw) {
+    const ex = r => catVal(r, 'itemNumber').toLowerCase() === qRaw || catVal(r, 'productCode').toLowerCase() === qRaw;
+    list = list.filter(ex).concat(list.filter(r => !ex(r)));
+  }
+  { const sig = JSON.stringify([qRaw, issuesOnly, cf, scope, mode, itype, state.ui.ourFam]); if (sig !== catSig) { catSig = sig; catShown = CAT_PAGE; } }
+  renderOurCatBar(scopeRows, list.length, { scope:eff === 'all' && scope === 'vendors' ? 'all' : scope, eff, mode, review, modeCount, typeCount, vendorNames, vendorN:vendorNames.size });
+
+  const errN = rows.filter(r => ourIssueLevel(r) === 'error').length;
+  const dupN = [...famIdx.values()].filter(f => f.rows.length > 1).length;
+  const conN = [...famIdx.values()].filter(f => f.conflict).length;
+  note.appendChild(document.createTextNode(rows.length.toLocaleString() + ' record' + (rows.length === 1 ? '' : 's') + ' \u00b7 ' + vendorNames.size + ' vendor' + (vendorNames.size === 1 ? '' : 's') +
+    (dupN ? ' \u00b7 ' + dupN + ' repeated Item #' + (conN ? ' (' + conN + ' conflicting)' : '') : '') + (errN ? ' \u00b7 ' + errN + ' with errors' : '')));
+  const sayStatus = (hint, issueRows, cautionRows) => {
+    const add = h => { const d = el('span'); d.innerHTML = h; status.appendChild(d); };
+    add(hint); status.appendChild(el('span', 'spacer'));
+    add('<b>' + issueRows.toLocaleString() + '</b> with issues \u00b7 <b>' + cautionRows.toLocaleString() + '</b> with warnings (in the records listed)');
+  };
+
+  /* ================================================ level 0: vendor summary */
+  if (eff === 'vendors') {
+    const vm = new Map();
+    list.forEach(r => {
+      const vk = catKey(catVal(r, 'vendor')); let v = vm.get(vk);
+      if (!v) { v = { key:vk, name:catVal(r, 'vendor'), recs:0, fams:new Set(), active:0, priced:0, unpriced:0, cat:0, issues:0, cautions:0, date:'' }; vm.set(vk, v); }
+      const pv = pvOf.get(r.id), fl = flOf.get(r.id), p = programById(r.program);
+      v.recs++; v.fams.add(catFamKey(r) || r.id);
+      if (catVal(r, 'status').toLowerCase() === 'active') v.active++;
+      if (pv.cls) v.unpriced++; else v.priced++;
+      if (catVal(r, 'category')) v.cat++;
+      if (fl.some(catIsIssue)) v.issues++; if (fl.some(f => f.level === 'caution')) v.cautions++;
+      if (p && p.effectiveDate && String(p.effectiveDate) > v.date) v.date = String(p.effectiveDate);
+    });
+    const vs = [...vm.values()].sort((a, b) => review ? (b.issues - a.issues) || a.name.localeCompare(b.name) : (a.name || '\uffff').localeCompare(b.name || '\uffff', undefined, { numeric:true }));
+    const t = el('table', 'cat vend');
+    const W = [280, 110, 100, 150, 120, 130, 190];
+    t.style.minWidth = W.reduce((a, b) => a + b, 0) + 'px';
+    const cg = el('colgroup'); W.forEach(w => { const c = el('col'); c.style.width = w + 'px'; cg.appendChild(c); }); t.appendChild(cg);
+    const hr = el('tr');
+    [['Vendor', '', ''], ['Items', 'num', 'Distinct Item #s (repeats counted once)'], ['Active', 'num', 'Records with Status = Active'], ['Priced / unpriced', 'num', 'Unpriced = no price or an invalid price'],
+     ['With Category', 'num', 'Share of records with a Category'], ['Program date', '', 'Latest effective date of the pricing programs these records use. Records have no price date of their own.'], ['Issues', '', 'Records with an issue (not warnings)']]
+      .forEach(h => { const th = el('th', h[1], h[0]); if (h[2]) th.title = h[2]; hr.appendChild(th); });
+    const th = el('thead'); th.appendChild(hr); t.appendChild(th);
+    const tb = el('tbody');
+    const goVendor = (v, rv) => { const patch = { ourScope:v.key }; if (rv) patch.ourReview = 'review'; catSet(patch); };
+    const tot = { recs:0, fams:0, active:0, priced:0, unpriced:0, cat:0, issues:0, cautions:0 };
+    vs.forEach(v => {
+      Object.keys(tot).forEach(k => { tot[k] += k === 'fams' ? v.fams.size : v[k]; });
+      const tr = el('tr', 'catRow'); tr.tabIndex = 0;
+      tr.title = 'Open ' + (v.name || '(no vendor)') + '\u2019s products';
+      tr.addEventListener('click', () => goVendor(v, false));
+      tr.addEventListener('keydown', e => { if (e.target === tr && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); goVendor(v, false); } });
+      const td0 = el('td', 'key'); td0.style.fontFamily = 'var(--ui)'; td0.appendChild(document.createTextNode((v.name || '(no vendor)')));
+      tr.appendChild(td0);
+      const tdI = el('td', 'num', v.fams.size.toLocaleString()); if (v.recs !== v.fams.size) tdI.appendChild(el('span', 'l2', v.recs.toLocaleString() + ' records')); tr.appendChild(tdI);
+      tr.appendChild(el('td', 'num', v.active.toLocaleString()));
+      const tdP = el('td', 'num'); tdP.appendChild(document.createTextNode(v.priced.toLocaleString() + ' / ')); tdP.appendChild(el('span', v.unpriced ? 'need' : 'dim', v.unpriced.toLocaleString())); tr.appendChild(tdP);
+      tr.appendChild(el('td', 'num' + (v.cat ? '' : ' dim'), Math.round(v.cat / v.recs * 100) + '%'));
+      tr.appendChild(el('td', v.date ? '' : 'dim', v.date || '\u2014'));
+      const tdX = el('td');
+      if (v.issues) { tdX.appendChild(el('span', 'iBadge warn', v.issues.toLocaleString())); const lk = el('button', 'revLink', 'Review'); lk.type = 'button'; lk.addEventListener('click', e => { e.stopPropagation(); goVendor(v, true); }); tdX.appendChild(lk); }
+      else tdX.appendChild(el('span', 'dim', '\u2014'));
+      if (v.cautions) tdX.appendChild(el('span', 'iBadge caut', v.cautions.toLocaleString())).title = v.cautions + ' records with warnings';
+      tr.appendChild(tdX); tb.appendChild(tr);
+    });
+    if (vs.length) {
+      const tr = el('tr', 'catRow vTotal'); tr.tabIndex = 0; tr.title = 'Open every vendor\u2019s products together';
+      const go = () => catSet({ ourScope:'all' });
+      tr.addEventListener('click', go); tr.addEventListener('keydown', e => { if (e.target === tr && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); go(); } });
+      tr.appendChild(el('td', null, 'All vendors'));
+      tr.appendChild(el('td', 'num', tot.fams.toLocaleString())); tr.appendChild(el('td', 'num', tot.active.toLocaleString()));
+      tr.appendChild(el('td', 'num', tot.priced.toLocaleString() + ' / ' + tot.unpriced.toLocaleString()));
+      tr.appendChild(el('td', 'num', tot.recs ? Math.round(tot.cat / tot.recs * 100) + '%' : ''));
+      tr.appendChild(el('td')); tr.appendChild(el('td', null, tot.issues ? tot.issues.toLocaleString() + ' with issues' : ''));
+      tb.appendChild(tr);
+    } else {
+      const tr = el('tr'), td = el('td', null, review ? 'No record needs review with these filters.' : 'No record matches the mode, search and filters.');
+      td.colSpan = 7; td.style.cssText = 'padding:14px;color:var(--ink-3)'; tr.appendChild(td); tb.appendChild(tr);
+    }
+    t.appendChild(tb); pane.appendChild(t);
+    pane.scrollTop = keepTop; pane.scrollLeft = keepLeft;
+    sayStatus('Click a vendor to see its products \u00b7 <b>Review</b> jumps to that vendor\u2019s issues.', tot.issues, tot.cautions);
+    return;
+  }
+
+  /* ================================================ level 1-2: products, families, source records */
+  const midKey = mode === 'rentals' ? 'rentals' : mode === 'tiered' ? 'tiered' : 'std';
+  const famOn = state.ui.ourFam !== false && midKey === 'std';   /* rate and tier views list each record, with a ×N marker */
+  const units = [], seen = new Map();
+  list.forEach(r => {
+    const k = famOn ? catFamKey(r) : null;
+    if (!k) { units.push({ members:[r] }); return; }
+    let u = seen.get(k); if (!u) { u = { key:k, members:[], fam:famIdx.get(k) }; seen.set(k, u); units.push(u); }
+    u.members.push(r);
+  });
+
+  const t = el('table', 'cat');
+  const MIDW = { std:[150, 160, 104], rentals:[135, 150, 100, 250], tiered:[170, 270, 150] };
+  const W = [118, 290, 130, 120].concat(MIDW[midKey], [84, review ? 270 : 110]);
+  t.style.minWidth = W.reduce((a, b) => a + b, 0) + 'px';
+  const cg = el('colgroup'); W.forEach(w => { const c = el('col'); c.style.width = w + 'px'; cg.appendChild(c); }); t.appendChild(cg);
+  const MIDH = {
+    std: [['Pack / UOM', '', 'Packaging Details, eaches per case, and Ordered UM'],
+          ['Primary price', '', 'One price with its basis. Each price shown only for a case price with a valid pack size.'],
+          ['Price type', '', 'Standard or Tiered, and Purchase or Rental']],
+    rentals: [['Daily rate', '', 'Per day. \u2248 means worked out from a rate quoted per week or month, using the vendor\u2019s days-per-week and days-per-month rules.'],
+              ['Monthly rate', '', 'Per month, using the vendor\u2019s days-per-month rule. \u2248 means worked out from another period.'],
+              ['Days to cap', '', 'Days at the daily rate after which the monthly price is cheaper. Needs term bands (tiers with a minimum number of days).'],
+              ['Rates on file', '', 'The prices as entered, with the rental rules used']],
+    tiered: [['Program', '', 'Pricing program and its effective date'],
+             ['Tier prices', '', 'Every tier on the program, with this item\u2019s price'],
+             ['Contract', '', 'Contract on the record, or the contracts of its tiers']]
+  };
+  const H = [
+    ['Item #', 'key mkey', 'Matching key \u2014 Facility/Vendor Crossed To references this.'],
+    ['Description', 'mkey', 'Matching key'],
+    ['Product Code', 'mkey', 'Matching key'],
+    ['Category', 'mkey', 'Matching key \u2014 blank on many records is normal; it is a note, not an error.']
+  ].concat(MIDH[midKey], [
+    ['Status', '', ''],
+    [review ? 'Why it needs review' : 'Issues', '', 'Red/amber = issues to fix. Outlined = warnings (blank Product Code, missing pack or UM).']
+  ]);
+  const thead = el('thead'), htr = el('tr');
+  H.forEach(h => { const th = el('th', h[1], h[0]); if (h[2]) th.title = h[2]; htr.appendChild(th); });
+  thead.appendChild(htr); t.appendChild(thead);
+  const tb = el('tbody');
+  const openRec = id => {
+    openRowSide({ type:'our', id });
+    pane.querySelectorAll('tr.rowSel').forEach(x => x.classList.remove('rowSel'));
+    const tr = pane.querySelector('tr[data-ourid="' + CSS.escape(id) + '"]'); if (tr) tr.classList.add('rowSel');
+  };
+  const order = { error:0, warn:1, caution:2, info:3 };
+  let issueRows = 0, cautionRows = 0;
+
+  /* one source record */
+  const recRow = (r, sub, dif) => {
+    const pv = pvOf.get(r.id), fl = flOf.get(r.id);
+    const D = c => dif && dif.has(c) ? ' dif' : '';
+    const tr = el('tr', 'catRow' + (sub ? ' famSub' : '') + (rowSideCtx && rowSideCtx.type === 'our' && rowSideCtx.id === r.id ? ' rowSel' : ''));
+    tr.dataset.ourid = r.id; tr.tabIndex = 0;
+    tr.addEventListener('click', () => { if (window.getSelection && String(window.getSelection())) return; openRec(r.id); });
+    tr.addEventListener('keydown', e => { if (e.target === tr && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); openRec(r.id); } });
+    const tdK = el('td', 'key');
+    const item = catVal(r, 'itemNumber');
+    if (sub) tdK.appendChild(document.createTextNode('\u21b3 '));
+    if (!item) tdK.appendChild(el('span', 'bad', 'required')); else tdK.appendChild(document.createTextNode(item));
+    if (!sub && !famOn) { const g = famIdx.get(catFamKey(r)); if (g && g.rows.length > 1) { const b = el('span', 'iBadge ' + (g.conflict ? 'warn' : 'caut'), '\u00d7' + g.rows.length); b.style.marginLeft = '6px'; b.title = 'Item # is listed ' + g.rows.length + ' times for this vendor'; tdK.appendChild(b); } }
+    tr.appendChild(tdK);
+    const desc = catVal(r, 'description');
+    const tdD = el('td', D('desc').trim()); const dd = el('span', 'dsc' + (desc ? '' : ' dim'), desc || 'Blank'); if (desc) tdD.title = desc; tdD.appendChild(dd);
+    const l2 = sub ? (r.source || 'Entered') : eff === 'all' ? catVal(r, 'vendor') : '';
+    if (l2) tdD.appendChild(el('span', 'l2', l2));
+    tr.appendChild(tdD);
+    const pc = catVal(r, 'productCode'); tr.appendChild(Object.assign(el('td', (pc ? '' : 'dim') + D('code'), pc || '\u2014'), { title:pc ? '' : 'Product Code is blank' }));
+    const cat = catVal(r, 'category'); tr.appendChild(el('td', (cat ? '' : 'dim') + D('cat'), cat || '\u2014'));
+    if (midKey === 'rentals') {
+      const rv = ourRentalView(r);
+      const c1 = el('td'); c1.appendChild(el('span', 'l1 money' + rv.dailyCls, rv.daily)); if (rv.title) c1.title = rv.title; if (rv.note) c1.appendChild(el('span', 'l2 need', rv.note)); tr.appendChild(c1);
+      const c2 = el('td'); c2.appendChild(el('span', 'l1 money' + rv.monthlyCls, rv.monthly)); if (rv.title) c2.title = rv.title; tr.appendChild(c2);
+      const c3 = el('td'); c3.appendChild(el('span', 'l1' + rv.capCls, rv.cap)); if (rv.capTitle) c3.title = rv.capTitle; tr.appendChild(c3);
+      const c4 = el('td'); c4.appendChild(el('span', 'l1' + (rv.rates === 'No price' ? ' need' : ''), rv.rates)); c4.appendChild(el('span', 'l2', rv.rules)); c4.title = rv.rates; tr.appendChild(c4);
+    } else if (midKey === 'tiered') {
+      const pg = programById(r.program), tiers = (pg && pg.tiers) || [];
+      const c1 = el('td'); c1.appendChild(el('span', 'l1', pg ? progLabel(pg) : 'Program missing'));
+      c1.appendChild(el('span', 'l2', [pg && pg.effectiveDate ? 'effective ' + pg.effectiveDate : '', 'per ' + pv.unit].filter(Boolean).join(' \u00b7 '))); tr.appendChild(c1);
+      const c2 = el('td'); c2.title = pv.title || '';
+      tiers.slice(0, 5).forEach(tt => { const n = priceNum((r.prices || {})[tt.id]); const x = el('span', 'l1' + (n === null ? ' need' : isNaN(n) ? ' bad' : ''), tt.name + '  ' + (n === null ? 'not set' : isNaN(n) ? 'invalid' : catMoney(n))); x.style.fontSize = '12px'; c2.appendChild(x); });
+      if (tiers.length > 5) c2.appendChild(el('span', 'l2', '+ ' + (tiers.length - 5) + ' more tiers (hover for all)'));
+      tr.appendChild(c2);
+      const cons = [...new Set(tiers.map(tt => String(tt.contract || '').trim()).filter(Boolean))];
+      const cv = catVal(r, 'contract') || cons.join(', ');
+      tr.appendChild(el('td', cv ? '' : 'dim', cv || '\u2014'));
+    } else {
+      const tdP = el('td', D('pack').trim());
+      const pk = catVal(r, 'packagingDetails');
+      tdP.appendChild(el('span', 'l1' + (pk ? '' : ' need'), pk || 'Pack missing'));
+      const um = catVal(r, 'orderedUM').toUpperCase();
+      tdP.appendChild(el('span', 'l2' + (um ? '' : ' need'), [pv.epc ? fmtQty(pv.epc) + ' ea / case' : '', um ? 'UM ' + um : 'UM missing'].filter(Boolean).join(' \u00b7 ')));
+      tr.appendChild(tdP);
+      const tdM = el('td', D('price').trim()); if (pv.title) tdM.title = pv.title;
+      tdM.appendChild(el('span', 'l1 money' + pv.cls, pv.primary));
+      if (pv.second) tdM.appendChild(el('span', 'l2' + pv.secondCls, pv.second));
+      tr.appendChild(tdM);
+      const tdT = el('td'); const it = catVal(r, 'itemType');
+      tdT.appendChild(el('span', 'l1', pv.tiered ? 'Tiered' : 'Standard'));
+      tdT.appendChild(el('span', 'l2' + (it ? '' : ' dim'), it || 'Type not set'));
+        tr.appendChild(tdT);
+    }
+    const stv = catVal(r, 'status'); tr.appendChild(el('td', stv ? '' : 'dim', stv || 'Not set'));
+    const tdI = el('td');
+    const iss = fl.filter(catIsIssue).sort((a, b) => order[a.level] - order[b.level]), cau = fl.filter(f => f.level === 'caution');
+    if (!sub) { if (iss.length) issueRows++; if (cau.length) cautionRows++; }
+    if (iss.length) tdI.appendChild(el('span', 'iBadge ' + (iss.some(f => f.level === 'error') ? 'err' : 'warn'), String(iss.length)));
+    if (cau.length) tdI.appendChild(el('span', 'iBadge caut', String(cau.length)));
+    if (!iss.length && !cau.length) tdI.appendChild(el('span', 'dim', '\u2014'));
+    if (review && iss.length) tdI.appendChild(el('span', 'reason', iss[0].text + (iss.length > 1 ? ' (+' + (iss.length - 1) + ' more)' : '')));
+    tdI.title = fl.length ? fl.slice().sort((a, b) => order[a.level] - order[b.level]).map(f => CAT_LEVEL_LABEL[f.level] + ': ' + f.text).join('\n') : 'No flags';
+    tr.appendChild(tdI);
+    return tr;
+  };
+  /* a family: same vendor + Item #, shown as one row that expands to its source records */
+  const famRow = u => {
+    const ms = u.members, f = u.fam, open = catOpen.has(u.key);
+    const rep = ms[0], pvs = ms.map(r => pvOf.get(r.id));
+    const same = fn => { const x = new Set(ms.map(fn)); return x.size === 1 ? [...x][0] : null; };
+    const tr = el('tr', 'catRow famRow'); tr.tabIndex = 0;
+    const toggle = () => { if (catOpen.has(u.key)) catOpen.delete(u.key); else catOpen.add(u.key); renderOur(); };
+    tr.title = open ? 'Hide the source records' : 'Show the ' + ms.length + ' source records';
+    tr.setAttribute('aria-expanded', open ? 'true' : 'false');
+    tr.addEventListener('click', toggle);
+    tr.addEventListener('keydown', e => { if (e.target === tr && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); toggle(); } });
+    const tdK = el('td', 'key'); tdK.appendChild(el('span', 'chev', open ? '\u25be' : '\u25b8')); tdK.appendChild(document.createTextNode(catVal(rep, 'itemNumber')));
+    const bd = el('span', 'iBadge ' + (f.conflict ? 'warn' : 'caut'), '\u00d7' + ms.length); bd.style.marginLeft = '6px'; tdK.appendChild(bd);
+    tr.appendChild(tdK);
+    const tdD = el('td'); const d1 = same(r => catNorm(r.description));
+    const dd = el('span', 'dsc' + (d1 === null ? ' varies' : ''), d1 === null ? 'Descriptions differ' : (catVal(rep, 'description') || 'Blank')); tdD.appendChild(dd);
+    tdD.appendChild(el('span', 'l2', (eff === 'all' && catVal(rep, 'vendor') ? catVal(rep, 'vendor') + ' \u00b7 ' : '') + ms.length + ' records' + (f.rows.length > ms.length ? ' of ' + f.rows.length : '')));
+    tr.appendChild(tdD);
+    const code = same(r => catNorm(r.productCode)); tr.appendChild(el('td', code === null ? 'varies' : code === '' ? 'dim' : '', code === null ? 'varies' : catVal(rep, 'productCode') || '\u2014'));
+    const cat = same(r => catNorm(r.category)); tr.appendChild(el('td', cat === null ? 'varies' : cat === '' ? 'dim' : '', cat === null ? 'varies' : catVal(rep, 'category') || '\u2014'));
+    const pk = same(r => catNorm(r.packagingDetails) + '|' + catNorm(r.factorQty) + '|' + catVal(r, 'orderedUM'));
+    const tdP = el('td'); if (pk === null) tdP.appendChild(el('span', 'l1 varies', 'Pack / UM differ')); else { tdP.appendChild(el('span', 'l1', catVal(rep, 'packagingDetails') || 'Pack missing')); tdP.appendChild(el('span', 'l2', [pvs[0].epc ? fmtQty(pvs[0].epc) + ' ea / case' : '', catVal(rep, 'orderedUM') ? 'UM ' + catVal(rep, 'orderedUM').toUpperCase() : 'UM missing'].filter(Boolean).join(' \u00b7 '))); }
+    tr.appendChild(tdP);
+    const tdM = el('td'); const prim = new Set(pvs.map(p => p.primary));
+    if (prim.size === 1) { tdM.appendChild(el('span', 'l1 money' + pvs[0].cls, pvs[0].primary)); if (pvs[0].second) tdM.appendChild(el('span', 'l2' + pvs[0].secondCls, pvs[0].second)); }
+    else {
+      const nums = pvs.filter(p => p.lo != null), units = new Set(nums.map(p => p.unit));
+      const txt = nums.length && units.size === 1 ? catMoney(Math.min.apply(null, nums.map(p => p.lo))) + '\u2013' + catMoney(Math.max.apply(null, nums.map(p => p.hi))) + ' / ' + [...units][0] : 'Prices differ';
+      tdM.appendChild(el('span', 'l1 money need', txt)); tdM.appendChild(el('span', 'l2 need', 'Records disagree'));
+    }
+    tr.appendChild(tdM);
+    const tdT = el('td'); const st = same(r => ourStructureOf(r)); tdT.appendChild(el('span', 'l1' + (st === null ? ' varies' : ''), st === null ? 'Mixed' : st)); const ty = same(r => catNorm(r.itemType)); tdT.appendChild(el('span', 'l2' + (ty ? '' : ' dim'), ty === null ? 'Mixed' : catVal(rep, 'itemType') || 'Type not set')); tr.appendChild(tdT);
+    const ss = same(r => catNorm(r.status)); tr.appendChild(el('td', ss === null ? 'varies' : ss === '' ? 'dim' : '', ss === null ? 'Mixed' : catVal(rep, 'status') || 'Not set'));
+    const tdI = el('td');
+    const memberIss = [], seenT = new Set();
+    ms.forEach(r => flOf.get(r.id).filter(catIsIssue).forEach(x => { if (x.type === 'conflict' && f.conflict) return; if (!seenT.has(x.text)) { seenT.add(x.text); memberIss.push(x); } }));
+    if (f.conflict) tdI.appendChild(el('span', 'iBadge warn', 'Conflict'));
+    else tdI.appendChild(el('span', 'iBadge caut', 'Duplicate'));
+    if (memberIss.length) tdI.appendChild(el('span', 'iBadge ' + (memberIss.some(x => x.level === 'error') ? 'err' : 'warn'), String(memberIss.length)));
+    if (f.conflict) { issueRows++; if (review) tdI.appendChild(el('span', 'reason', 'Same Item # listed ' + f.rows.length + '\u00d7 with different ' + f.diffs.map(d => d.label).join(', ') + '.')); }
+    else if (memberIss.length) issueRows++;
+    tdI.title = f.conflict ? 'Records differ in: ' + f.diffs.map(d => d.label).join(', ') + '. Nothing is merged automatically.' : 'Identical records \u2014 safe to aggregate (Edit all fields > Aggregate ticked).';
+    tr.appendChild(tdI);
+    return tr;
+  };
+
+  const shown = units.slice(0, catShown);
+  shown.forEach(u => {
+    if (u.members.length < 2) { tb.appendChild(recRow(u.members[0], false, null)); return; }
+    tb.appendChild(famRow(u));
+    if (catOpen.has(u.key)) {
+      const dif = new Set(u.fam.diffs.map(d => d.col));
+      u.members.forEach(r => tb.appendChild(recRow(r, true, dif)));
+    }
+  });
+  if (!shown.length) {
+    const tr = el('tr'), td = el('td', null, review ? 'No record needs review with these filters.' : 'No record matches the mode, search and filters.');
+    td.colSpan = H.length; td.style.cssText = 'padding:14px;color:var(--ink-3)'; tr.appendChild(td); tb.appendChild(tr);
+  }
+  if (units.length > catShown) {
+    const tr = el('tr'), td = el('td');
+    td.colSpan = H.length; td.style.cssText = 'padding:10px;background:#f6f8fb;color:var(--ink-2)';
+    td.appendChild(document.createTextNode('Showing ' + catShown.toLocaleString() + ' of ' + units.length.toLocaleString() + ' matching items \u2014 search or filter to narrow, or '));
+    const mbt = el('button', 'btn sm', 'Show ' + Math.min(CAT_PAGE, units.length - catShown).toLocaleString() + ' more'); mbt.type = 'button';
+    mbt.addEventListener('click', () => { catShown += CAT_PAGE; renderOur(); });
+    td.appendChild(mbt); tr.appendChild(td); tb.appendChild(tr);
+  }
+  t.appendChild(tb); pane.appendChild(t);
+  pane.scrollTop = keepTop; pane.scrollLeft = keepLeft;
+  oView.total = list.length;
+  sayStatus('Click a record for its details' + (famOn ? ' \u00b7 click a \u00d7N row to see its source records' : '') + ' \u00b7 matching keys are locked here.' + (hiddenInactive ? ' \u00b7 ' + hiddenInactive.toLocaleString() + ' inactive hidden \u2014 see Inactive, or search.' : ''), issueRows, cautionRows);
+}
+$('#segOurView').addEventListener('click', e => { const b = e.target.closest('button'); if (b) setOurView(b.dataset.ourview); });
 
 /* ------------------------------------------------ Our Pricing grouping */
 const OUR_GROUP_FIELDS = { itemNumber:'Item #', productCode:'Product Code', description:'Description' };
@@ -10033,6 +10691,7 @@ function openOurColumnFilter(col){
 /* ----------------------------------------------------------- status bar */
 function renderOurStatus(){
   const s = $('#ourStatus'); if (!s) return;
+  if (ourViewMode() === 'catalog') return;
   s.innerHTML = '';
   const add = html => { const d = el('span'); d.innerHTML = html; s.appendChild(d); };
   if (!oCur || !oView.rows[oCur.r]) { add('Click a cell, or paste a range from Excel with <kbd>Ctrl</kbd>+<kbd>V</kbd>. Press <kbd>?</kbd> for shortcuts.'); return; }
@@ -10156,7 +10815,7 @@ function renderOurStatus(){
 }
 
 /* ------------------------------------------------------------ clipboard */
-const ourGridActive = () => state.ui.tab === 'our' && !$('#scrim').classList.contains('on');
+const ourGridActive = () => state.ui.tab === 'our' && ourViewMode() === 'edit' && !$('#scrim').classList.contains('on');
 document.addEventListener('copy', e => {
   if (!ourGridActive() || oEditor || !oSel || document.activeElement !== $('#paneOur')) return;
   const text = ourSelectionTSV(); if (!text) return;
@@ -10320,8 +10979,8 @@ $('#chkOurIssues').addEventListener('change', e => { state.ui.ourIssuesOnly = e.
 /* ------------------------------------------------ import / paste mapping */
 const OUR_HEADER_RULES = [
   ['vendor', /^(vendor|supplier|distributor)(\s*name)?$/i],
-  ['itemNumber', /^(our\s*)?item\s*(#|no\.?|num(ber)?)?$|material\s*(#|no\.?|num(ber)?)?$|^sku(\s*#)?$|^(\S+\s*)?(item|product)\s*(#|no\.?)$/i],
-  ['productCode', /product\s*(code|#|no\.?|num)|prod\.?\s*code|mfg|catalog|^ndc|^upc|gtin|material\s*code|item\s*code/i],
+  ['itemNumber', /^(our\s*)?item\s*(#|no\.?|num(ber)?)?$|material\s*(#|no\.?|num(ber)?)?$|^sku(\s*#)?$|^(\S+\s*)?(item|product)\s*(#|no\.?)$|^(our\s*)?item\s*code$/i],
+  ['productCode', /product\s*(code|#|no\.?|num)|prod\.?\s*code|mf[gr]|manufacturer|catalog|^ndc|^upc|gtin|material\s*code/i],
   ['description', /desc|product\s*name|item\s*name|^name$|^product$/i],
   ['packagingDetails', /packag|pack\s*size|^pack$|case\s*(config|pack)|^size$/i],
   ['factorQty', /factor/i],
@@ -10329,7 +10988,8 @@ const OUR_HEADER_RULES = [
   ['status', /status/i],
   ['program', /program/i],
   ['contract', /^contract/i],
-  ['stdPrice', /^(standard|std|list|our|contract|case|unit)?\s*price(\s*(per\s*case|\/\s*cs|usd))?$|^cost$/i]
+  ['stdPrice', /^(standard|std|list|our|contract|case|unit)?\s*price(\s*(per\s*case|\/\s*cs|usd))?$|^cost$/i],
+  ['category', /^(product\s*|item\s*)?categor(y|ies)$/i]
 ];
 function cellText(v){
   if (v == null) return '';
@@ -11946,6 +12606,7 @@ function clarifyGo(it){
   if (it.refType === 'our') {
     switchTab('our');
     const ri = oView.idx.get(it.refId); if (ri != null) ourSetCur(ri, 0);
+    else if (ourViewMode() === 'catalog' && state.our.rows.some(r => r.id === it.refId)) openRowSide({ type:'our', id:it.refId });
     return;
   }
   if (it.refType === 'line') { const key = normIdent(it.ourItem); xuHighlight = null; xcPreselect = key ? { key, ids:new Set([it.refId]) } : null; }
@@ -12296,9 +12957,42 @@ function renderRowSide(){
       }
       refresh();
     };
+    /* ---- pinned Matching keys block: the same four fields in the same place in every view ---- */
+    { const locked = ourViewMode() !== 'edit' && !ctx.unlockKeys;
+      const kb = el('div', 'rsKeys');
+      kb.appendChild(el('div', 'rsSec', 'Matching keys' + (locked ? ' \u00b7 locked' : '')));
+      OUR_KEY_FIELDS.forEach(k => {
+        const label = OUR_KEY_LABEL[k];
+        const shownVal = () => { const v = rec[k] == null ? '' : String(rec[k]).trim(); return v === '' ? 'Blank' : v; };
+        rsField(kb, label, k === 'itemNumber' ? 'Crossed To uses this' : '', () => {
+          if (locked) { const d = el('div', 'ro' + (catVal(rec, k) === '' ? ' blank' : ''), shownVal()); rowSideFields.push({ ro:d, get:shownVal }); return d; }
+          return rsInput(() => rec[k] == null ? '' : String(rec[k]), v => { const val = normalizeOurInput(k, v); if (setOurField(rec.id, k, val)) refresh(); });
+        });
+      });
+      if (locked) {
+        const ub = el('button', 'btn sm', 'Edit matching keys'); ub.style.marginTop = '8px';
+        ub.title = 'Changing these changes how Facility/Vendor items match this record. Every change is logged.';
+        ub.addEventListener('click', () => { rowSideCtx.unlockKeys = true; renderRowSide(); });
+        kb.appendChild(ub);
+      } else if (ourViewMode() !== 'edit') {
+        kb.appendChild(el('div', 'rsHint', 'Unlocked for this record. Changes are logged and can be undone.'));
+      }
+      body.appendChild(kb); }
+    /* ---- flags ---- */
+    { const fl = ourCatFlags(rec), order = { error:0, warn:1, caution:2, info:3 };
+      secTitle('Flags');
+      if (!fl.length) body.appendChild(el('div', 'rsFlag', 'No flags.'));
+      fl.slice().sort((a, b) => order[a.level] - order[b.level]).forEach(f => {
+        const d = el('div', 'rsFlag'); d.appendChild(el('span', 'dot ' + (f.level === 'error' ? 'err' : f.level === 'warn' ? 'warn' : 'ok')));
+        d.appendChild(el('span', null, CAT_LEVEL_LABEL[f.level] + ' \u2014 ' + f.text)); body.appendChild(d); }); }
+    /* ---- price meaning ---- */
+    { const pv = ourPriceView(rec);
+      secTitle('Price');
+      const d = el('div', 'rsFlag'); d.appendChild(el('span', null, pv.primary + (pv.second ? '   \u00b7   ' + pv.second : ''))); body.appendChild(d); }
     const SEC = { field:'Item, packaging and pricing setup', tier:'Tier prices', calc:'Calculated (read-only)', each:'Each prices (read-only)', ro:'Read-only' };
     ['field', 'tier', 'each', 'calc', 'ro'].forEach(kind => {
       const list = cols.filter(c => c.kind === kind).filter(c => {
+        if (kind === 'field' && OUR_KEY_FIELDS.indexOf(c.k) >= 0) return false;   /* shown in the pinned block above */
         const xc = ourCell(rec, c, cb);
         if (kind === 'tier') return xc.editable || !!(programById(rec.program) && programById(rec.program) === c.program);
         if (kind === 'each') return xc.text !== '\u00b7';
@@ -12317,6 +13011,11 @@ function renderRowSide(){
     });
     if (hiddenN > 0) body.appendChild(el('div', 'rsHint', hiddenN + ' tier price field' + (hiddenN === 1 ? '' : 's') + ' hidden \u2014 they follow the Tiers menu on the Our Pricing toolbar.'));
     const fb = flagButton(() => flagOurData(rec), { label:'\u2691 Flag for clarification' }); fb.classList.add('btn', 'sm'); foot.appendChild(fb);
+    if (ourViewMode() === 'catalog') {
+      const eb = el('button', 'btn sm', 'Open in Edit all fields');
+      eb.addEventListener('click', () => { const id = rec.id; closeRowSide(); setOurView('edit', id); });
+      foot.appendChild(eb);
+    }
     rowSideSig = rsSigOur(rec);
   }
   head.appendChild(ht); head.appendChild(x);
